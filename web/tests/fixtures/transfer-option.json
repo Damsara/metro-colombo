@@ -1,0 +1,119 @@
+{
+  "departure_time": "2026-10-08T05:30:00+05:30",
+  "arrival_time": "2026-10-08T07:15:00+05:30",
+  "total_minutes": 105,
+  "rides": 2,
+  "transfers": 1,
+  "total_fare": {
+    "full_amount": 395,
+    "half_amount": 395,
+    "complete": true
+  },
+  "legs": [
+    {
+      "kind": "ride",
+      "ride": {
+        "route": {
+          "code": "CM04",
+          "name": "Panadura - Dematagoda"
+        },
+        "direction_id": "1b314dc5-938c-4da2-946b-5f90271a4ea2",
+        "slot_id": "0370a516-82fe-400d-804f-5875023b7ea2",
+        "end_location": "Dematagoda Railway Station",
+        "bus": {
+          "id": "c24a3920-5f59-44b6-9fb5-0b358ba92b5f",
+          "registration_number": "WP-NE-6545"
+        },
+        "board": {
+          "id": "c793da61-9bb5-4a62-b425-85f75061f89d",
+          "stop_code": "DTP116",
+          "stop_name_en": "Panadura",
+          "stop_name_si": "පානදුර",
+          "stop_name_tm": "பாணந்துறை",
+          "latitude": 6.7147539,
+          "longitude": 79.907588,
+          "scheduled_time": "2026-10-08T05:30:00+05:30",
+          "time_status": "scheduled"
+        },
+        "alight": {
+          "id": "2de8993d-320e-4906-bac3-b62b5103a7f5",
+          "stop_code": "MCC68-2",
+          "stop_name_en": "Borella 02 - YMBA",
+          "stop_name_si": "බොරැල්ල 02 - YMBA",
+          "stop_name_tm": "பொரளை 02 - YMBA",
+          "latitude": 6.9133472,
+          "longitude": 79.8774599,
+          "scheduled_time": "2026-10-08T06:45:00+05:30",
+          "time_status": "scheduled"
+        },
+        "travel_minutes": 75
+      }
+    },
+    {
+      "kind": "move",
+      "move": {
+        "from_stop": {
+          "id": "2de8993d-320e-4906-bac3-b62b5103a7f5",
+          "stop_code": "MCC68-2",
+          "stop_name_en": "Borella 02 - YMBA",
+          "stop_name_si": "බොරැල්ල 02 - YMBA",
+          "stop_name_tm": "பொரளை 02 - YMBA",
+          "latitude": 6.9133472,
+          "longitude": 79.8774599
+        },
+        "to_stop": {
+          "id": "e9c4ed3c-19a6-44bd-96ac-1fdacf5b15ec",
+          "stop_code": "MCC68",
+          "stop_name_en": "Borella 02 - YMBA",
+          "stop_name_si": "බොරැල්ල 02 - YMBA",
+          "stop_name_tm": "பொரெல்லா 02 - YMBA",
+          "latitude": 6.91333,
+          "longitude": 79.87759
+        },
+        "distance_meters": 14.488071036320544,
+        "estimated_minutes": 3,
+        "depart_time": "2026-10-08T06:45:00+05:30",
+        "arrive_time": "2026-10-08T06:48:00+05:30"
+      }
+    },
+    {
+      "kind": "ride",
+      "ride": {
+        "route": {
+          "code": "CM05",
+          "name": "Ekala - Battaramulla"
+        },
+        "direction_id": "fd7b32c1-7592-4c9c-8212-f1e9d6e5de91",
+        "slot_id": "53a14701-2fba-4ef5-83ea-b4f2f592a876",
+        "end_location": "Battaramulla",
+        "bus": {
+          "id": "66cc8915-0be7-4afc-a3ef-fc9724728193",
+          "registration_number": "WP-NE-6516"
+        },
+        "board": {
+          "id": "e9c4ed3c-19a6-44bd-96ac-1fdacf5b15ec",
+          "stop_code": "MCC68",
+          "stop_name_en": "Borella 02 - YMBA",
+          "stop_name_si": "බොරැල්ල 02 - YMBA",
+          "stop_name_tm": "பொரெல்லா 02 - YMBA",
+          "latitude": 6.91333,
+          "longitude": 79.87759,
+          "scheduled_time": "2026-10-08T06:51:00+05:30",
+          "time_status": "scheduled"
+        },
+        "alight": {
+          "id": "2fd4a6f1-63a2-4bf3-a7ad-36630eb213f6",
+          "stop_code": "MCC37",
+          "stop_name_en": "Battaramulla",
+          "stop_name_si": "බත්තරමුල්ල",
+          "stop_name_tm": "பத்தரமுல்லை",
+          "latitude": 6.9013413,
+          "longitude": 79.9199591,
+          "scheduled_time": "2026-10-08T07:15:00+05:30",
+          "time_status": "scheduled"
+        },
+        "travel_minutes": 24
+      }
+    }
+  ]
+}

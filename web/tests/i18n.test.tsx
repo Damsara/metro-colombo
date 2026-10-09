@@ -1,0 +1,161 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { afterEach, test, vi } from "vitest";
+import JourneyResults from "../src/components/JourneyResults";
+import {
+  dateLabel,
+  distanceLabel,
+  i18n,
+  preferredLanguage,
+  timeLabel,
+} from "../src/i18n";
+import { LanguageProvider } from "../src/lib/language";
+import type { JourneyOption, Language } from "../src/types";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  i18n.activate("en");
+});
+
+function inLanguage<T>(language: Language, run: () => T): T {
+  i18n.activate(language);
+  return run();
+}
+
+test("dates use catalog month and weekday names in every browser", () => {
+  // 2026-10-10 is a Saturday.
+  assert.equal(
+    inLanguage("en", () => dateLabel(i18n, "2026-10-10")),
+    "Sat, 10 Oct",
+  );
+  assert.equal(
+    inLanguage("si", () => dateLabel(i18n, "2026-10-10")),
+    "ඔක් 10, සෙන",
+  );
+  assert.equal(
+    inLanguage("ta", () => dateLabel(i18n, "2026-10-10")),
+    "சனி, 10 அக்.",
+  );
+});
+
+test("times are Colombo clock times in each language's format", () => {
+  const afternoon = "2026-10-09T09:35:00Z"; // 15:05 in Colombo
+  const morning = "2026-10-08T18:30:00Z"; // 00:00 in Colombo
+  assert.equal(
+    inLanguage("en", () => timeLabel(i18n, afternoon)),
+    "3:05 PM",
+  );
+  assert.equal(
+    inLanguage("en", () => timeLabel(i18n, morning)),
+    "12:00 AM",
+  );
+  assert.equal(
+    inLanguage("si", () => timeLabel(i18n, afternoon)),
+    "ප.ව. 3.05",
+  );
+  assert.equal(
+    inLanguage("ta", () => timeLabel(i18n, afternoon)),
+    "3:05 PM",
+  );
+});
+
+test("units follow each language's order", () => {
+  assert.equal(
+    inLanguage("en", () => distanceLabel(i18n, 420)),
+    "420 m",
+  );
+  assert.equal(
+    inLanguage("si", () => distanceLabel(i18n, 1500)),
+    "කි.මී. 1.5",
+  );
+  assert.equal(
+    inLanguage("ta", () => distanceLabel(i18n, 420)),
+    "420 மீ",
+  );
+});
+
+test("the browser's language is used until one is chosen", () => {
+  assert.equal(preferredLanguage(["si-LK", "en-US"]), "si");
+  assert.equal(preferredLanguage(["fr-FR", "ta-IN"]), "ta");
+  assert.equal(preferredLanguage(["fr-FR"]), undefined);
+});
+
+test("a saved Sinhala choice renders the journey in Sinhala word order", () => {
+  vi.stubGlobal("localStorage", {
+    getItem: () => "si",
+    setItem: () => {},
+  });
+  const option: JourneyOption = JSON.parse(
+    readFileSync(
+      new URL("./fixtures/transfer-option.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  const ride = option.legs[0];
+  assert.ok(ride.kind === "ride");
+  const html = renderToStaticMarkup(
+    createElement(LanguageProvider, {
+      children: createElement(JourneyResults, {
+        plan: {
+          from_stop: ride.ride.board,
+          to_stop: ride.ride.alight,
+          date: "2999-01-01",
+          queried_at: "2026-10-07T06:00:00Z",
+          is_now: false,
+          options: [option],
+        },
+        selected: option,
+        liveBuses: [],
+        onShowBus: () => {},
+        loading: false,
+        error: null,
+        language: "si",
+        onSelect: () => {},
+        onRetry: () => {},
+        onNextDay: () => {},
+        routeColors: new Map(),
+      }),
+    }),
+  );
+  // The stop name comes before the verb.
+  assert.match(html, /පානදුර <strong>හිදී නගින්න<\/strong>/);
+  assert.match(html, /ගමන් 1ක්/);
+  assert.doesNotMatch(html, /Get on at/);
+});
+
+/** msgid/msgstr pairs of a .po file, joining continuation lines. */
+function entries(po: string): [string, string][] {
+  const field = String.raw`"(?:[^"\\]|\\.)*"(?:\n"(?:[^"\\]|\\.)*")*`;
+  const join = (quoted: string) =>
+    quoted
+      .split("\n")
+      .map((line) => JSON.parse(line) as string)
+      .join("");
+  return [
+    ...po.matchAll(new RegExp(`^msgid (${field})\nmsgstr (${field})$`, "gm")),
+  ].map(([, id, str]) => [join(id), join(str)]);
+}
+
+// A translation that drops or renames a placeholder would show a raw `{name}`
+// or lose the value, which the build's missing-translation check cannot see.
+test("every translation keeps the source message's placeholders and tags", () => {
+  const placeholders = (message: string) =>
+    [...message.matchAll(/\{(\w+)[,}]|<\/?(\d+)>/g)]
+      .map((match) => match[1] ?? `<${match[2]}>`)
+      .sort();
+  for (const locale of ["si", "ta"]) {
+    const po = readFileSync(
+      new URL(`../src/locales/${locale}/messages.po`, import.meta.url),
+      "utf8",
+    );
+    const pairs = entries(po).filter(([id]) => id);
+    // Every message parsed (the header's empty msgid aside).
+    assert.equal(pairs.length, (po.match(/^msgid /gm) ?? []).length - 1);
+    for (const [id, str] of pairs) {
+      assert.ok(str, `${locale}: "${id}" is untranslated`);
+      assert.deepEqual(placeholders(str), placeholders(id), `${locale}: ${id}`);
+    }
+  }
+});

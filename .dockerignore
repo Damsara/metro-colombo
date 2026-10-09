@@ -1,0 +1,14 @@
+# Build inputs are copied explicitly; keep everything else out of the context.
+**/node_modules
+**/dist
+.git
+.env
+.env.*
+!.env.example
+.claude
+re
+skill
+tests
+web/tests
+deploy
+*.md

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.DS_Store
+__pycache__/
+*.pyc
+skill/**/.venv/
+
+# Local research notes
+re/
+*.tsbuildinfo

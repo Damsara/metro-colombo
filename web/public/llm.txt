@@ -1,0 +1,60 @@
+# Metro — Lanka Metro Transit API
+
+An unofficial public transit API for Colombo's Lanka Metro Transit (LMT-GO /
+SmartMetro). This file documents the timetable and live-tracking calls the site
+makes.
+
+## Base
+
+Every path is on the same host as this site, under `/api`. Responses are JSON
+unless noted. A failed call returns `{"error": "…"}` with status 400 (bad
+request), 404 (unknown route or path), or 502 (upstream unavailable).
+
+## Endpoints
+
+- `GET /api/routes` — all routes (code, English name, colour, directions).
+  Each route has a `code` (e.g. `CM01`), `color_hex`, and `directions[]` with
+  `id`, `start_location`, `end_location`, and `geojson_url`.
+- `GET /api/routes/:code` — one route by code, same shape as an entry of
+  `/api/routes`.
+- `GET /api/routes/:code/stops` — ordered stops for a route. Optional
+  `?direction=` accepts a direction id, `0`/`1`, `forward`/`reverse`, or a
+  direction's `start_location`. One match returns a single object; several
+  matches return `{"directions":[…]}`. Stops carry `stop_code` (e.g. `MMC-1`),
+  `stop_name_en`/`stop_name_si`/`stop_name_tm`, `sequence_number`, `latitude`,
+  `longitude`. Tamil stop names use `stop_name_tm` (not `name_ta`).
+- `GET /api/routes/:code/geometry` — route line as a GeoJSON
+  `FeatureCollection`. `?direction=` takes the same values as for stops
+  (defaults to the first direction).
+- `GET /api/journey?from=&to=&date=` — scheduled trips between two stops for one
+  Colombo date. `from`/`to` are required (a `stop_code` or stop `id`). `date` is
+  optional `YYYY-MM-DD` in Asia/Colombo (defaults to today). Returns `options[]`
+  with `departure_time`, `arrival_time`, `total_minutes`, `total_fare`
+  (`full_amount`, `half_amount`, `complete`), and `legs[]` (a `ride` leg or a
+  `move` leg for transfers). Times are ISO strings with `+05:30` offset.
+- `GET /api/live` — latest bus positions from the operator's live GPS feed,
+  refreshed about every 5 seconds; poll it at that rate, ideally
+  `5000 - age_ms` milliseconds after each response so the poll lands just
+  after the next update. Returns
+  `{"success":true,"count":N,"timestamp":…,"age_ms":…,"buses":[…]}` where
+  `age_ms` is how long ago the server received that update and each bus has
+  `id`, `lat`, `lng`, and when known `route_code`, `route_id`, `direction_id`,
+  `registration_number`, `heading`, `current_capacity`, `total_capacity`,
+  `timestamp`. Buses silent for 60 seconds are dropped. `success` is true while
+  the live feed is connected; an empty `buses` array then means no bus is
+  reporting, not that service stopped. Positions are already corrected for a
+  known upstream fault that offsets some fixes by one degree.
+
+- `GET /api/places` — landmarks with trilingual names (`name`, `name_si`,
+  `name_ta`), a free-text `category`, and their nearest stop as `stop_code` and
+  `stop_id` (usable with `/api/journey`) plus `walk_meters` to it.
+- `GET /api/health` — `{"ok":true,"routes_count":N,"upstream":"reachable"}`, or
+  `ok:false` when the upstream cannot be reached.
+
+## Notes
+
+- Live heading is often missing; estimate it from successive positions of the
+  same bus `id`.
+- Occupancy (`current_capacity`/`total_capacity`) is not a promise of a free seat.
+- All `GET` calls allow public CORS.
+- Stop codes look like `MMC-1` or `MCC5`.
