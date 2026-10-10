@@ -91,7 +91,7 @@ export default function LiveBusList({
               <li key={key || `${bus.lat}:${bus.lng}`}>
                 <button
                   type="button"
-                  className="inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border border-line bg-white px-3 text-sm text-ink aria-pressed:border-brand aria-pressed:bg-tint-100 aria-pressed:ring-1 aria-pressed:ring-brand aria-pressed:ring-inset hover-fine:not-aria-pressed:bg-tint-50"
+                  className="inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border border-line bg-card px-3 text-sm text-ink aria-pressed:border-brand aria-pressed:bg-tint-100 aria-pressed:ring-1 aria-pressed:ring-brand aria-pressed:ring-inset hover-fine:not-aria-pressed:bg-tint-50"
                   aria-pressed={isSelected}
                   onClick={() => onBusSelect(isSelected ? null : bus)}
                 >

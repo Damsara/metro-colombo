@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Landmark, MapPin, Search, X } from "lucide-react";
 import type { I18n } from "@lingui/core";
 import { plural, t } from "@lingui/core/macro";
@@ -15,6 +16,15 @@ const OPTION_DETAIL = "mt-0.5 block text-xs text-muted";
 const STATUS = "bg-tint-50 px-3 py-2.5 text-2xs leading-normal text-muted";
 
 type Choice = { key: string; stop: CatalogStop; place?: Place };
+
+/** Shortcuts listed before all stops while nothing has been typed. */
+export interface StopSection {
+  key: string;
+  title: string;
+  stops: readonly CatalogStop[];
+}
+
+type Group = { key: string; title?: string; choices: Choice[] };
 
 /** Where the arrow keys land first: the top going down, the bottom going up. */
 function startIndex(step: 1 | -1, count: number): number {
@@ -40,6 +50,12 @@ interface StopPickerProps {
   routeColors: ReadonlyMap<string, string>;
   /** Landmarks, searchable by name; choosing one picks its nearest stop. */
   places: ReadonlyArray<Place>;
+  /** Shown before all stops when the query is empty; empty ones are skipped. */
+  sections?: readonly StopSection[];
+  /** A short note after the label, such as "(nearest)". */
+  labelNote?: string;
+  /** The larger first field of the form. */
+  prominent?: boolean;
   onChange: (stop: CatalogStop | null) => void;
 }
 
@@ -52,6 +68,9 @@ export default function StopPicker({
   loading,
   routeColors,
   places,
+  sections = [],
+  labelNote,
+  prominent = false,
   onChange,
 }: StopPickerProps) {
   const id = useId();
@@ -68,7 +87,7 @@ export default function StopPicker({
   const [activeIndex, setActiveIndex] = useState(-1);
   const mobile = useMediaQuery("(max-width: 760px)");
   const query = value ? "" : draft.trim().toLocaleLowerCase();
-  const choices = useMemo((): Choice[] => {
+  const groups = useMemo((): Group[] => {
     const matches = (names: (string | undefined)[]) =>
       !query || names.some((name) => name?.toLocaleLowerCase().includes(query));
     const stopChoices = stops
@@ -81,7 +100,21 @@ export default function StopPicker({
         ]),
       )
       .map((stop) => ({ key: stop.id, stop }));
-    if (!query) return stopChoices;
+    if (!query) {
+      const shortcuts = sections
+        .filter((section) => section.stops.length)
+        .map((section) => ({
+          key: section.key,
+          title: section.title,
+          choices: section.stops.map((stop) => ({
+            key: `${section.key}-${stop.id}`,
+            stop,
+          })),
+        }));
+      // Without any shortcuts the list stays a plain A–Z with no heading.
+      const all = shortcuts.length ? t`All stops` : undefined;
+      return [...shortcuts, { key: "all", title: all, choices: stopChoices }];
+    }
     const placeChoices = places.flatMap((place) => {
       if (!matches([place.name, place.name_si, place.name_ta])) return [];
       const stop =
@@ -89,11 +122,43 @@ export default function StopPicker({
         stops.find((item) => item.stop_code === place.stop_code);
       return stop ? [{ key: `place-${place.id}`, stop, place }] : [];
     });
-    return [...placeChoices, ...stopChoices];
-  }, [stops, places, query]);
+    return [{ key: "matches", choices: [...placeChoices, ...stopChoices] }];
+  }, [stops, places, query, sections, t]);
+  // Keyboard focus moves through one flat list across the sections.
+  const choices = useMemo(
+    () => groups.flatMap((group) => group.choices),
+    [groups],
+  );
+  // A stop can be listed in a section and again under all stops.
+  const stopCount = useMemo(
+    () => new Set(choices.map(({ stop }) => stop.id)).size,
+    [choices],
+  );
   const expanded = open;
   const sheetOpen = expanded && mobile;
   const activeStop = activeIndex >= 0 ? choices[activeIndex]?.stop : undefined;
+
+  // Shared by the inline combobox and the phone sheet's search field.
+  const onListKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+      if (!choices.length) return;
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      setActiveIndex(
+        !expanded || activeIndex < 0
+          ? startIndex(step, choices.length)
+          : wrapIndex(activeIndex + step, choices.length),
+      );
+    } else if (event.key === "Enter" && expanded && activeStop) {
+      event.preventDefault();
+      choose(activeStop);
+    } else if (event.key === "Escape" && expanded) {
+      event.preventDefault();
+      closePicker();
+    }
+  };
 
   useEffect(() => {
     if (!sheetOpen) return;
@@ -156,13 +221,13 @@ export default function StopPicker({
       ? t`No matching stops. Try another name or stop code.`
       : mobile
         ? t({
-            message: plural(choices.length, {
+            message: plural(stopCount, {
               one: "# stop. Tap one to select.",
               other: "# stops. Tap one to select.",
             }),
           })
         : t({
-            message: plural(choices.length, {
+            message: plural(stopCount, {
               one: "# stop. Use the arrow keys to choose, then press Enter.",
               other: "# stops. Use the arrow keys to choose, then press Enter.",
             }),
@@ -187,78 +252,105 @@ export default function StopPicker({
     else inputRef.current?.focus();
   }
 
-  const list = (inSheet: boolean) => (
-    <ul
-      id={listId}
-      className={
-        inSheet
-          ? "h-full overflow-y-auto overscroll-contain p-1"
-          : "max-h-66 overflow-y-auto overscroll-contain p-1 max-md:max-h-[min(40vh,280px)]"
-      }
-      role="listbox"
-      aria-label={label}
-      aria-busy={loading}
-    >
-      {choices.map(({ key, stop, place }, index) => {
-        const stopLabel = stopName(stop, language);
-        const walk = place ? walkLabel(i18n, place.walk_meters) : "";
-        // A landmark is only a shortcut to its stop, so it never shows as chosen.
-        const isValue = !place && value?.id === stop.id;
-        return (
-          <li key={key} role="presentation">
-            <button
-              type="button"
-              id={`${listId}-${index}`}
-              role="option"
-              tabIndex={-1}
-              aria-selected={isValue}
-              className={`flex w-full items-center gap-2 rounded-md text-left active:bg-tint-200 hover-fine:bg-tint-100 [&>svg]:text-muted ${
-                index === activeIndex || isValue ? "bg-tint-100" : ""
-              } ${inSheet ? "min-h-14 px-3 py-3.5" : "min-h-13 px-2 py-3"}`}
-              onClick={() => choose(stop)}
-              onMouseEnter={() => setActiveIndex(index)}
-            >
-              {place ? (
-                <Landmark size={18} aria-hidden="true" />
-              ) : (
-                <MapPin size={18} aria-hidden="true" />
-              )}
-              <span className="min-w-0 flex-1">
-                <span className="block text-lg leading-normal font-semibold">
-                  {place ? placeTitle(place, language) : stopLabel}
-                </span>
-                {place ? (
-                  <span className={OPTION_DETAIL}>
-                    {t`Nearest stop: ${stopLabel} · ${walk}`}
-                  </span>
-                ) : (
-                  <span className={OPTION_DETAIL}>
-                    {stop.towards?.length
-                      ? `${towards(i18n, stop.towards.map(localPlace).join(" / "))} · `
-                      : ""}
-                    {stop.stop_code}
-                  </span>
-                )}
+  const option = (
+    { key, stop, place }: Choice,
+    index: number,
+    inSheet: boolean,
+  ) => {
+    const stopLabel = stopName(stop, language);
+    const walk = place ? walkLabel(i18n, place.walk_meters) : "";
+    // A landmark is only a shortcut to its stop, so it never shows as chosen.
+    const isValue = !place && value?.id === stop.id;
+    return (
+      <li key={key} role="presentation">
+        <button
+          type="button"
+          id={`${listId}-${index}`}
+          role="option"
+          tabIndex={-1}
+          aria-selected={isValue}
+          className={`flex w-full items-center gap-2 rounded-md text-left active:bg-tint-100 hover-fine:bg-tint-100 [&>svg]:text-muted ${
+            index === activeIndex || isValue ? "bg-tint-100" : ""
+          } ${inSheet ? "min-h-14 px-3 py-3.5" : "min-h-13 px-2 py-3"}`}
+          onClick={() => choose(stop)}
+          onMouseEnter={() => setActiveIndex(index)}
+        >
+          {place ? (
+            <Landmark size={18} aria-hidden="true" />
+          ) : (
+            <MapPin size={18} aria-hidden="true" />
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block text-lg leading-normal font-semibold">
+              {place ? placeTitle(place, language) : stopLabel}
+            </span>
+            {place ? (
+              <span className={OPTION_DETAIL}>
+                {t`Nearest stop: ${stopLabel} · ${walk}`}
               </span>
+            ) : (
+              <span className={OPTION_DETAIL}>
+                {stop.towards?.length
+                  ? `${towards(i18n, stop.towards.map(localPlace).join(" / "))} · `
+                  : ""}
+                {stop.stop_code}
+              </span>
+            )}
+          </span>
+          <span
+            className="flex max-w-26 flex-wrap justify-end gap-1"
+            aria-label={t`Routes`}
+          >
+            {stop.routes.map((route) => (
+              <RouteChip
+                key={route}
+                code={route}
+                color={routeColors.get(route)}
+                size="xs"
+              />
+            ))}
+          </span>
+        </button>
+      </li>
+    );
+  };
+
+  const list = (inSheet: boolean) => {
+    let index = 0;
+    return (
+      <ul
+        id={listId}
+        className={
+          inSheet
+            ? "h-full overflow-y-auto overscroll-contain p-1"
+            : "max-h-66 overflow-y-auto overscroll-contain p-1 max-md:max-h-[min(40vh,280px)]"
+        }
+        role="listbox"
+        aria-label={label}
+        aria-busy={loading}
+      >
+        {groups.map((group) => {
+          const options = group.choices.map((choice) =>
+            option(choice, index++, inSheet),
+          );
+          if (!group.title) return options;
+          const headingId = `${listId}-${group.key}`;
+          return (
+            <li key={group.key} role="group" aria-labelledby={headingId}>
               <span
-                className="flex max-w-26 flex-wrap justify-end gap-1"
-                aria-label={t`Routes`}
+                id={headingId}
+                role="presentation"
+                className="block px-2 pt-3 pb-1 text-xs font-semibold text-muted"
               >
-                {stop.routes.map((route) => (
-                  <RouteChip
-                    key={route}
-                    code={route}
-                    color={routeColors.get(route)}
-                    size="xs"
-                  />
-                ))}
+                {group.title}
               </span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-  );
+              <ul role="presentation">{options}</ul>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
 
   return (
     <div
@@ -276,12 +368,13 @@ export default function StopPicker({
         htmlFor={inputId}
       >
         {label}
+        {labelNote && <span className="font-normal"> {labelNote}</span>}
       </label>
       <div className="relative flex min-w-0 items-center">
         <input
           ref={inputRef}
           id={inputId}
-          className={`min-h-11 w-full bg-transparent py-2 text-lg font-semibold text-ink placeholder:font-normal placeholder:text-muted ${sheetOpen ? "cursor-pointer" : ""}`}
+          className={`min-h-11 w-full bg-transparent py-2 font-semibold ${prominent ? "text-2xl tracking-tight max-md:text-xl" : "text-lg"} text-ink placeholder:font-normal placeholder:text-muted ${sheetOpen ? "cursor-pointer" : ""}`}
           role="combobox"
           type="text"
           inputMode="search"
@@ -306,26 +399,7 @@ export default function StopPicker({
             if (mobile) setOpen(true);
           }}
           onChange={(event) => onInputChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing) return;
-            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-              event.preventDefault();
-              setOpen(true);
-              if (!choices.length) return;
-              const step = event.key === "ArrowDown" ? 1 : -1;
-              setActiveIndex(
-                !expanded || activeIndex < 0
-                  ? startIndex(step, choices.length)
-                  : wrapIndex(activeIndex + step, choices.length),
-              );
-            } else if (event.key === "Enter" && expanded && activeStop) {
-              event.preventDefault();
-              choose(activeStop);
-            } else if (event.key === "Escape" && expanded) {
-              event.preventDefault();
-              closePicker();
-            }
-          }}
+          onKeyDown={onListKeyDown}
         />
         {(value || draft) && (
           <IconButton
@@ -376,7 +450,8 @@ export default function StopPicker({
             <Search size={20} aria-hidden="true" />
             <input
               ref={sheetInputRef}
-              className="min-h-12 min-w-0 flex-1 bg-transparent text-lg font-semibold text-ink focus:outline-none"
+              className="min-h-12 min-w-0 flex-1 bg-transparent text-lg font-semibold text-ink"
+              role="combobox"
               type="search"
               inputMode="search"
               enterKeyHint="search"
@@ -386,8 +461,15 @@ export default function StopPicker({
               spellCheck={false}
               placeholder={placeholder}
               value={displayValue}
+              aria-autocomplete="list"
+              aria-expanded="true"
+              aria-controls={listId}
               aria-describedby={helpId}
+              aria-activedescendant={
+                activeStop ? `${listId}-${activeIndex}` : undefined
+              }
               onChange={(event) => onInputChange(event.target.value)}
+              onKeyDown={onListKeyDown}
             />
           </div>
           <p

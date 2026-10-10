@@ -13,29 +13,36 @@
   --font-sans: "DM Sans", "Noto Sans Sinhala", "Noto Sans Tamil", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Colour: a warm neutral base with bus red kept for the bus itself (the
-     logo, the main action, live buses), plus a few status colours. Every
-     colour in the UI comes from here. */
+  /* Colour, in four roles: charcoal (ink) for doing things, red for the bus
+     (the logo, live buses, bus actions), yellow for the bus's side stripe
+     (thin accents only, never text) and soft parchment for the surface, with
+     slightly lighter cards on it. Route colours stay the operator's. Every
+     colour in the UI comes from here; src/theme.ts mirrors these values. */
+  --color-paper: #f1ede4;
+  --color-card: #f9f7f2;
+  --color-field: #e7e1d5;
+  --color-map: #ebe6dc;
+  --color-tint-50: #ece7dd;
+  --color-tint-100: #e7e1d5;
+  --color-tint-200: #ddd6c8;
+  --color-line: #e0d9cb;
+  --color-line-strong: #cec5b4;
+  --color-ink: #211d19;
+  --color-muted: #685e52;
+  --color-faint: #a69c8e;
   --color-brand: #b42318;
-  --color-tint-50: #f7f5f2;
-  --color-tint-100: #efebe6;
-  --color-tint-200: #e4dfd8;
-  --color-ink: #26221f;
-  --color-muted: #6b645d;
-  --color-faint: #a39b93;
-  --color-line: #e7e2dc;
-  --color-line-strong: #d6cfc7;
-  --color-paper: #fbfaf8;
-  --color-map: #eeebe6;
+  --color-bus: #b42318;
   --color-live: #b42318;
-  --color-live-50: #fdeeec;
-  --color-warning: #b26a00;
-  --color-warning-50: #fff8e6;
-  --color-warning-200: #e3d9b9;
+  --color-live-50: #f8e4df;
+  --color-stripe: #f6c440;
+  --color-soon: #fff1b8;
+  --color-soon-ink: #5c4400;
+  --color-warning: #8f6200;
+  --color-warning-50: #fbf1d6;
+  --color-warning-200: #e6d6a8;
   --color-danger: #8e1b12;
-  --color-danger-50: #fff3f0;
-  --color-danger-200: #efcfc8;
-  --color-bus: #c5302a;
+  --color-danger-50: #f9e6e1;
+  --color-danger-200: #ebcbc3;
   --color-destination: #d26540;
 
   /* Type scale. Sizes carry no line height of their own; text inherits the
@@ -62,9 +69,9 @@
   --radius-md: 10px;
   --radius-lg: 14px;
 
-  --shadow-card: 0 7px 30px #2a231d1c;
-  --shadow-float: 0 4px 18px #26221f2e;
-  --shadow-menu: 0 10px 40px #26221f25;
+  --shadow-card: 0 7px 30px #211d191c;
+  --shadow-float: 0 4px 18px #211d192e;
+  --shadow-menu: 0 10px 40px #211d1925;
 
   /* Layout thresholds: phone (<761px), compact (≤1100px), wide (≥1600px).
      `md` matches the JavaScript check that decides whether the map is shown
@@ -108,8 +115,11 @@
   *,
   ::before,
   ::after {
-    border-color: oklch(0.922 0 0);
-    outline-color: color-mix(in oklab, oklch(0.708 0 0) 50%, transparent);
+    border-color: var(--color-line);
+    outline-color: var(--color-ink);
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
   }
   :root {
     color: var(--color-ink);
@@ -119,8 +129,8 @@
     overscroll-behavior: none;
   }
   body {
-    background: oklch(1 0 0);
-    color: oklch(0.145 0 0);
+    background: var(--color-paper);
+    color: var(--color-ink);
   }
   ::-webkit-date-and-time-value {
     min-height: 1lh;
@@ -147,26 +157,30 @@
     cursor: pointer;
     user-select: none;
     -webkit-touch-callout: none;
+    transition: transform 120ms ease-out;
   }
   button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
   }
   button:active:not(:disabled) {
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
   @media (hover: hover) and (pointer: fine) {
     button:not(:disabled):hover {
       filter: brightness(0.97);
     }
   }
+  /* A charcoal ring with a gap of whatever surface is behind it. */
   button:focus-visible,
   a:focus-visible,
   input:focus-visible,
   select:focus-visible,
-  summary:focus-visible {
-    outline: 3px solid #edb84f;
-    outline-offset: 3px;
+  textarea:focus-visible,
+  summary:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
   }
   /* Tracking tuned for Latin text pulls Sinhala and Tamil letter clusters
      apart; this overrides every component's tracking. */
@@ -192,14 +206,28 @@
    These overrides stay unlayered too, so they compete with it by specificity
    rather than always losing to it. */
 .maplibregl-ctrl-group {
+  background: var(--color-card) !important;
   border: 1px solid var(--color-line);
   border-radius: 10px !important;
   overflow: hidden;
-  box-shadow: 0 3px 12px #2a231d15 !important;
+  box-shadow: 0 3px 12px #211d1915 !important;
 }
 .maplibregl-ctrl-group button {
   width: 44px !important;
   height: 44px !important;
+}
+.maplibregl-ctrl-group button + button {
+  border-top-color: var(--color-line) !important;
+}
+/* Phones and tablets pinch to zoom, so the +/− buttons only take room. */
+@media (pointer: coarse) {
+  .maplibregl-ctrl-group .maplibregl-ctrl-zoom-in,
+  .maplibregl-ctrl-group .maplibregl-ctrl-zoom-out {
+    display: none !important;
+  }
+  .maplibregl-ctrl-group .maplibregl-ctrl-compass {
+    border-top: 0 !important;
+  }
 }
 .maplibregl-ctrl-top-right {
   top: 19px !important;
@@ -209,8 +237,8 @@
   font-size: 10px !important;
 }
 .maplibregl-canvas:focus-visible {
-  outline: 3px solid #edb84f;
-  outline-offset: -3px;
+  outline: 2px solid var(--color-ink);
+  outline-offset: -4px;
 }
 @media (max-width: 760px) {
   .maplibregl-ctrl-top-right {

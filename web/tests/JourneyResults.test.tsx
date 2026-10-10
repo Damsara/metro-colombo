@@ -3,9 +3,21 @@ import { readFileSync } from "node:fs";
 import { test } from "vitest";
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import JourneyResults from "../src/components/JourneyResults";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import JourneyResults, {
+  nextBusIndex,
+  stopsAway,
+} from "../src/components/JourneyResults";
+import { countdown, countdownLabel, i18n } from "../src/i18n";
 import { LanguageProvider } from "../src/lib/language";
-import type { JourneyOption, JourneyPlan, LiveBus } from "../src/types";
+import {
+  colomboDate,
+  type JourneyOption,
+  type JourneyPlan,
+  type LiveBus,
+  type RouteStops,
+  type Stop,
+} from "../src/types";
 
 // Actual Panadura -> Battaramulla capture, reduced to rendered fields; booking token omitted.
 const option: JourneyOption = JSON.parse(
@@ -32,10 +44,60 @@ const plan: JourneyPlan = {
 };
 
 // Renders in the provider tree the app uses; the language is English unless a
-// test switches it.
-function markup(element: ReactElement): string {
+// test switches it. Seed `client` to hand components cached query data.
+function markup(
+  element: ReactElement,
+  client: QueryClient = new QueryClient(),
+): string {
   return renderToStaticMarkup(
-    createElement(LanguageProvider, { children: element }),
+    createElement(QueryClientProvider, {
+      client,
+      children: createElement(LanguageProvider, { children: element }),
+    }),
+  );
+}
+
+/** A copy of `source` whose first ride boards `minutes` from now, today. */
+function boardingIn(source: JourneyOption, minutes: number): JourneyOption {
+  const first = source.legs.find((leg) => leg.kind === "ride");
+  assert.ok(first?.kind === "ride");
+  const shift =
+    Date.now() +
+    minutes * 60_000 -
+    Date.parse(first.ride.board.scheduled_time!);
+  const at = (value: string) =>
+    new Date(Date.parse(value) + shift).toISOString();
+  const moved: JourneyOption = structuredClone(source);
+  moved.departure_time = at(moved.departure_time);
+  moved.arrival_time = at(moved.arrival_time);
+  for (const leg of moved.legs) {
+    if (leg.kind !== "ride") continue;
+    leg.ride.board.scheduled_time = at(leg.ride.board.scheduled_time!);
+    leg.ride.alight.scheduled_time = at(leg.ride.alight.scheduled_time!);
+  }
+  return moved;
+}
+
+function renderToday(
+  options: JourneyOption[],
+  liveBuses: LiveBus[] = [],
+  client?: QueryClient,
+): string {
+  return markup(
+    createElement(JourneyResults, {
+      plan: { ...plan, date: colomboDate(), options },
+      selected: null,
+      liveBuses,
+      onShowBus: () => {},
+      loading: false,
+      error: null,
+      language: "en",
+      onSelect: () => {},
+      onRetry: () => {},
+      onNextDay: () => {},
+      routeColors: new Map(),
+    }),
+    client,
   );
 }
 
@@ -166,4 +228,136 @@ test("an assigned bus that is live elsewhere is not presented as this trip", () 
     assert.doesNotMatch(html, /Bus live/);
     assert.match(html, /On another trip now/);
   }
+});
+
+test("countdowns read now, minutes, or the clock past an hour", () => {
+  const now = Date.parse("2026-10-11T05:00:00+05:30");
+  const at = (seconds: number) => countdown(now + seconds * 1000, now);
+  assert.deepEqual(at(0), { kind: "now" });
+  assert.deepEqual(at(59), { kind: "now" });
+  assert.deepEqual(at(60), { kind: "in", minutes: 1 });
+  // Rounded down, so nobody is told they have longer than they do.
+  assert.deepEqual(at(12 * 60 + 50), { kind: "in", minutes: 12 });
+  assert.deepEqual(at(59 * 60 + 59), { kind: "in", minutes: 59 });
+  assert.deepEqual(at(60 * 60), { kind: "clock" });
+  assert.deepEqual(at(-30), { kind: "now" });
+  assert.deepEqual(at(-3 * 60 - 10), { kind: "left", minutes: 3 });
+
+  assert.equal(countdownLabel(i18n, at(0)), "Leaves now");
+  assert.equal(countdownLabel(i18n, at(60)), "Leaves in 1 min");
+  assert.equal(countdownLabel(i18n, at(59 * 60)), "Leaves in 59 min");
+  assert.equal(countdownLabel(i18n, at(-180)), "Left 3 min ago");
+  assert.equal(countdownLabel(i18n, at(90 * 60)), null);
+});
+
+test("the soonest departure still to come today is the next bus", () => {
+  const now = Date.now();
+  const later = boardingIn(option, 40);
+  const soon = boardingIn(option, 5);
+  const gone = boardingIn(option, -2);
+  assert.equal(nextBusIndex([later, gone, soon], true, now), 2);
+  assert.equal(nextBusIndex([gone], true, now), -1);
+  assert.equal(nextBusIndex([later, soon], false, now), -1);
+});
+
+test("today's journeys lead with a countdown and mark the next bus", () => {
+  const html = renderToday([boardingIn(option, 70), boardingIn(option, 10.5)]);
+  assert.match(html, /Leaves in 10 min/);
+  assert.equal((html.match(/Next bus/g) ?? []).length, 1);
+  // The later one is over an hour off, so it shows its clock time instead.
+  assert.equal((html.match(/Leaves in/g) ?? []).length, 1);
+  // Next bus sits on the soonest card, which is listed first.
+  assert.ok(html.indexOf("Next bus") < html.indexOf("Leaves in 10 min"));
+  assert.match(html, /Scheduled/);
+  assert.match(html, /All times are Sri Lanka time/);
+  assert.doesNotMatch(html, /Summary times are scheduled/);
+});
+
+test("another day's journeys show clock times without countdowns", () => {
+  const html = render(null);
+  assert.doesNotMatch(html, /Leaves/);
+  assert.doesNotMatch(html, /Next bus/);
+  assert.match(html, /5:30 AM/);
+});
+
+test("a live estimate on the first stop is labelled as one", () => {
+  const live = boardingIn(option, 20);
+  const first = live.legs.find((leg) => leg.kind === "ride");
+  assert.ok(first?.kind === "ride");
+  first.ride.board.time_status = "live";
+  first.ride.board.estimated_time = new Date(
+    Date.now() + 25.5 * 60_000,
+  ).toISOString();
+  const html = renderToday([live]);
+  assert.match(html, /Live estimate/);
+  assert.match(html, /Leaves in 25 min/);
+});
+
+function stopAt(id: string, latitude: number): Stop {
+  return {
+    id,
+    stop_code: id,
+    stop_name_en: id,
+    stop_name_si: id,
+    stop_name_tm: id,
+    latitude,
+    longitude: 79.9,
+  };
+}
+
+// Stops about 1.1 km apart on a line heading north.
+const line = ["a", "b", "c", "d", "e", "f"].map((id, index) =>
+  stopAt(id, 6.8 + index * 0.01),
+);
+
+test("stops away counts the stops the bus has still to make", () => {
+  const near = (latitude: number) => ({ lat: latitude, lng: 79.9 });
+  assert.equal(stopsAway(near(6.8), line, "e"), 4);
+  // Just past b, heading for c.
+  assert.equal(stopsAway(near(6.8115), line, "e"), 2);
+  // Nearly at c.
+  assert.equal(stopsAway(near(6.819), line, "e"), 2);
+  assert.equal(stopsAway(near(6.84), line, "e"), 0);
+  assert.equal(stopsAway(near(6.85), line, "e"), -1);
+  assert.equal(stopsAway(near(6.8), line, "missing"), null);
+});
+
+test("a live bus on the ride shows how far off it is and how full", () => {
+  const soon = boardingIn(option, 10);
+  const first = soon.legs.find((leg) => leg.kind === "ride");
+  assert.ok(first?.kind === "ride" && first.ride.bus);
+  const ride = first.ride;
+  const plate = first.ride.bus.registration_number;
+  // Put the journey's boarding stop fourth on the direction's stop list.
+  const stops = [...line.slice(0, 3), ride.board, ...line.slice(3)];
+  const client = new QueryClient();
+  client.setQueryData<RouteStops>(
+    ["route-stops", ride.route.code, ride.direction_id],
+    {
+      route_code: ride.route.code,
+      direction_id: ride.direction_id,
+      direction_label: "",
+      stops,
+    },
+  );
+  const bus: LiveBus = {
+    lat: line[0].latitude,
+    lng: line[0].longitude,
+    route_code: ride.route.code,
+    direction_id: ride.direction_id,
+    registration_number: plate,
+    current_capacity: 10,
+    total_capacity: 60,
+  };
+  const html = renderToday([soon], [bus], client);
+  assert.match(html, /Bus live/);
+  assert.match(html, /3 stops away/);
+  assert.match(html, /Plenty of room/);
+
+  // One stop out reads in the singular, and without stop data it just says live.
+  const oneOut = { ...bus, lat: line[2].latitude };
+  assert.match(renderToday([soon], [oneOut], client), /1 stop away/);
+  const unknown = renderToday([soon], [bus]);
+  assert.match(unknown, /Bus live/);
+  assert.doesNotMatch(unknown, /stops? away/);
 });

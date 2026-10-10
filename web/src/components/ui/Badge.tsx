@@ -5,6 +5,8 @@ const TONES = {
   live: "bg-live-50 text-live",
   warning: "bg-warning-50 text-warning",
   danger: "bg-danger-50 text-danger",
+  // A departure that is close, e.g. "Leaves in 3 min".
+  soon: "bg-soon text-soon-ink",
 };
 
 export function Badge({

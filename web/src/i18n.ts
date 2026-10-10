@@ -1,5 +1,5 @@
 import { i18n, type I18n } from "@lingui/core";
-import { msg, t } from "@lingui/core/macro";
+import { msg, plural, t } from "@lingui/core/macro";
 import { messages as en } from "./locales/en/messages.po";
 import { messages as si } from "./locales/si/messages.po";
 import { messages as ta } from "./locales/ta/messages.po";
@@ -78,6 +78,57 @@ export function timeLabel(i18n: I18n, value: string): string {
     message: `${hour}:${minute} ${period}`,
     comment: "Clock time; period is AM or PM",
   });
+}
+
+/**
+ * How a departure reads against the clock: "now", minutes to go, minutes
+ * since it left, or far enough off that the clock time says it better.
+ */
+export type Countdown =
+  | { kind: "now" }
+  | { kind: "in"; minutes: number }
+  | { kind: "left"; minutes: number }
+  | { kind: "clock" };
+
+// Past this, "Leaves in 75 min" is harder to read than "6:30 AM".
+const COUNTDOWN_LIMIT_MIN = 60;
+
+export function countdown(departure: number, now: number): Countdown {
+  const ms = departure - now;
+  // Rounded down while waiting, so the bus never turns up sooner than promised.
+  if (ms >= 0) {
+    const minutes = Math.floor(ms / 60_000);
+    if (minutes === 0) return { kind: "now" };
+    return minutes < COUNTDOWN_LIMIT_MIN
+      ? { kind: "in", minutes }
+      : { kind: "clock" };
+  }
+  const minutes = Math.floor(-ms / 60_000);
+  return minutes === 0 ? { kind: "now" } : { kind: "left", minutes };
+}
+
+/** "Leaves in 12 min", "Leaves now" or "Left 3 min ago"; null for "clock". */
+export function countdownLabel(i18n: I18n, value: Countdown): string | null {
+  switch (value.kind) {
+    case "now":
+      return t(i18n)`Leaves now`;
+    case "in":
+      return t(i18n)({
+        message: plural(value.minutes, {
+          one: "Leaves in # min",
+          other: "Leaves in # min",
+        }),
+      });
+    case "left":
+      return t(i18n)({
+        message: plural(value.minutes, {
+          one: "Left # min ago",
+          other: "Left # min ago",
+        }),
+      });
+    case "clock":
+      return null;
+  }
 }
 
 export function preferredLanguage(

@@ -11,7 +11,7 @@ const PLACEMENT = {
   map: "absolute right-7.5 bottom-19 w-80 max-w-[calc(100%-60px)] shadow-card max-lg:right-5 max-lg:bottom-56 max-md:inset-x-4 max-md:bottom-52 max-md:w-auto max-md:max-w-none",
   // Over the trip panel on phones, dimming the page behind it.
   panel:
-    "fixed inset-x-4 bottom-20 hidden shadow-[0_0_0_100vmax_#26221f35,var(--shadow-card)] max-md:block",
+    "fixed inset-x-4 bottom-20 hidden shadow-[0_0_0_100vmax_#211d1935,var(--shadow-card)] max-md:block",
   // Pinned to the bottom of the full-screen phone map.
   immersive:
     "absolute inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] max-h-[min(42vh,320px)] overflow-y-auto overscroll-contain shadow-card",

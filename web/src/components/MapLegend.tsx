@@ -15,14 +15,14 @@ export function MapLegend({
   return (
     // Screen readers get the map key from MapView.
     <div
-      className={`absolute bottom-7.5 left-7.5 flex items-center gap-4 rounded-md border border-line bg-white/95 px-4 py-2.5 text-2xs text-muted max-md:inset-x-4 max-md:bottom-6 max-md:justify-center max-md:gap-6 ${
+      className={`absolute bottom-7.5 left-7.5 flex items-center gap-4 rounded-md border border-line bg-card/95 px-4 py-2.5 text-2xs text-muted max-md:inset-x-4 max-md:bottom-6 max-md:justify-center max-md:gap-6 ${
         hidden ? "hidden" : ""
       }`}
       aria-hidden="true"
     >
       <span className={LEGEND_ITEM}>
         <i
-          className="size-2.5 rounded-full border-2 border-ink bg-white"
+          className="size-2.5 rounded-full border-2 border-ink bg-card"
           aria-hidden="true"
         />
         {t`Bus stop`}

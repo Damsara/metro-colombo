@@ -5,18 +5,110 @@ import {
   MapPin,
   Search,
 } from "lucide-react";
+import { useId, useRef, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
-import { colomboDate } from "../types";
+import { dateLabel } from "../i18n";
+import { colomboDate, nextDay } from "../types";
 import type { CatalogStop, Language, Place } from "../types";
-import StopPicker from "./StopPicker";
+import StopPicker, { type StopSection } from "./StopPicker";
 import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
 import { Field } from "./ui/Field";
 import { IconButton } from "./ui/IconButton";
 
 const HELPER = "pb-3 text-sm leading-relaxed";
+const CHIP =
+  "inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold";
 
-/** The trip form: two stops, an optional location lookup and the date. */
+type DateChoice = "today" | "tomorrow" | "pick";
+
+/** Today, Tomorrow, or "Pick a date", which shows the native date field. */
+function DateChips({
+  date,
+  onDateChange,
+}: {
+  date: string;
+  onDateChange: (date: string) => void;
+}) {
+  const { t, i18n } = useLingui();
+  const labelId = useId();
+  const pickRef = useRef<HTMLInputElement>(null);
+  const [picking, setPicking] = useState(false);
+  const today = colomboDate();
+  const tomorrow = nextDay(today);
+  const choice: DateChoice = picking
+    ? "pick"
+    : date === today
+      ? "today"
+      : date === tomorrow
+        ? "tomorrow"
+        : "pick";
+  const choose = (next: DateChoice) => {
+    setPicking(next === "pick");
+    if (next === "today") onDateChange(today);
+    else if (next === "tomorrow") onDateChange(tomorrow);
+    else requestAnimationFrame(() => pickRef.current?.focus());
+  };
+  const chips: { value: DateChoice; label: string }[] = [
+    { value: "today", label: t`Today` },
+    { value: "tomorrow", label: t`Tomorrow` },
+    {
+      value: "pick",
+      // A picked date names itself, so the chip reads "Sat, 17 Oct".
+      label:
+        choice === "pick" && date && !picking
+          ? dateLabel(i18n, date)
+          : t`Pick a date`,
+    },
+  ];
+  return (
+    <div className="mb-4">
+      <p id={labelId} className="mb-2 text-sm font-semibold text-muted">
+        {t`Travel date`}
+      </p>
+      <div
+        className="flex flex-wrap gap-2"
+        role="group"
+        aria-labelledby={labelId}
+      >
+        {chips.map((chip) => (
+          <button
+            key={chip.value}
+            type="button"
+            aria-pressed={choice === chip.value}
+            className={`${CHIP} ${
+              choice === chip.value
+                ? "border-ink bg-ink text-white"
+                : "border-line bg-white text-ink hover-fine:bg-tint-50"
+            }`}
+            onClick={() => choose(chip.value)}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
+      {choice === "pick" && (
+        <Field layout="inline" className="mt-2" label={t`Travel date`}>
+          <input
+            ref={pickRef}
+            type="date"
+            className="min-h-9 max-w-44 bg-transparent text-ink max-md:min-h-12 max-md:w-full max-md:max-w-none"
+            aria-label={t`Travel date`}
+            required
+            min={today}
+            value={date}
+            onChange={(event) => onDateChange(event.target.value)}
+          />
+        </Field>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The trip form: where to first, then the starting stop (the nearest one when
+ * location is already allowed), an optional location lookup and the date.
+ */
 export function TripForm({
   from,
   to,
@@ -36,6 +128,8 @@ export function TripForm({
   locationBusy,
   locationMessage,
   onLocate,
+  fromIsNearest,
+  stopSections,
 }: {
   from: CatalogStop | null;
   to: CatalogStop | null;
@@ -56,6 +150,10 @@ export function TripForm({
   /** What the location lookup found, or "" before it runs. */
   locationMessage: string;
   onLocate: () => void;
+  /** The starting stop came from the location lookup. */
+  fromIsNearest: boolean;
+  /** Picker shortcuts (recent, nearby, popular) for an empty query. */
+  stopSections: readonly StopSection[];
 }) {
   const { t } = useLingui();
   return (
@@ -73,36 +171,40 @@ export function TripForm({
         className={`relative flex items-stretch gap-2.5 px-3 py-3.5 max-md:gap-2 ${cardClass()}`}
       >
         <div
-          className="flex w-6 flex-col items-center pt-5 pb-4 text-ink"
+          className="flex w-6 flex-col items-center pt-6 pb-5 text-ink"
           aria-hidden="true"
         >
-          <span className="size-3 rounded-full border-2 border-ink" />
-          <i className="my-1 min-h-12 flex-1 border-l-2 border-dotted border-line-strong" />
           <MapPin size={19} />
+          <i className="my-1 min-h-12 flex-1 border-l-2 border-dotted border-line-strong" />
+          <span className="size-3 rounded-full border-2 border-ink" />
         </div>
         <div className="min-w-0 flex-1">
           <StopPicker
-            label={t`Starting from`}
+            label={t`Where to?`}
             placeholder={t`Type a stop or a place`}
-            value={from}
-            stops={stops}
-            language={language}
-            loading={stopsLoading}
-            routeColors={routeColors}
-            places={places}
-            onChange={onFromChange}
-          />
-          <div className="my-3 mr-7 border-t border-line" />
-          <StopPicker
-            label={t`Going to`}
-            placeholder={t`Where do you want to go?`}
             value={to}
             stops={stops}
             language={language}
             loading={stopsLoading}
             routeColors={routeColors}
             places={places}
+            sections={stopSections}
+            prominent
             onChange={onToChange}
+          />
+          <div className="my-3 mr-7 border-t border-line" />
+          <StopPicker
+            label={t`From`}
+            labelNote={fromIsNearest ? t`(nearest)` : undefined}
+            placeholder={t`Choose a start stop`}
+            value={from}
+            stops={stops}
+            language={language}
+            loading={stopsLoading}
+            routeColors={routeColors}
+            places={places}
+            sections={stopSections}
+            onChange={onFromChange}
           />
         </div>
         <IconButton
@@ -131,17 +233,7 @@ export function TripForm({
           {locationMessage}
         </p>
       )}
-      <Field layout="inline" className="mb-4" label={t`Travel date`}>
-        <input
-          type="date"
-          className="min-h-9 max-w-44 bg-transparent text-ink max-md:min-h-12 max-md:w-full max-md:max-w-none"
-          aria-label={t`Travel date`}
-          required
-          min={colomboDate()}
-          value={date}
-          onChange={(event) => onDateChange(event.target.value)}
-        />
-      </Field>
+      <DateChips date={date} onDateChange={onDateChange} />
       {invalidSameStop && (
         <p className={`${HELPER} text-danger`} role="alert">
           {t`Choose a different destination from your starting stop.`}

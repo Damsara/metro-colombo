@@ -10,4 +10,4 @@ export const DOCS_TITLE =
 
 /** A centred notice over the map, e.g. while it loads. */
 export const MAP_STATUS =
-  "absolute top-[45%] left-1/2 -translate-1/2 rounded-md bg-white px-5 py-4 text-md shadow-float";
+  "absolute top-[45%] left-1/2 -translate-1/2 rounded-md bg-card px-5 py-4 text-md shadow-float";

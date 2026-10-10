@@ -1,12 +1,21 @@
 import type { ButtonHTMLAttributes, Ref } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "neutral" | "quiet" | "link";
+type ButtonVariant =
+  | "primary"
+  | "bus"
+  | "secondary"
+  | "neutral"
+  | "quiet"
+  | "link";
 type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "border border-brand bg-brand text-white",
-  secondary: "border border-line-strong bg-white text-ink",
-  neutral: "border border-line bg-white text-ink",
+  // The main thing to do on a page, e.g. "Find my bus".
+  primary: "border border-ink bg-ink text-white",
+  // Actions on a bus itself, e.g. "Follow".
+  bus: "border border-bus bg-bus text-white",
+  secondary: "border border-line-strong bg-card text-ink",
+  neutral: "border border-line bg-card text-ink",
   // Text-only actions inside panels, e.g. "Use my location".
   quiet: "text-ink",
   // Inline actions inside a sentence or notice.
@@ -43,17 +52,17 @@ export function buttonClass({
   const shape =
     variant === "link"
       ? ""
-      : `${pill ? "rounded-full" : "rounded-md"} ${variant === "quiet" ? "min-h-11 text-sm" : SIZES[size]}`;
+      : `${pill ? "rounded-full" : "rounded-md"} ${variant === "quiet" ? "min-h-11 min-w-11 px-2 text-sm" : SIZES[size]}`;
   return [
     "inline-flex items-center gap-2 font-semibold",
     align === "start"
       ? "justify-start [&>svg:last-child]:ml-auto"
       : "justify-center",
     "disabled:cursor-not-allowed aria-disabled:cursor-progress aria-disabled:opacity-50",
-    // A disabled main action turns grey rather than a faded red, which reads
-    // as an error.
-    variant === "primary"
-      ? "disabled:border-line-strong disabled:bg-tint-200 disabled:text-muted"
+    // A disabled filled button turns flat and grey rather than fading, so
+    // its label stays readable.
+    variant === "primary" || variant === "bus"
+      ? "disabled:border-line-strong disabled:bg-field disabled:text-muted disabled:opacity-100"
       : "disabled:opacity-50",
     VARIANTS[variant],
     shape,

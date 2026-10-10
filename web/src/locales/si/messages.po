@@ -7,25 +7,33 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: si\n"
 
+#: src/components/TripForm.tsx:198
+msgid "(nearest)"
+msgstr "(ළඟම)"
+
 #. placeholder {0}: option.transfers
-#: src/components/JourneyResults.tsx:447
+#: src/components/JourneyResults.tsx:582
 msgid "{0, plural, =0 {Direct · no bus change} =1 {Change bus once} other {Change bus # times}}"
 msgstr "{0, plural, =0 {සෘජු ගමනකි · බස් මාරුවක් නැත} =1 {වරක් බස් මාරු කරන්න} other {# වරක් බස් මාරු කරන්න}}"
 
 #. placeholder {0}: options.length
-#: src/components/JourneyResults.tsx:641
+#: src/components/JourneyResults.tsx:782
 msgid "{0, plural, one {# option} other {# options}}"
 msgstr "{0, plural, one {ගමන් #ක්} other {ගමන් #ක්}}"
 
-#. placeholder {0}: choices.length
-#: src/components/StopPicker.tsx:158
-msgid "{0, plural, one {# stop. Tap one to select.} other {# stops. Tap one to select.}}"
-msgstr "{0, plural, one {නැවතුම් #ක්. තෝරාගැනීමට ඔබන්න.} other {නැවතුම් #ක්. තෝරාගැනීමට ඔබන්න.}}"
+#. placeholder {0}: value.minutes
+#: src/i18n.ts:116
+msgid "{0, plural, one {Leaves in # min} other {Leaves in # min}}"
+msgstr "{0, plural, one {මිනිත්තු #කින් පිටත් වේ} other {මිනිත්තු #කින් පිටත් වේ}}"
 
-#. placeholder {0}: choices.length
-#: src/components/StopPicker.tsx:164
-msgid "{0, plural, one {# stop. Use the arrow keys to choose, then press Enter.} other {# stops. Use the arrow keys to choose, then press Enter.}}"
-msgstr "{0, plural, one {නැවතුම් #ක්. තේරීමට ඊතල යතුරු භාවිතා කර Enter ඔබන්න.} other {නැවතුම් #ක්. තේරීමට ඊතල යතුරු භාවිතා කර Enter ඔබන්න.}}"
+#. placeholder {0}: value.minutes
+#: src/i18n.ts:123
+msgid "{0, plural, one {Left # min ago} other {Left # min ago}}"
+msgstr "{0, plural, one {මිනිත්තු #කට පෙර පිටත් විය} other {මිනිත්තු #කට පෙර පිටත් විය}}"
+
+#: src/components/JourneyResults.tsx:469
+msgid "{away, plural, one {# stop away} other {# stops away}}"
+msgstr "{away, plural, one {නැවතුම් #ක් දුරින්} other {නැවතුම් #ක් දුරින්}}"
 
 #: src/components/RoutesPanel.tsx:72
 msgid "{count, plural, one {# stop} other {# stops}}"
@@ -35,7 +43,7 @@ msgstr "{count, plural, one {නැවතුම් #} other {නැවතුම�
 msgid "{current} of {total} places taken"
 msgstr "ස්ථාන {total} න් {current} ක් පිරී ඇත"
 
-#: src/components/StopPicker.tsx:30
+#: src/components/StopPicker.tsx:39
 msgid "{distance} walk"
 msgstr "පයින් {distance}"
 
@@ -64,26 +72,42 @@ msgstr "විනාඩි {minutes}"
 msgid "{selectedLabel} is selected for tracking. Tap again to release the lock."
 msgstr "{selectedLabel} ලුහුබැඳීමට තෝරා ඇත. එය නවත්වන්න නැවත ඔබන්න."
 
+#: src/components/StopPicker.tsx:200
+msgid "{stopCount, plural, one {# stop. Tap one to select.} other {# stops. Tap one to select.}}"
+msgstr "{stopCount, plural, one {නැවතුම් #යි. තෝරා ගැනීමට එකක් තට්ටු කරන්න.} other {නැවතුම් #යි. තෝරා ගැනීමට එකක් තට්ටු කරන්න.}}"
+
+#: src/components/StopPicker.tsx:206
+msgid "{stopCount, plural, one {# stop. Use the arrow keys to choose, then press Enter.} other {# stops. Use the arrow keys to choose, then press Enter.}}"
+msgstr "{stopCount, plural, one {නැවතුම් #යි. ඊතල යතුරු වලින් තෝරා Enter ඔබන්න.} other {නැවතුම් #යි. ඊතල යතුරු වලින් තෝරා Enter ඔබන්න.}}"
+
 #. Short travel date, e.g. Sat, 10 Oct
 #: src/i18n.ts:64
 msgid "{weekday}, {day} {month}"
 msgstr "{month} {day}, {weekday}"
 
-#: src/components/JourneyResults.tsx:318
+#: src/components/JourneyResults.tsx:385
 msgid "<0>Get off at</0> {alightName}"
 msgstr "{alightName} <0>හිදී බසින්න</0>"
 
-#: src/components/JourneyResults.tsx:307
+#: src/components/JourneyResults.tsx:374
 msgid "<0>Get on at</0> {boardName}"
 msgstr "{boardName} <0>හිදී නගින්න</0>"
 
-#: src/components/MapView.tsx:1039
+#: src/components/MapView.tsx:1050
 msgid "A: Start · B: Destination"
 msgstr "A: ආරම්භය · B: ගමනාන්තය"
 
 #: src/components/RoutesPanel.tsx:169
 msgid "All bus routes"
 msgstr "සියලු බස් මාර්ග"
+
+#: src/components/StopPicker.tsx:114
+msgid "All stops"
+msgstr "සියලු නැවතුම්"
+
+#: src/components/JourneyResults.tsx:821
+msgid "All times are Sri Lanka time."
+msgstr "සියලු වේලාවන් ශ්‍රී ලංකා වේලාවෙනි."
 
 #: src/i18n.ts:76
 msgid "AM"
@@ -94,16 +118,20 @@ msgctxt "month"
 msgid "Apr"
 msgstr "අප්‍රේල්"
 
-#: src/components/JourneyResults.tsx:292
+#: src/components/JourneyResults.tsx:359
 msgid "Assigned bus"
 msgstr "යොදවා ඇති බස් රථය"
+
+#: src/components/JourneyResults.tsx:467
+msgid "At your stop"
+msgstr "ඔබේ නැවතුමේ"
 
 #: src/i18n.ts:51
 msgctxt "month"
 msgid "Aug"
 msgstr "අගෝ"
 
-#: src/App.tsx:498
+#: src/App.tsx:566
 msgid "Back to my trip"
 msgstr "මගේ ගමනට ආපසු"
 
@@ -121,19 +149,19 @@ msgstr "ගමන් පෝරමයට ආපසු"
 msgid "Bus"
 msgstr "බස්"
 
-#: src/components/JourneyResults.tsx:445
+#: src/components/JourneyResults.tsx:462
 msgid "Bus live"
 msgstr "බස් සජීවී"
 
-#: src/App.tsx:447
+#: src/App.tsx:515
 msgid "Bus route map"
 msgstr "බස් මාර්ග සිතියම"
 
-#: src/App.tsx:231
+#: src/App.tsx:245
 msgid "Bus routes"
 msgstr "බස් මාර්ග"
 
-#: src/App.tsx:247
+#: src/App.tsx:261
 msgctxt "tab"
 msgid "Bus routes"
 msgstr "බස් මාර්ග"
@@ -143,27 +171,31 @@ msgstr "බස් මාර්ග"
 msgid "Bus stop"
 msgstr "බස් නැවතුම"
 
-#: src/components/JourneyResults.tsx:638
+#: src/components/JourneyResults.tsx:779
 msgid "Buses for your trip"
 msgstr "ඔබේ ගමනට බස් රථ"
 
-#: src/components/JourneyResults.tsx:157
+#: src/components/JourneyResults.tsx:224
 msgid "Change bus at {changeName}"
 msgstr "{changeName} හිදී බස් මාරු කරන්න"
 
-#: src/components/JourneyResults.tsx:577
+#: src/components/JourneyResults.tsx:718
 msgid "Check both stops and choose today or a later date."
 msgstr "නැවතුම් දෙක පරීක්ෂා කර අද හෝ පසු දිනයක් තෝරන්න."
 
-#: src/components/JourneyResults.tsx:596
+#: src/components/JourneyResults.tsx:737
 msgid "Check your connection and try again."
 msgstr "ඔබගේ අන්තර්ජාල සම්බන්ධතාව පරීක්ෂා කර නැවත උත්සාහ කරන්න."
 
-#: src/components/TripForm.tsx:147
+#: src/components/TripForm.tsx:239
 msgid "Choose a different destination from your starting stop."
 msgstr "ආරම්භක නැවතුමට වෙනස් අවසන් නැවතුමක් තෝරන්න."
 
-#: src/App.tsx:289
+#: src/components/TripForm.tsx:199
+msgid "Choose a start stop"
+msgstr "ආරම්භක නැවතුමක් තෝරන්න"
+
+#: src/App.tsx:303
 msgid "Choose two stops. We’ll help with the rest."
 msgstr "නැවතුම් දෙකක් තෝරන්න. ඉතිරිය අපි සොයා දෙන්නම්."
 
@@ -171,15 +203,20 @@ msgstr "නැවතුම් දෙකක් තෝරන්න. ඉතිර�
 msgid "Choose where you want to get off."
 msgstr "බැසීමට අවශ්‍ය නැවතුම තෝරන්න."
 
-#: src/components/JourneyResults.tsx:607
+#: src/components/JourneyResults.tsx:748
 msgid "Choose your starting stop and destination to find a journey."
 msgstr "ගමනක් සොයා ගැනීමට ආරම්භක නැවතුම සහ ගමනාන්තය තෝරන්න."
 
-#: src/components/StopPicker.tsx:334
+#: src/App.tsx:335
+msgctxt "recent trips"
+msgid "Clear"
+msgstr "මකන්න"
+
+#: src/components/StopPicker.tsx:404
 msgid "Clear {label}"
 msgstr "{label} ඉවත් කරන්න"
 
-#: src/components/StopPicker.tsx:366
+#: src/components/StopPicker.tsx:436
 msgid "Close"
 msgstr "වසන්න"
 
@@ -187,15 +224,15 @@ msgstr "වසන්න"
 msgid "Close stop details"
 msgstr "නැවතුම් විස්තර වසන්න"
 
-#: src/state/useTrip.ts:137
+#: src/state/useTrip.ts:232
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "ළඟම නැවතුම: {nearestName} · සෘජු දුරින් {nearestDistance}. ඇවිදින මාර්ගය පරීක්ෂා කරන්න."
 
-#: src/App.tsx:509
+#: src/App.tsx:577
 msgid "Colombo & beyond"
 msgstr "කොළඹ සහ අවට"
 
-#: src/components/JourneyResults.tsx:588
+#: src/components/JourneyResults.tsx:729
 msgid "Could not load journeys"
 msgstr "ගමන් ලබා ගත නොහැකි විය"
 
@@ -208,7 +245,7 @@ msgctxt "month"
 msgid "Dec"
 msgstr "දෙසැ"
 
-#: src/components/MapView.tsx:927
+#: src/components/MapView.tsx:938
 msgid "Destination: {stopLabel}"
 msgstr "ගමනාන්තය: {stopLabel}"
 
@@ -216,7 +253,7 @@ msgstr "ගමනාන්තය: {stopLabel}"
 msgid "Direction"
 msgstr "දිශාව"
 
-#: src/components/JourneyResults.tsx:431
+#: src/components/JourneyResults.tsx:596
 msgid "Duration unavailable"
 msgstr "ගමන් කාලය නොමැත"
 
@@ -224,19 +261,19 @@ msgstr "ගමන් කාලය නොමැත"
 msgid "Edit"
 msgstr "වෙනස් කරන්න"
 
-#: src/App.tsx:235
+#: src/App.tsx:249
 msgid "Explore Metro"
 msgstr "Metro සොයන්න"
 
-#: src/components/JourneyResults.tsx:131
+#: src/components/JourneyResults.tsx:198
 msgid "Fare · Rs. {fare}"
 msgstr "ගාස්තුව · රු. {fare}"
 
-#: src/components/JourneyResults.tsx:130
+#: src/components/JourneyResults.tsx:197
 msgid "Fare · Rs. {fare} (estimate)"
 msgstr "ගාස්තුව · රු. {fare} (ඇස්තමේන්තුව)"
 
-#: src/components/JourneyResults.tsx:127
+#: src/components/JourneyResults.tsx:194
 msgid "Fare unavailable"
 msgstr "ගාස්තුව නොමැත"
 
@@ -249,27 +286,35 @@ msgstr "පෙබ"
 msgid "Filling up"
 msgstr "පිරෙමින් පවතී"
 
-#: src/components/TripForm.tsx:161
+#: src/App.tsx:368
+msgid "Find buses for the way back, from {end} to {start}"
+msgstr "ආපසු ගමනට බස් සොයන්න, {end} සිට {start} දක්වා"
+
+#: src/App.tsx:354
+msgid "Find buses from {start} to {end}"
+msgstr "{start} සිට {end} දක්වා බස් සොයන්න"
+
+#: src/components/TripForm.tsx:253
 msgid "Find my bus"
 msgstr "මගේ බස් රථය සොයන්න"
 
-#: src/components/MapView.tsx:337
+#: src/components/MapView.tsx:345
 msgid "Find my location"
 msgstr "මගේ ස්ථානය සොයන්න"
 
-#: src/App.tsx:511
+#: src/App.tsx:579
 msgid "Find your way around."
 msgstr "ඔබේ මාර්ගය සොයාගන්න."
 
-#: src/components/JourneyResults.tsx:562
+#: src/components/JourneyResults.tsx:703
 msgid "Finding scheduled journeys…"
 msgstr "නියමිත ගමන් සොයමින්…"
 
-#: src/components/TripForm.tsx:161
+#: src/components/TripForm.tsx:253
 msgid "Finding your buses…"
 msgstr "බස් සොයමින්…"
 
-#: src/components/TripForm.tsx:126
+#: src/components/TripForm.tsx:228
 msgid "Finding your location…"
 msgstr "ස්ථානය සොයමින්…"
 
@@ -287,7 +332,11 @@ msgctxt "weekday"
 msgid "Fri"
 msgstr "සිකු"
 
-#: src/components/JourneyResults.tsx:180
+#: src/components/TripForm.tsx:197
+msgid "From"
+msgstr "සිට"
+
+#: src/components/JourneyResults.tsx:247
 msgid "From {fromName}"
 msgstr "{fromName} සිට"
 
@@ -303,11 +352,7 @@ msgstr "{startName} සිට"
 msgid "Go here"
 msgstr "මෙතැනට යන්න"
 
-#: src/components/TripForm.tsx:97
-msgid "Going to"
-msgstr "ගමනාන්තය"
-
-#: src/components/MapView.tsx:378
+#: src/components/MapView.tsx:386
 msgid "Hide live buses"
 msgstr "සජීවී බස් සඟවන්න"
 
@@ -320,12 +365,12 @@ msgctxt "month"
 msgid "Jan"
 msgstr "ජන"
 
-#: src/components/JourneyResults.tsx:343
-#: src/components/JourneyResults.tsx:465
+#: src/components/JourneyResults.tsx:410
+#: src/components/JourneyResults.tsx:604
 msgid "Journey steps"
 msgstr "ගමන් පියවර"
 
-#: src/components/MapView.tsx:1030
+#: src/components/MapView.tsx:1041
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "ගමනේ නැවතුම්; වළලු මඟින් නගින සහ බසින නැවතුම් පෙන්වයි"
 
@@ -339,19 +384,24 @@ msgctxt "month"
 msgid "Jun"
 msgstr "ජූනි"
 
-#: src/components/LanguageSwitcher.tsx:18
+#: src/components/LanguageSwitcher.tsx:25
+#: src/components/LanguageSwitcher.tsx:47
 msgid "Language"
 msgstr "භාෂාව"
+
+#: src/i18n.ts:114
+msgid "Leaves now"
+msgstr "දැන් පිටත් වේ"
 
 #: src/components/RoutesPanel.tsx:182
 msgid "live"
 msgstr "සජීවී"
 
-#: src/components/JourneyResults.tsx:240
+#: src/components/JourneyResults.tsx:307
 msgid "Live · show on map"
 msgstr "සජීවී · සිතියමේ පෙන්වන්න"
 
-#: src/components/JourneyResults.tsx:325
+#: src/components/JourneyResults.tsx:392
 msgid "Live arrival estimate"
 msgstr "සජීවී පැමිණීමේ ඇස්තමේන්තුව"
 
@@ -363,7 +413,7 @@ msgstr "සජීවී බස්"
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "සජීවී බස් ස්ථාන දැනට ලබාගත නොහැක. කාලසටහන් තවමත් ක්‍රියා කරයි."
 
-#: src/components/MapView.tsx:1036
+#: src/components/MapView.tsx:1047
 msgid "Live bus; tap to select and follow"
 msgstr "සජීවී බස්; තෝරා අනුගමනය කිරීමට ඔබන්න"
 
@@ -371,28 +421,32 @@ msgstr "සජීවී බස්; තෝරා අනුගමනය කිර�
 msgid "Live buses on this route"
 msgstr "මෙම මාර්ගයේ සජීවී බස්"
 
-#: src/components/JourneyResults.tsx:314
+#: src/components/JourneyResults.tsx:381
 msgid "Live departure estimate"
 msgstr "සජීවී පිටත්වීමේ ඇස්තමේන්තුව"
+
+#: src/components/JourneyResults.tsx:529
+msgid "Live estimate"
+msgstr "සජීවී ඇස්තමේන්තුව"
 
 #: src/components/LiveBusList.tsx:58
 msgid "Live on this direction"
 msgstr "මෙම දිශාවේ සජීවී"
 
-#: src/App.tsx:407
+#: src/App.tsx:475
 msgid "Load missing stops"
 msgstr "නොලැබුණු නැවතුම් ලබාගන්න"
 
-#: src/App.tsx:353
+#: src/App.tsx:421
 msgid "Loading bus routes…"
 msgstr "බස් මාර්ග ලබාගනිමින්…"
 
-#: src/App.tsx:453
-#: src/components/MapView.tsx:972
+#: src/App.tsx:521
+#: src/components/MapView.tsx:983
 msgid "Loading map…"
 msgstr "සිතියම ලබාගනිමින්…"
 
-#: src/components/StopPicker.tsx:154
+#: src/components/StopPicker.tsx:196
 msgid "Loading stops…"
 msgstr "නැවතුම් ලබා ගනිමින්…"
 
@@ -400,31 +454,31 @@ msgstr "නැවතුම් ලබා ගනිමින්…"
 msgid "Loading the stops…"
 msgstr "නැවතුම් ලබාගනිමින්…"
 
-#: src/components/MapView.tsx:944
+#: src/components/MapView.tsx:955
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "ස්ථාන අවසරය ලබා දී නැත. ඔබට තවමත් නැවතුම් තෝරාගත හැක."
 
-#: src/components/MapView.tsx:338
+#: src/components/MapView.tsx:346
 msgid "Location unavailable"
 msgstr "ස්ථානය ලබාගත නොහැක"
 
-#: src/state/useTrip.ts:139
+#: src/state/useTrip.ts:234
 msgid "Location was not available. You can still type your starting stop."
 msgstr "ස්ථානය ලබාගත නොහැකි විය. ආරම්භක නැවතුම ඇතුළත් කරන්න."
 
-#: src/components/MapView.tsx:339
+#: src/components/MapView.tsx:347
 msgid "Map credits"
 msgstr "සිතියම් දායකත්වය"
 
-#: src/components/MapView.tsx:1022
+#: src/components/MapView.tsx:1033
 msgid "Map key"
 msgstr "සිතියම් සංකේත"
 
-#: src/components/MapView.tsx:948
+#: src/components/MapView.tsx:959
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "බාහිර සිතියම් සැපයුම්කරුගෙන් සිතියම පූරණය කළ නොහැකි විය. අන්තර්ජාල සම්බන්ධතාව පරීක්ෂා කරන්න. ඔබට තවමත් ගමන සැලසුම් කළ හැක."
 
-#: src/components/MapView.tsx:982
+#: src/components/MapView.tsx:993
 msgid "Map unavailable"
 msgstr "සිතියම ලබාගත නොහැක"
 
@@ -438,7 +492,7 @@ msgctxt "month"
 msgid "May"
 msgstr "මැයි"
 
-#: src/App.tsx:208
+#: src/App.tsx:222
 msgid "Metro home"
 msgstr "Metro මුල් පිටුව"
 
@@ -451,23 +505,31 @@ msgstr "සඳුදා"
 msgid "near {nearName}"
 msgstr "{nearName} අසල"
 
-#: src/components/StopPicker.tsx:232
+#: src/App.tsx:168
+msgid "Near you"
+msgstr "ඔබ අසල"
+
+#: src/components/StopPicker.tsx:266
 msgid "Nearest stop: {stopLabel} · {walk}"
 msgstr "ළඟම නැවතුම: {stopLabel} · {walk}"
+
+#: src/components/JourneyResults.tsx:544
+msgid "Next bus"
+msgstr "ඊළඟ බසය"
 
 #: src/components/LiveBusList.tsx:81
 msgid "No buses reporting here right now."
 msgstr "දැනට මෙහි බස් නොපෙනේ."
 
-#: src/components/StopPicker.tsx:156
+#: src/components/StopPicker.tsx:198
 msgid "No matching stops. Try another name or stop code."
 msgstr "ගැළපෙන නැවතුම් නැත. වෙනත් නමක් හෝ නැවතුම් අංකයක් සොයන්න."
 
-#: src/components/JourneyResults.tsx:619
+#: src/components/JourneyResults.tsx:760
 msgid "No more scheduled departures today"
 msgstr "අදට තවත් නියමිත පිටත්වීම් නැත"
 
-#: src/components/JourneyResults.tsx:620
+#: src/components/JourneyResults.tsx:761
 msgid "No scheduled journeys found"
 msgstr "නියමිත ගමන් හමු නොවීය"
 
@@ -475,7 +537,7 @@ msgstr "නියමිත ගමන් හමු නොවීය"
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "මේ දිශාවට දැනට නැත · අනෙක් දිශාවේ {elsewhere}"
 
-#: src/App.tsx:429
+#: src/App.tsx:497
 msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
 msgstr "<0>Lanka Metro Transit</0> හෝ නිල <1>LMT GO යෙදුම</1> සමඟ අනුබද්ධ නොවේ."
 
@@ -489,7 +551,7 @@ msgctxt "month"
 msgid "Oct"
 msgstr "ඔක්"
 
-#: src/components/JourneyResults.tsx:249
+#: src/components/JourneyResults.tsx:316
 msgid "On another trip now · see where"
 msgstr "දැනට වෙනත් ගමනක · කොහේදැයි බලන්න"
 
@@ -497,7 +559,7 @@ msgstr "දැනට වෙනත් ගමනක · කොහේදැයි �
 msgid "On map"
 msgstr "සිතියමේ"
 
-#: src/App.tsx:350
+#: src/App.tsx:418
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "නැවතුම් සහ බස් දැන් සිටින තැන බැලීමට මාර්ගයක් විවෘත කරන්න."
 
@@ -509,15 +571,19 @@ msgstr "පිටුව හමු නොවීය :c"
 msgid "Paused"
 msgstr "නවතා ඇත"
 
-#: src/App.tsx:242
+#: src/components/TripForm.tsx:61
+msgid "Pick a date"
+msgstr "දිනයක් තෝරන්න"
+
+#: src/App.tsx:256
 msgid "Plan a trip"
 msgstr "ගමන සැලසුම් කරන්න"
 
-#: src/App.tsx:231
+#: src/App.tsx:245
 msgid "Plan your bus trip"
 msgstr "ඔබේ බස් ගමන සැලසුම් කරන්න"
 
-#: src/components/JourneyResults.tsx:564
+#: src/components/JourneyResults.tsx:705
 msgid "Please wait a moment."
 msgstr "කරුණාකර මොහොතක් රැඳී සිටින්න."
 
@@ -529,11 +595,15 @@ msgstr "ඉඩ ඇත"
 msgid "PM"
 msgstr "ප.ව."
 
-#: src/components/MapView.tsx:336
+#: src/components/MapView.tsx:344
 msgid "Point north"
 msgstr "උතුරට හරවන්න"
 
-#: src/App.tsx:315
+#: src/App.tsx:169
+msgid "Popular"
+msgstr "ජනප්‍රිය"
+
+#: src/App.tsx:383
 msgid "Popular starting stops"
 msgstr "ජනප්‍රිය ආරම්භක නැවතුම්"
 
@@ -541,19 +611,27 @@ msgstr "ජනප්‍රිය ආරම්භක නැවතුම්"
 msgid "Press “Find my bus”. Select a departure for boarding instructions."
 msgstr "“මගේ බස් රථය සොයන්න” ඔබන්න. උපදෙස් සඳහා ගමනක් තෝරන්න."
 
-#: src/App.tsx:528
+#: src/App.tsx:167
+msgid "Recent"
+msgstr "මෑත"
+
+#: src/App.tsx:332
+msgid "Recent trips"
+msgstr "මෑත ගමන්"
+
+#: src/App.tsx:596
 msgid "Retry map route"
 msgstr "නැවත ලබාගන්න"
 
-#: src/App.tsx:532
+#: src/App.tsx:600
 msgid "Route line unavailable. Stops and trip planning still work."
 msgstr "මාර්ග රේඛාව ලබාගත නොහැක. නැවතුම් සහ සැලසුම් තවමත් වැඩ කරයි."
 
-#: src/components/StopPicker.tsx:245
+#: src/components/StopPicker.tsx:279
 msgid "Routes"
 msgstr "මාර්ග"
 
-#: src/components/MapView.tsx:953
+#: src/components/MapView.tsx:964
 msgid "Routes and stops map"
 msgstr "මාර්ග සහ නැවතුම් සිතියම"
 
@@ -562,15 +640,19 @@ msgctxt "weekday"
 msgid "Sat"
 msgstr "සෙන"
 
-#: src/components/JourneyResults.tsx:324
+#: src/components/JourneyResults.tsx:529
+msgid "Scheduled"
+msgstr "නියමිත"
+
+#: src/components/JourneyResults.tsx:391
 msgid "Scheduled arrival"
 msgstr "නියමිත පැමිණීම"
 
-#: src/components/JourneyResults.tsx:313
+#: src/components/JourneyResults.tsx:380
 msgid "Scheduled departure"
 msgstr "නියමිත පිටත්වීම"
 
-#: src/App.tsx:425
+#: src/App.tsx:493
 msgid "See the map"
 msgstr "සිතියම බලන්න"
 
@@ -579,11 +661,11 @@ msgctxt "month"
 msgid "Sep"
 msgstr "සැප්"
 
-#: src/components/MapView.tsx:378
+#: src/components/MapView.tsx:386
 msgid "Show live buses"
 msgstr "සජීවී බස් පෙන්වන්න"
 
-#: src/components/JourneyResults.tsx:678
+#: src/components/JourneyResults.tsx:818
 msgid "Show more journeys ({remaining} more)"
 msgstr "තවත් ගමන් පෙන්වන්න (තවත් {remaining}ක්)"
 
@@ -591,23 +673,23 @@ msgstr "තවත් ගමන් පෙන්වන්න (තවත් {remain
 msgid "Show that direction"
 msgstr "එම දිශාව පෙන්වන්න"
 
-#: src/App.tsx:339
+#: src/App.tsx:407
 msgid "Show the buses for this trip"
 msgstr "මෙම ගමනේ බස් පෙන්වන්න"
 
-#: src/components/JourneyResults.tsx:625
+#: src/components/JourneyResults.tsx:766
 msgid "Show the next day"
 msgstr "ඊළඟ දිනය පෙන්වන්න"
 
-#: src/components/JourneyResults.tsx:625
+#: src/components/JourneyResults.tsx:766
 msgid "Show tomorrow’s buses"
 msgstr "හෙට බස් පෙන්වන්න"
 
-#: src/components/MapView.tsx:949
+#: src/components/MapView.tsx:960
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "සිතියමේ සමහර දත්ත පූරණය කළ නොහැකි විය. සිතියම හෝ ජාල සම්බන්ධතාව නොමැති විය හැක. ඔබට තවමත් ගමන සැලසුම් කළ හැක."
 
-#: src/App.tsx:411
+#: src/App.tsx:479
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
 msgstr "සමහර නැවතුම් ලබාගත නොහැකි විය. සියල්ල නොපෙන්විය හැක."
 
@@ -615,15 +697,11 @@ msgstr "සමහර නැවතුම් ලබාගත නොහැකි �
 msgid "Start here"
 msgstr "මෙතැනින් නගින්න"
 
-#: src/components/MapView.tsx:927
+#: src/components/MapView.tsx:938
 msgid "Start: {stopLabel}"
 msgstr "ආරම්භය: {stopLabel}"
 
-#: src/components/TripForm.tsx:85
-msgid "Starting from"
-msgstr "ආරම්භක නැවතුම"
-
-#: src/components/MapView.tsx:1025
+#: src/components/MapView.tsx:1036
 msgid "Stop"
 msgstr "නැවතුම"
 
@@ -631,16 +709,12 @@ msgstr "නැවතුම"
 msgid "Stop tracking this bus"
 msgstr "මෙම බස් ලුහුබැඳීම නවත්වන්න"
 
-#: src/components/JourneyResults.tsx:645
-msgid "Summary times are scheduled; live estimates are marked in the journey steps. All times are Sri Lanka time."
-msgstr "සාරාංශයේ වේලාවන් කාලසටහන අනුවය. සජීවී ඇස්තමේන්තු ගමන් විස්තරවල දක්වා ඇත. සියල්ල ශ්‍රී ලංකා වේලාවෙනි."
-
 #: src/i18n.ts:35
 msgctxt "weekday"
 msgid "Sun"
 msgstr "ඉරිදා"
 
-#: src/components/TripForm.tsx:111
+#: src/components/TripForm.tsx:213
 msgid "Swap starting and destination stops"
 msgstr "ආරම්භක සහ අවසන් නැවතුම් මාරු කරන්න"
 
@@ -652,7 +726,7 @@ msgstr "ගමන සැලසුම් කිරීමට නැවතුමක
 msgid "Tap a stop to plan a trip"
 msgstr "ගමන සැලසුම් කිරීමට නැවතුමක් ඔබන්න"
 
-#: src/components/MapView.tsx:985
+#: src/components/MapView.tsx:996
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "සිතියමට අන්තර්ජාල සම්බන්ධතාවක් සහ බ්‍රවුසරයේ WebGL සහාය අවශ්‍යයි. ඔබට තවමත් නැවතුම් තෝරා ගමන සැලසුම් කළ හැක."
 
@@ -660,7 +734,7 @@ msgstr "සිතියමට අන්තර්ජාල සම්බන්ධ�
 msgid "The stops couldn’t be loaded."
 msgstr "නැවතුම් ලබාගත නොහැකි විය."
 
-#: src/components/JourneyResults.tsx:575
+#: src/components/JourneyResults.tsx:716
 msgid "This trip can’t be planned"
 msgstr "මෙම ගමන සැලසුම් කළ නොහැක"
 
@@ -669,7 +743,7 @@ msgctxt "weekday"
 msgid "Thu"
 msgstr "බ්‍රහස්"
 
-#: src/components/JourneyResults.tsx:88
+#: src/components/JourneyResults.tsx:100
 msgid "Time unavailable"
 msgstr "වේලාව නොමැත"
 
@@ -677,9 +751,17 @@ msgstr "වේලාව නොමැත"
 msgid "Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only — not tickets or official service information."
 msgstr "වේලාවන් ශ්‍රී ලංකා වේලාවෙනි. සජීවී ඇස්තමේන්තු වෙනම දක්වා ඇත. Lanka Metro Transit, Smart Metro හෝ නිල LMT GO යෙදුම සමඟ අනුබද්ධ නොවේ. ගමන් සැලසුම් සඳහා පමණි — ටිකට්පත් හෝ නිල සේවා තොරතුරු නොවේ."
 
-#: src/components/JourneyResults.tsx:183
+#: src/components/JourneyResults.tsx:250
 msgid "To {toName}"
 msgstr "{toName} දක්වා"
+
+#: src/components/TripForm.tsx:53
+msgid "Today"
+msgstr "අද"
+
+#: src/components/TripForm.tsx:54
+msgid "Tomorrow"
+msgstr "හෙට"
 
 #: src/i18n.ts:13
 msgid "Towards {place}"
@@ -689,27 +771,28 @@ msgstr "{place} දෙසට"
 msgid "Tracked bus"
 msgstr "ලුහුබඳින බසය"
 
-#: src/components/MapView.tsx:369
+#: src/components/MapView.tsx:377
 msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
 msgstr "ප්‍රවාහන සිතියම. ඊතල යතුරු මඟින් ගමන් කරන්න. විශාල කිරීමට හෝ කුඩා කිරීමට + හෝ − භාවිතා කරන්න."
 
-#: src/components/TripForm.tsx:134
-#: src/components/TripForm.tsx:138
+#: src/components/TripForm.tsx:67
+#: src/components/TripForm.tsx:91
+#: src/components/TripForm.tsx:96
 msgid "Travel date"
 msgstr "ගමන් දිනය"
 
-#: src/App.tsx:393
-#: src/components/JourneyResults.tsx:592
+#: src/App.tsx:461
+#: src/components/JourneyResults.tsx:733
 #: src/components/RoutesPanel.tsx:236
 msgid "Try again"
 msgstr "නැවත උත්සාහ කරන්න"
 
-#: src/components/MapView.tsx:993
-#: src/components/MapView.tsx:1014
+#: src/components/MapView.tsx:1004
+#: src/components/MapView.tsx:1025
 msgid "Try map again"
 msgstr "සිතියම නැවත උත්සාහ කරන්න"
 
-#: src/components/JourneyResults.tsx:629
+#: src/components/JourneyResults.tsx:770
 msgid "Try the next day or different stops."
 msgstr "ඊළඟ දිනය හෝ වෙනත් නැවතුම් උත්සාහ කරන්න."
 
@@ -718,7 +801,7 @@ msgctxt "weekday"
 msgid "Tue"
 msgstr "අඟහ"
 
-#: src/components/TripForm.tsx:86
+#: src/components/TripForm.tsx:184
 msgid "Type a stop or a place"
 msgstr "නැවතුමක් හෝ ස්ථානයක්"
 
@@ -726,19 +809,19 @@ msgstr "නැවතුමක් හෝ ස්ථානයක්"
 msgid "Type your starting stop and choose a result."
 msgstr "ආරම්භක නැවතුම ඇතුළත් කර තෝරන්න."
 
-#: src/components/TripForm.tsx:127
+#: src/components/TripForm.tsx:229
 msgid "Use my location for the nearest stop"
 msgstr "මගේ ස්ථානයෙන් ළඟම නැවතුම සොයන්න"
 
-#: src/components/JourneyResults.tsx:159
+#: src/components/JourneyResults.tsx:226
 msgid "Wait about {waitLabel}"
 msgstr "{waitLabel} පමණ රැඳී සිටින්න"
 
-#: src/components/JourneyResults.tsx:178
+#: src/components/JourneyResults.tsx:245
 msgid "Walk"
 msgstr "පයින් යන්න"
 
-#: src/App.tsx:397
+#: src/App.tsx:465
 msgid "We can’t connect to Metro right now."
 msgstr "දැනට Metro වෙත සම්බන්ධ විය නොහැක."
 
@@ -747,32 +830,32 @@ msgctxt "weekday"
 msgid "Wed"
 msgstr "බදාදා"
 
-#: src/components/TripForm.tsx:98
-msgid "Where do you want to go?"
-msgstr "ඔබට යන්න ඕනෑ කොහෙටද?"
+#: src/components/TripForm.tsx:183
+msgid "Where to?"
+msgstr "කොහෙද යන්නේ?"
 
-#: src/App.tsx:285
+#: src/App.tsx:299
 msgid "Where would you\n"
 "like to go?"
 msgstr "ඔබට යන්න\n"
 "ඕනෑ කොහෙටද?"
 
-#: src/components/JourneyResults.tsx:605
+#: src/components/JourneyResults.tsx:746
 msgid "Where would you like to go?"
 msgstr "ඔබට යන්න ඕනෑ කොහෙටද?"
 
-#: src/state/useTrip.ts:138
+#: src/state/useTrip.ts:233
 msgid "Your browser cannot find your location. Please choose a stop."
 msgstr "ඔබේ ස්ථානය සොයාගත නොහැක. නැවතුමක් තෝරන්න."
 
-#: src/components/MapView.tsx:946
+#: src/components/MapView.tsx:957
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "ඔබේ ස්ථානය සොයාගත නොහැකි විය. ඒ වෙනුවට නැවතුම් තෝරන්න."
 
-#: src/components/MapView.tsx:334
+#: src/components/MapView.tsx:342
 msgid "Zoom in"
 msgstr "විශාල කරන්න"
 
-#: src/components/MapView.tsx:335
+#: src/components/MapView.tsx:343
 msgid "Zoom out"
 msgstr "කුඩා කරන්න"

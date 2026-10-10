@@ -32,7 +32,7 @@ export function Tabs<T extends string>({
           role="tab"
           aria-selected={tab.value === value}
           onClick={() => onChange(tab.value)}
-          className="flex min-h-12 items-center justify-center gap-2.5 rounded-md text-base font-semibold text-muted aria-selected:bg-tint-100 aria-selected:text-ink max-md:gap-2 max-md:text-md hover-fine:not-aria-selected:bg-tint-50 aria-selected:[&_svg]:text-brand"
+          className="flex min-h-12 items-center justify-center gap-2.5 rounded-md text-base font-semibold text-muted aria-selected:bg-field aria-selected:text-ink aria-selected:shadow-[inset_0_-3px_0_var(--color-stripe)] max-md:gap-2 max-md:text-md hover-fine:not-aria-selected:bg-tint-50 aria-selected:[&_svg]:text-brand"
         >
           {tab.icon}
           {tab.label}

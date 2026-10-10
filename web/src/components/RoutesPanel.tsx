@@ -200,7 +200,7 @@ export function RouteDetail({
               role="radio"
               aria-checked={index === directionIndex}
               onClick={() => onDirectionChange(index)}
-              className="flex min-h-14 min-w-0 flex-col justify-center rounded-md px-3 py-2 text-left text-muted aria-checked:bg-white aria-checked:text-ink aria-checked:shadow-card hover-fine:not-aria-checked:bg-tint-100"
+              className="flex min-h-14 min-w-0 flex-col justify-center rounded-md px-3 py-2 text-left text-muted aria-checked:bg-card aria-checked:text-ink aria-checked:shadow-card hover-fine:not-aria-checked:bg-tint-100"
             >
               <strong className="text-sm leading-snug font-semibold">
                 {towards(i18n, endName)}
@@ -213,7 +213,7 @@ export function RouteDetail({
         })}
       </div>
 
-      <div className="mb-6 rounded-lg border border-line bg-white p-3.5">
+      <div className="mb-6 rounded-lg border border-line bg-card p-3.5">
         <LiveBusList
           buses={buses}
           selectedBusId={selectedBusId}
@@ -316,7 +316,7 @@ function BusAtStop({
         type="button"
         aria-pressed={selected}
         onClick={onToggle}
-        className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-md border border-line bg-white px-3 text-left text-sm aria-pressed:border-brand aria-pressed:bg-tint-100 hover-fine:not-aria-pressed:bg-tint-50"
+        className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-md border border-line bg-card px-3 text-left text-sm aria-pressed:border-brand aria-pressed:bg-tint-100 hover-fine:not-aria-pressed:bg-tint-50"
       >
         <span className="min-w-0 flex-1 truncate">
           <strong className="font-semibold">

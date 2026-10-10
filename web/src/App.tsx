@@ -6,6 +6,7 @@ import {
   Map as MapIcon,
   MapPin,
   Navigation,
+  RotateCcw,
   Route as RouteIcon,
 } from "lucide-react";
 import {
@@ -31,9 +32,11 @@ import { TripSummary } from "./components/TripSummary";
 import { Button, buttonClass } from "./components/ui/Button";
 import { cardClass } from "./components/ui/Card";
 import { Eyebrow } from "./components/ui/Eyebrow";
+import { IconButton } from "./components/ui/IconButton";
 import { Notice } from "./components/ui/Notice";
 import { Tabs } from "./components/ui/Tabs";
 import { useLanguage } from "./lib/language";
+import { findStop, type RecentStop } from "./lib/recentTrips";
 import { useMediaQuery } from "./lib/useMediaQuery";
 import { TransitDataProvider, useTransitData } from "./state/TransitData";
 import { useBusSelection } from "./state/useBusSelection";
@@ -159,6 +162,20 @@ function Home() {
       ).filter((stop): stop is CatalogStop => !!stop),
     [catalog.stops],
   );
+
+  const stopSections = useMemo(
+    () => [
+      { key: "recent", title: t`Recent`, stops: trip.recentStops },
+      { key: "nearby", title: t`Near you`, stops: trip.nearbyStops },
+      { key: "popular", title: t`Popular`, stops: popularStops },
+    ],
+    [t, trip.recentStops, trip.nearbyStops, popularStops],
+  );
+  // The catalog's name in the current language, or the remembered one.
+  const recentName = (stop: RecentStop) => {
+    const entry = findStop(catalog.stops, stop);
+    return entry ? stopName(entry, language) : stop.name;
+  };
 
   const chooseStop = (stop: Stop, target: "from" | "to") => {
     const entry = catalog.stops.find((item) => item.ids.includes(stop.id)) ?? {
@@ -308,7 +325,61 @@ like to go?`}
                     locationBusy={trip.locationBusy}
                     locationMessage={trip.locationMessage}
                     onLocate={trip.locate}
+                    fromIsNearest={trip.fromIsNearest}
+                    stopSections={stopSections}
                   />
+                  {trip.recentTrips.length > 0 && (
+                    <div className="mt-7 max-md:mt-6">
+                      <div className="mb-1 flex items-center justify-between gap-3">
+                        <h2 className="text-sm font-semibold text-muted">
+                          {t`Recent trips`}
+                        </h2>
+                        <Button variant="quiet" onClick={trip.clearRecent}>
+                          {t({ message: "Clear", context: "recent trips" })}
+                        </Button>
+                      </div>
+                      <ul className="divide-y divide-line">
+                        {trip.recentTrips.map((recent) => {
+                          const start = recentName(recent.from);
+                          const end = recentName(recent.to);
+                          // Rows wait for the stop catalog to find their stops.
+                          const ready =
+                            !!findStop(catalog.stops, recent.from) &&
+                            !!findStop(catalog.stops, recent.to);
+                          return (
+                            <li
+                              key={`${recent.from.code}-${recent.to.code}`}
+                              className="flex items-center gap-1"
+                            >
+                              <button
+                                type="button"
+                                className="flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left text-base font-semibold text-ink disabled:opacity-50 hover-fine:bg-tint-50"
+                                aria-label={t`Find buses from ${start} to ${end}`}
+                                disabled={!ready}
+                                onClick={() => trip.searchRecent(recent)}
+                              >
+                                <span className="truncate">{start}</span>
+                                <ArrowRight
+                                  size={16}
+                                  className="shrink-0 text-muted"
+                                  aria-hidden="true"
+                                />
+                                <span className="truncate">{end}</span>
+                              </button>
+                              <IconButton
+                                variant="plain"
+                                label={t`Find buses for the way back, from ${end} to ${start}`}
+                                disabled={!ready}
+                                onClick={() => trip.searchRecent(recent, true)}
+                              >
+                                <RotateCcw size={17} aria-hidden="true" />
+                              </IconButton>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                   {!request && popularStops.length > 0 && (
                     <div className="mt-7 max-md:mt-6">
                       <h2 className="mb-2.5 text-sm font-semibold text-muted">

@@ -14,12 +14,20 @@ import {
   Footprints,
   LocateFixed,
 } from "lucide-react";
-import { ApiError } from "../api";
+import { ApiError, distanceMeters, useRouteStops } from "../api";
 import type { I18n } from "@lingui/core";
 import { t } from "@lingui/core/macro";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
-import { distanceLabel, minutesLabel, timeLabel, towards } from "../i18n";
+import {
+  countdown,
+  countdownLabel,
+  distanceLabel,
+  minutesLabel,
+  timeLabel,
+  towards,
+} from "../i18n";
 import { usePlaceName } from "../lib/placeNames";
+import { OccupancyMeter } from "./OccupancyBadge";
 import { RouteChip } from "./RouteChip";
 import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
@@ -34,6 +42,7 @@ import type {
   LiveBus,
   Move,
   Ride,
+  Stop,
 } from "../types";
 
 interface JourneyResultsProps {
@@ -57,8 +66,11 @@ const FARE_FORMAT = new Intl.NumberFormat("en-LK", {
   maximumFractionDigits: 2,
 });
 
-// How often the list re-checks which departures have already gone.
+// How often the list re-checks which departures have already gone, which also
+// keeps the countdowns current.
 const CLOCK_TICK_MS = 15_000;
+// Slack for a bus waiting at a stop, so GPS drift doesn't count it as gone.
+const AT_STOP_METERS = 25;
 
 const STATE = "mt-5";
 // Each step's icon is joined to the next by a dotted line.
@@ -113,13 +125,68 @@ function stopTime(stop: Ride["board"]): string | undefined {
   return hasLiveEstimate(stop) ? stop.estimated_time : stop.scheduled_time;
 }
 
-function rideBusIsLive(
+/** The first ride whose assigned bus is live and running it now. */
+function liveRide(
+  option: JourneyOption,
   liveBuses: readonly LiveBus[],
-  ride: Ride,
   now: number,
-): boolean {
-  const bus = findLiveBus(liveBuses, ride.bus);
-  return !!bus && isOnRide(bus, ride, now);
+): { ride: Ride; bus: LiveBus } | undefined {
+  for (const leg of option.legs) {
+    if (leg.kind !== "ride") continue;
+    const bus = findLiveBus(liveBuses, leg.ride.bus);
+    if (bus && isOnRide(bus, leg.ride, now)) return { ride: leg.ride, bus };
+  }
+  return undefined;
+}
+
+/**
+ * How many stops the bus still has to make before `boardId`, counted on the
+ * direction's full stop list: 0 means it is there, negative that it has
+ * passed, null that the stop isn't on the list.
+ */
+export function stopsAway(
+  bus: Pick<LiveBus, "lat" | "lng">,
+  stops: readonly Stop[],
+  boardId: string,
+): number | null {
+  const board = stops.findIndex((stop) => stop.id === boardId);
+  if (board < 0) return null;
+  const position = { latitude: bus.lat, longitude: bus.lng };
+  let nearest = 0;
+  let best = Infinity;
+  stops.forEach((stop, index) => {
+    const distance = distanceMeters(position, stop);
+    if (distance < best) {
+      best = distance;
+      nearest = index;
+    }
+  });
+  // The nearest stop may be one the bus just left: once past it, the bus is
+  // closer to the next stop than that stop is.
+  const next = stops[nearest + 1];
+  if (
+    next &&
+    distanceMeters(position, next) + AT_STOP_METERS <
+      distanceMeters(stops[nearest], next)
+  )
+    nearest += 1;
+  return board - nearest;
+}
+
+/** The option to mark "Next bus": the soonest one still to leave today. */
+export function nextBusIndex(
+  options: readonly JourneyOption[],
+  isToday: boolean,
+  now: number,
+): number {
+  if (!isToday) return -1;
+  let soonest = -1;
+  options.forEach((option, index) => {
+    const time = boardTime(option);
+    if (time >= now && (soonest < 0 || time < boardTime(options[soonest])))
+      soonest = index;
+  });
+  return soonest;
 }
 
 function fareLabel(i18n: I18n, totalFare: JourneyOption["total_fare"]): string {
@@ -378,6 +445,37 @@ function JourneyLeg({
   );
 }
 
+/** "● Bus live · 3 stops away", with how full it is. */
+function LiveStatus({ ride, bus }: { ride: Ride; bus: LiveBus }) {
+  const { t } = useLingui();
+  const route = useRouteStops(ride.route.code, ride.direction_id);
+  const away = route.data
+    ? stopsAway(bus, route.data.stops, ride.board.id)
+    : null;
+  return (
+    <span className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+      <span className="inline-flex items-center gap-1.5 font-semibold text-bus">
+        <span
+          className="size-2 shrink-0 animate-follow-pulse rounded-full bg-bus"
+          aria-hidden="true"
+        />
+        {t`Bus live`}
+        {away !== null && away >= 0 && (
+          <>
+            <span aria-hidden="true">·</span>
+            {away === 0 ? (
+              t`At your stop`
+            ) : (
+              <Plural value={away} one="# stop away" other="# stops away" />
+            )}
+          </>
+        )}
+      </span>
+      <OccupancyMeter bus={bus} />
+    </span>
+  );
+}
+
 /**
  * One journey: a summary button that expands to its steps. The steps only
  * render while the card is selected.
@@ -387,6 +485,8 @@ function JourneyCard({
   cardId,
   detailsId,
   isSelected,
+  isToday,
+  isNext,
   onToggle,
   language,
   ...rideProps
@@ -395,6 +495,9 @@ function JourneyCard({
   cardId: string;
   detailsId: string;
   isSelected: boolean;
+  /** Countdowns only make sense for today's departures. */
+  isToday: boolean;
+  isNext: boolean;
   onToggle: () => void;
   language: Language;
 } & RideDisplayProps) {
@@ -403,9 +506,27 @@ function JourneyCard({
   const routes = option.legs.flatMap((leg) =>
     leg.kind === "ride" ? [leg.ride.route.code] : [],
   );
-  const busLive = option.legs.some(
-    (leg) => leg.kind === "ride" && rideBusIsLive(liveBuses, leg.ride, now),
+  const live = liveRide(option, liveBuses, now);
+  const firstRide = option.legs.find((leg) => leg.kind === "ride");
+  const liveEstimate =
+    firstRide?.kind === "ride" && hasLiveEstimate(firstRide.ride.board);
+  // The countdown and the clock both follow the live estimate when there is
+  // one, so they never disagree.
+  const departs = boardTime(option);
+  const departure = Number.isFinite(departs)
+    ? new Date(departs).toISOString()
+    : option.departure_time;
+  const lead =
+    isToday && Number.isFinite(departs) ? countdown(departs, now) : null;
+  const leadText = lead && countdownLabel(i18n, lead);
+  const times = (
+    <>
+      <span>{scheduledTime(i18n, departure)}</span>
+      <ArrowRight size={leadText ? 14 : 18} aria-hidden="true" />
+      <span>{scheduledTime(i18n, option.arrival_time)}</span>
+    </>
   );
+  const timeSource = liveEstimate ? t`Live estimate` : t`Scheduled`;
   return (
     <li
       className={`overflow-hidden ${cardClass({ selected: isSelected })}`}
@@ -413,25 +534,40 @@ function JourneyCard({
     >
       <button
         type="button"
-        className="block min-h-11 w-full px-4 pt-4 pb-3 text-left"
+        className="block min-h-11 w-full px-4 pt-3.5 pb-3 text-left"
         aria-expanded={isSelected}
         aria-controls={detailsId}
         onClick={onToggle}
       >
-        <span className="flex flex-wrap items-center justify-between gap-2">
-          <span className="flex items-center gap-2 text-2xl font-semibold tracking-tight max-md:text-xl [&>svg]:text-faint">
-            <span>{scheduledTime(i18n, option.departure_time)}</span>
-            <ArrowRight size={18} aria-hidden="true" />
-            <span>{scheduledTime(i18n, option.arrival_time)}</span>
+        {isNext && (
+          <Badge tone="soon" className="mb-1.5">
+            {t`Next bus`}
+          </Badge>
+        )}
+        {leadText ? (
+          <span
+            className={`block text-2xl font-semibold tracking-tight max-md:text-xl ${lead?.kind === "left" ? "text-muted" : ""}`}
+          >
+            {leadText}
           </span>
-          <span className="flex items-center gap-1 text-2xs text-muted">
-            <Clock3 size={16} aria-hidden="true" />
-            {knownNumber(option.total_minutes)
-              ? minutesLabel(i18n, option.total_minutes)
-              : t`Duration unavailable`}
+        ) : (
+          <span className="flex items-center gap-2 text-2xl font-semibold tracking-tight max-md:text-xl [&>svg]:text-faint">
+            {times}
+          </span>
+        )}
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-sm text-muted [&>svg]:text-faint">
+          {leadText && (
+            <>
+              {times}
+              <span aria-hidden="true">·</span>
+            </>
+          )}
+          <span className={liveEstimate ? "font-semibold text-bus" : ""}>
+            {timeSource}
           </span>
         </span>
-        <span className="mt-3 flex items-center gap-2 max-md:flex-wrap">
+        {live && <LiveStatus ride={live.ride} bus={live.bus} />}
+        <span className="mt-3 flex flex-wrap items-center gap-2">
           <span className="flex flex-wrap gap-1">
             {routes.map((route, routeIndex) => (
               <RouteChip
@@ -442,7 +578,6 @@ function JourneyCard({
               />
             ))}
           </span>
-          {busLive && <Badge tone="live">{t`Bus live`}</Badge>}
           <span className="text-2xs text-muted">
             <Plural
               value={option.transfers}
@@ -452,11 +587,15 @@ function JourneyCard({
             />
           </span>
         </span>
-        <span className="mt-3 flex items-center justify-between gap-2 border-t border-line/60 pt-3 max-md:flex-wrap">
-          <span className="text-md font-semibold">
+        <span className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
+          <span>
             {fareLabel(i18n, option.total_fare)}
+            <span aria-hidden="true"> · </span>
+            {knownNumber(option.total_minutes)
+              ? minutesLabel(i18n, option.total_minutes)
+              : t`Duration unavailable`}
           </span>
-          <span className="flex items-center gap-1 text-2xs text-muted">
+          <span className="flex items-center gap-1 text-2xs">
             {isSelected ? (
               <Check size={16} aria-hidden="true" />
             ) : (
@@ -553,6 +692,8 @@ export default function JourneyResults({
   }, [plan, today, options]);
 
   const remaining = options.length - visibleCount;
+  const isToday = plan?.date === today;
+  const nextIndex = nextBusIndex(options, isToday, now);
 
   if (loading) {
     return (
@@ -641,10 +782,7 @@ export default function JourneyResults({
           <Plural value={options.length} one="# option" other="# options" />
         </Badge>
       </div>
-      <p className="mt-2 mb-4 text-sm leading-relaxed text-muted">
-        {t`Summary times are scheduled; live estimates are marked in the journey steps. All times are Sri Lanka time.`}
-      </p>
-      <ol className="flex flex-col gap-3">
+      <ol className="mt-4 flex flex-col gap-3">
         {options.slice(0, visibleCount).map((option, index) => {
           const key = journeyKey(option);
           const isSelected = selected !== null && journeyKey(selected) === key;
@@ -655,6 +793,8 @@ export default function JourneyResults({
               cardId={`${id}-card-${index}`}
               detailsId={`${id}-steps-${index}`}
               isSelected={isSelected}
+              isToday={isToday}
+              isNext={index === nextIndex}
               onToggle={() => onSelect(isSelected ? null : option)}
               language={language}
               routeColors={routeColors}
@@ -678,6 +818,7 @@ export default function JourneyResults({
           {t`Show more journeys (${remaining} more)`}
         </Button>
       )}
+      <p className="mt-4 text-xs text-muted">{t`All times are Sri Lanka time.`}</p>
     </section>
   );
 }

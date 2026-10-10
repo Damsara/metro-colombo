@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from "react";
 
 const VARIANTS = {
-  outline: "border border-line bg-white",
+  outline: "border border-line bg-card",
   tinted: "border border-line bg-tint-50",
   soft: "bg-tint-100",
   plain: "bg-transparent",

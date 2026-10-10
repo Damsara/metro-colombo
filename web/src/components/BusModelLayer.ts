@@ -10,6 +10,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import busModelUrl from "../assets/bus.glb?url";
 import { BusMotion } from "../busMotion";
+import { palette } from "../theme";
 import { busKey, type LiveBus, type MapRoute, type Route } from "../types";
 
 // Colombo; the scene's local metres are measured from here.
@@ -25,7 +26,7 @@ const SELECTED_BUS_SCALE = 1.2;
 
 // Paint: the model's white and blue panels become Metro red, and every
 // surface is kept matte enough to read well under the map's flat light.
-const BUS_RED = 0xc5302a;
+const BUS_RED = parseInt(palette.bus.slice(1), 16);
 const RECOLOURED_MATERIALS = new Set(["white", "blue"]);
 const MIN_ROUGHNESS = 0.55;
 const MAX_METALNESS = 0.35;
@@ -42,7 +43,7 @@ const SUN_POSITION: [number, number, number] = [-100, 200, 100];
 // stretched to size; lifted a hair off the ground so they don't flicker
 // against it, with the shadow above the halo.
 const DISC_SEGMENTS = 32;
-const SHADOW_COLOR = 0x17202a;
+const SHADOW_COLOR = parseInt(palette.ink.slice(1), 16);
 const SHADOW_OPACITY = 0.16;
 const SHADOW_HEIGHT = 0.03;
 const SHADOW_SIZE: [number, number] = [1.65, 6.3]; // width × length

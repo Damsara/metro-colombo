@@ -21,7 +21,7 @@ export function Field({
     <label
       className={
         inline
-          ? `flex min-h-13 items-center justify-between gap-3 rounded-md border border-line bg-white px-3 py-2 text-md ${className}`
+          ? `flex min-h-13 items-center justify-between gap-3 rounded-md border border-line bg-card px-3 py-2 text-md ${className}`
           : `flex flex-col gap-2 ${className}`
       }
     >
@@ -50,7 +50,7 @@ export function Select({
   return (
     <span className={`relative block ${className}`}>
       <select
-        className="min-h-12 w-full appearance-none rounded-md border border-line bg-white py-3 pr-10 pl-3"
+        className="min-h-12 w-full appearance-none rounded-md border border-line bg-card py-3 pr-10 pl-3"
         {...props}
       />
       <ChevronDown

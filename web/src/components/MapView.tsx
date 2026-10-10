@@ -19,6 +19,7 @@ import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { i18n } from "../i18n";
 import { MAP_STATUS } from "../classNames";
+import { palette } from "../theme";
 import { BusModelLayer } from "./BusModelLayer";
 import { FollowBusPill } from "./FollowBusPill";
 import { Button } from "./ui/Button";
@@ -36,9 +37,8 @@ const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 const ROUTES = "metro-routes";
 const STOPS = "metro-stops";
 const STOP_HIT = "metro-stop-hit";
-// Matches --color-ink and --color-muted in styles.css.
-const STOP_COLOR = "#26221f";
-const WALK_COLOR = "#6b645d";
+const STOP_COLOR = palette.ink;
+const WALK_COLOR = palette.muted;
 const FALLBACK_ROUTE_COLOR = "#146c94";
 const FOLLOW_FOCUS = "bus-follow";
 const CAMERA_MS = 900;
@@ -223,7 +223,15 @@ function addTransitLayers(map: LibreMap): void {
       paint: {
         "line-color": ["get", "color"],
         "line-width": ["case", ["get", "highlight"], 6, 4],
-        "line-opacity": ["case", ["get", "dimmed"], 0.2, 0.88],
+        // The opened route stands out; the rest of the network steps back.
+        "line-opacity": [
+          "case",
+          ["get", "dimmed"],
+          0.2,
+          ["get", "highlight"],
+          1,
+          0.75,
+        ],
       },
     },
     firstLabel,
@@ -461,6 +469,7 @@ export default function MapView(props: MapViewProps) {
   const [warning, setWarning] = useState<Warning>(null);
   const [attempt, setAttempt] = useState(0);
 
+  const selectedBusRoute = selectedBus?.route_code ?? "";
   const routeData = useMemo<Lines>(
     () => ({
       type: "FeatureCollection",
@@ -471,9 +480,11 @@ export default function MapView(props: MapViewProps) {
             item.routeCode === route.code &&
             directionsMatch(item.directionId, route.directionId),
         );
-        const dimmed =
-          emphasizeRoutes.length > 0 &&
-          !emphasizeRoutes.some((item) => item.routeCode === route.code);
+        // A tracked bus quietens other routes too, without moving the camera
+        // to its route the way an opened route does.
+        const dimmed = emphasizeRoutes.length
+          ? !emphasizeRoutes.some((item) => item.routeCode === route.code)
+          : selectedBusRoute !== "" && route.code !== selectedBusRoute;
         return route.geometry.features.flatMap((feature) =>
           feature.geometry
             ? realLines(feature.geometry).map((geometry) => ({
@@ -490,7 +501,7 @@ export default function MapView(props: MapViewProps) {
         );
       }),
     }),
-    [routes, routeLock, emphasizeRoutes],
+    [routes, routeLock, emphasizeRoutes, selectedBusRoute],
   );
 
   const stopScene = useMemo(() => {
