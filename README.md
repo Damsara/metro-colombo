@@ -105,17 +105,32 @@ the catalogs.
 
 ## Configuration
 
-| Variable              | Default                              | Purpose                                                     |
-| --------------------- | ------------------------------------ | ----------------------------------------------------------- |
-| `METRO_REFRESH_TOKEN` | none (required)                      | upstream refresh token from `scripts/otp-login.mjs`         |
-| `AUTH_STATE_PATH`     | `.auth-state`                        | where the renewed refresh token is saved                    |
-| `EIMSKY_BASE`         | `https://metrobusapiprod.eimsky.com` | MetroBus backend                                            |
-| `LANKAMETRO_BASE`     | `https://lankametro.lk`              | route colours, landmarks, geometry fallback                 |
-| `HOST` / `PORT`       | `127.0.0.1` / `8788`                 | listen address; set `HOST=0.0.0.0` to accept other machines |
-| `WEB_DIST`            | `web/dist`                           | built UI served next to the API                             |
+| Variable                 | Default                              | Purpose                                                     |
+| ------------------------ | ------------------------------------ | ----------------------------------------------------------- |
+| `METRO_REFRESH_TOKEN`    | none (required)                      | upstream refresh token from `scripts/otp-login.mjs`         |
+| `AUTH_STATE_PATH`        | `.auth-state`                        | where the renewed refresh token is saved                    |
+| `EIMSKY_BASE`            | `https://metrobusapiprod.eimsky.com` | MetroBus backend                                            |
+| `LANKAMETRO_BASE`        | `https://lankametro.lk`              | route colours, landmarks, geometry fallback                 |
+| `HOST` / `PORT`          | `127.0.0.1` / `8788`                 | listen address; set `HOST=0.0.0.0` to accept other machines |
+| `WEB_DIST`               | `web/dist`                           | built UI served next to the API                             |
+| `VITE_GA_MEASUREMENT_ID` | unset (no analytics)                 | GA4 id baked into the UI at build time                      |
 
 `npm start` and `npm run dev` load `.env` when present; `.env.example` lists
 the variables.
+
+### Analytics
+
+Analytics are off unless the UI is built with `VITE_GA_MEASUREMENT_ID`
+(`VITE_GA_MEASUREMENT_ID=G-… npm --prefix web run build`, or
+`docker build --build-arg VITE_GA_MEASUREMENT_ID=G-… .`). With an id, the UI
+loads Google Analytics 4 and sends page views plus a few product events:
+trip searches and results, the next-day search, tracking a bus and its
+milestones, following a bus, opening a route, using your location, and
+changing language. Events carry route and stop codes and day offsets, never
+stop names, places, coordinates or anything typed. Visitors with Do Not Track
+on are not tracked. In the GA property, turn off Enhanced measurement's
+"page changes based on browser history events", since the app sends its own
+page views and its `?trip=1`-style flags aren't pages.
 
 ## API
 

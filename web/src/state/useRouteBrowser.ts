@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { resolveBusDirectionId, type Route } from "../types";
+import { track } from "../lib/analytics";
 import { useSearchFlag } from "../useSearchFlag";
 
 /** The route opened on the Bus routes tab, and which direction is showing. */
@@ -20,6 +21,7 @@ export function useRouteBrowser(routes: Route[]) {
       setOpenCode(code);
       setDirectionIndex(0);
       setDetailOpen(true);
+      track("open_route", { route: code });
     },
     [setDetailOpen],
   );

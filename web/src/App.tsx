@@ -19,6 +19,7 @@ import {
   useState,
 } from "react";
 import { useGeometry, useAllRouteGeometries, useRouteStops } from "./api";
+import { track } from "./lib/analytics";
 import { MAP_STATUS } from "./classNames";
 import { AppHeader } from "./components/AppHeader";
 import { HowToUse } from "./components/HowToUse";
@@ -170,6 +171,7 @@ function Home() {
   const handleBusSelect = useCallback(
     (bus: LiveBus | null) => {
       selectBus(bus);
+      if (bus) track("follow_bus", { route: routeCodeOf(bus) ?? "unknown" });
       if (!bus || tab !== "routes") return;
       const code = routeCodeOf(bus);
       if (code) showRouteOf(code, bus.direction_id);

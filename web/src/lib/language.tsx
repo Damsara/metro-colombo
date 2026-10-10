@@ -1,4 +1,5 @@
 import { I18nProvider } from "@lingui/react";
+import { track } from "./analytics";
 import {
   createContext,
   useCallback,
@@ -42,6 +43,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   });
 
   const setLanguage = useCallback((next: Language) => {
+    track("change_language", { language: next });
     i18n.activate(next);
     setLanguageState(next);
     try {

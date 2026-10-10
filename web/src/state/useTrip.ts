@@ -1,4 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
+import { daysAhead, track } from "../lib/analytics";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { distanceMeters, useJourney, type JourneyRequest } from "../api";
 import { distanceLabel } from "../i18n";
@@ -63,6 +64,19 @@ export function useTrip(stops: CatalogStop[]) {
   const [here, setHere] = useState<Position | null>(null);
   const [recentTrips, setRecentTrips] = useState(() => loadRecentTrips());
   const journey = useJourney(request);
+  // One results event per search, not per refetch.
+  const reported = useRef<string | null>(null);
+  useEffect(() => {
+    const plan = journey.data;
+    if (!plan || !request) return;
+    const key = `${request.from}:${request.to}:${request.date}`;
+    if (reported.current === key) return;
+    reported.current = key;
+    track("trip_results", {
+      options: plan.options.length,
+      days_ahead: daysAhead(request.date, colomboDate()),
+    });
+  }, [journey.data, request]);
   // Read when a location lookup finishes, after the closure that started it.
   const latest = useRef({ from, stops });
   useEffect(() => {
@@ -101,7 +115,11 @@ export function useTrip(stops: CatalogStop[]) {
   };
 
   const invalidSameStop = !!from && from.id === to?.id;
-  const search = (start: CatalogStop | null, end: CatalogStop | null) => {
+  const search = (
+    start: CatalogStop | null,
+    end: CatalogStop | null,
+    source: "form" | "recent" | "return" = "form",
+  ) => {
     if (journey.isFetching) return;
     if (!start || !end || start.id === end.id) return;
     // A tab left open overnight still holds yesterday's date.
@@ -113,6 +131,12 @@ export function useTrip(stops: CatalogStop[]) {
     setRequest({ from: start.id, to: end.id, date: day });
     setSelectedJourney(null);
     setTripOpen(true);
+    track("search_trip", {
+      from_stop: start.stop_code,
+      to_stop: end.stop_code,
+      days_ahead: daysAhead(day, colomboDate()),
+      source,
+    });
     const trips = addRecentTrip(recentTrips, {
       from: recentStop(start),
       to: recentStop(end),
@@ -125,7 +149,7 @@ export function useTrip(stops: CatalogStop[]) {
   const searchRecent = (trip: RecentTrip, reverse = false) => {
     const start = findStop(stops, reverse ? trip.to : trip.from);
     const end = findStop(stops, reverse ? trip.from : trip.to);
-    search(start ?? null, end ?? null);
+    search(start ?? null, end ?? null, reverse ? "return" : "recent");
   };
   const clearRecent = () => {
     setRecentTrips([]);
@@ -134,6 +158,7 @@ export function useTrip(stops: CatalogStop[]) {
   const searchNextDay = () => {
     if (!request) return;
     const next = nextDay(request.date);
+    track("search_next_day", { days_ahead: daysAhead(next, colomboDate()) });
     setDate(next);
     setRequest({ ...request, date: next });
     setSelectedJourney(null);
@@ -148,6 +173,7 @@ export function useTrip(stops: CatalogStop[]) {
   const locate = () => {
     if (!navigator.geolocation) {
       setLocationNote({ kind: "unsupported" });
+      track("use_location", { result: "unsupported" });
       return;
     }
     setLocationBusy(true);
@@ -165,10 +191,12 @@ export function useTrip(stops: CatalogStop[]) {
           setLocationNote({ kind: "nearest", ...nearest });
         }
         setLocationBusy(false);
+        track("use_location", { result: "found" });
       },
       () => {
         setLocationBusy(false);
         setLocationNote({ kind: "failed" });
+        track("use_location", { result: "failed" });
       },
       { timeout: 12000, maximumAge: 60000 },
     );

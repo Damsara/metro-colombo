@@ -18,6 +18,8 @@ WORKDIR /web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ ./
+# Optional: a GA4 measurement id (G-…) baked into the UI; empty keeps it off.
+ARG VITE_GA_MEASUREMENT_ID=
 RUN npm run build
 
 FROM node:${NODE_VERSION}-alpine

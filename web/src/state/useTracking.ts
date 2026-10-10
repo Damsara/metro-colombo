@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { track } from "../lib/analytics";
 import { useRouteStops } from "../api";
 import {
   advancePhase,
@@ -21,6 +22,12 @@ import {
   type Ride,
 } from "../types";
 import { useSearchFlag } from "../useSearchFlag";
+
+const MILESTONE = {
+  headOut: "head_out",
+  nextStop: "next_stop",
+  arrived: "arrived",
+} as const;
 
 // Often enough to notice a bus gone quiet soon after the minute is up.
 const CLOCK_TICK_MS = 5_000;
@@ -67,6 +74,7 @@ export function useTracking({
     (option: JourneyOption, ride: Ride, bus: LiveBus) => {
       setTarget({ option, ride, bus });
       setOn(true);
+      track("track_bus_start", { route: ride.route.code });
     },
     [setOn],
   );
@@ -145,12 +153,16 @@ export function useTracking({
     const next = advancePhase(phase, raw);
     if (next === phase) return;
     setPhase(next);
-    if (next === "headOut" || next === "nextStop" || next === "arrived")
+    if (next === "headOut" || next === "nextStop" || next === "arrived") {
       setAnnouncement(next);
+      track("track_bus_milestone", { milestone: MILESTONE[next] });
+    }
   }, [raw, lost, phase]);
   useEffect(() => {
-    if (lost) setAnnouncement("lost");
-    else setAnnouncement((current) => (current === "lost" ? null : current));
+    if (lost) {
+      setAnnouncement("lost");
+      track("track_bus_milestone", { milestone: "lost" });
+    } else setAnnouncement((current) => (current === "lost" ? null : current));
   }, [lost]);
 
   return {
