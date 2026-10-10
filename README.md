@@ -123,12 +123,16 @@ the variables.
 Analytics are off unless the UI is built with `VITE_GA_MEASUREMENT_ID`
 (`VITE_GA_MEASUREMENT_ID=G-… npm --prefix web run build`, or
 `docker build --build-arg VITE_GA_MEASUREMENT_ID=G-… .`). With an id, the UI
-loads Google Analytics 4 and sends page views plus a few product events:
+asks each visitor once, on first load, whether usage may be counted to help
+decide what to improve; "Allow" and "No thanks" are equal choices, the app
+works the same either way, and "Privacy choices" in the footer changes it
+later. Nothing is loaded from Google until a visitor allows it. Once allowed,
+the UI loads Google Analytics 4 and sends page views plus a few product events:
 trip searches and results, the next-day search, tracking a bus and its
 milestones, following a bus, opening a route, using your location, and
 changing language. Events carry route and stop codes and day offsets, never
 stop names, places, coordinates or anything typed. Visitors with Do Not Track
-on are not tracked. In the GA property, turn off Enhanced measurement's
+on are never asked or tracked. In the GA property, turn off Enhanced measurement's
 "page changes based on browser history events", since the app sends its own
 page views and its `?trip=1`-style flags aren't pages.
 

@@ -22,6 +22,7 @@ import { useGeometry, useAllRouteGeometries, useRouteStops } from "./api";
 import { track } from "./lib/analytics";
 import { MAP_STATUS } from "./classNames";
 import { AppHeader } from "./components/AppHeader";
+import { PrivacyChoicesLink } from "./components/ConsentPrompt";
 import { HowToUse } from "./components/HowToUse";
 import JourneyResults, { journeyKey } from "./components/JourneyResults";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
@@ -658,6 +659,7 @@ function Home() {
             API
           </Link>
         </span>
+        <PrivacyChoicesLink separated />
       </footer>
     </>
   );

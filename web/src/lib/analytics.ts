@@ -1,5 +1,6 @@
-// Google Analytics 4, only when a build sets VITE_GA_MEASUREMENT_ID. Events
-// carry route and stop codes, never names, places or coordinates.
+// Google Analytics 4, only when a build sets VITE_GA_MEASUREMENT_ID and the
+// visitor agrees (see consent.tsx). Events carry route and stop codes, never
+// names, places or coordinates.
 
 type Events = {
   search_trip: {
@@ -31,10 +32,18 @@ declare global {
 const MEASUREMENT_ID = /^G-[A-Z0-9]+$/;
 let enabled = false;
 
-/** Loads gtag.js for `id`, unless it's malformed or the visitor asked not to be tracked. */
+/** Whether this build can collect analytics at all: a valid id, and no Do Not Track. */
+export function analyticsAvailable(id: string | undefined): id is string {
+  return !!id && MEASUREMENT_ID.test(id) && navigator.doNotTrack !== "1";
+}
+
+/**
+ * Loads gtag.js for `id`. Call only after the visitor has agreed; returns
+ * false when the id is unusable or Do Not Track is on.
+ */
 export function initAnalytics(id: string | undefined): boolean {
-  if (enabled || !id || !MEASUREMENT_ID.test(id)) return false;
-  if (navigator.doNotTrack === "1") return false;
+  if (enabled || !analyticsAvailable(id)) return false;
+  (window as unknown as Record<string, unknown>)[`ga-disable-${id}`] = false;
   window.dataLayer = window.dataLayer ?? [];
   window.gtag = function gtag() {
     // gtag.js reads the arguments object, not an array.
@@ -49,6 +58,13 @@ export function initAnalytics(id: string | undefined): boolean {
   document.head.append(script);
   enabled = true;
   return true;
+}
+
+/** Stops sending anything, for a visitor who withdraws consent. */
+export function stopAnalytics(id: string | undefined): void {
+  if (id)
+    (window as unknown as Record<string, unknown>)[`ga-disable-${id}`] = true;
+  enabled = false;
 }
 
 let lastPath: string | null = null;

@@ -3,7 +3,9 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { ApiError } from "./api";
-import { initAnalytics, trackPage } from "./lib/analytics";
+import { ConsentPrompt } from "./components/ConsentPrompt";
+import { trackPage } from "./lib/analytics";
+import { ConsentProvider } from "./lib/consent";
 import { LanguageProvider } from "./lib/language";
 import { routeTree } from "./routeTree.gen";
 import "./styles.css";
@@ -20,11 +22,10 @@ const client = new QueryClient({
 
 const router = createRouter({ routeTree });
 
-if (initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID)) {
-  router.subscribe("onResolved", ({ toLocation }) =>
-    trackPage(toLocation.pathname),
-  );
-}
+// A no-op until the visitor allows analytics.
+router.subscribe("onResolved", ({ toLocation }) =>
+  trackPage(toLocation.pathname),
+);
 
 declare module "@tanstack/react-router" {
   interface Register {
@@ -35,9 +36,12 @@ declare module "@tanstack/react-router" {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <LanguageProvider>
-      <QueryClientProvider client={client}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
+      <ConsentProvider measurementId={import.meta.env.VITE_GA_MEASUREMENT_ID}>
+        <QueryClientProvider client={client}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+        <ConsentPrompt />
+      </ConsentProvider>
     </LanguageProvider>
   </React.StrictMode>,
 );
