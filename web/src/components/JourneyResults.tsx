@@ -5,7 +5,6 @@ import {
   ArrowRightLeft,
   CalendarPlus,
   BusFront,
-  CircleDashed,
   Check,
   ChevronDown,
   Clock3,
@@ -35,13 +34,7 @@ import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
 import { Notice } from "./ui/Notice";
-import {
-  colomboDate,
-  findLiveBus,
-  hasAssignedBus,
-  isOnRide,
-  stopName,
-} from "../types";
+import { colomboDate, findLiveBus, isOnRide, stopName } from "../types";
 import type {
   JourneyOption,
   JourneyPlan,
@@ -370,12 +363,6 @@ function RideLeg({
           />{" "}
           <strong>{towards(i18n, place(ride.end_location))}</strong>
         </p>
-        {!hasAssignedBus(ride) && (
-          <p className="mb-2 flex items-center gap-1.5 text-sm leading-relaxed text-muted">
-            <CircleDashed size={15} aria-hidden="true" />
-            {t`No bus assigned yet, so it can't be followed live.`}
-          </p>
-        )}
         {ride.bus?.registration_number && (
           <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <p className="text-sm leading-relaxed text-muted">
@@ -531,10 +518,6 @@ function JourneyCard({
     leg.kind === "ride" ? [leg.ride.route.code] : [],
   );
   const live = liveRide(option, liveBuses, now);
-  // A ride without a bus yet may still run, but can't be followed live.
-  const unassigned = option.legs.some(
-    (leg) => leg.kind === "ride" && !hasAssignedBus(leg.ride),
-  );
   const firstRide = option.legs.find((leg) => leg.kind === "ride");
   const liveEstimate =
     firstRide?.kind === "ride" && hasLiveEstimate(firstRide.ride.board);
@@ -557,7 +540,7 @@ function JourneyCard({
   const timeSource = liveEstimate ? t`Live estimate` : t`Scheduled`;
   return (
     <li
-      className={`overflow-hidden ${cardClass({ selected: isSelected, tentative: unassigned })}`}
+      className={`overflow-hidden ${cardClass({ selected: isSelected })}`}
       id={cardId}
     >
       <button
@@ -606,12 +589,6 @@ function JourneyCard({
               />
             ))}
           </span>
-          {unassigned && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-line-strong px-2 py-0.5 text-2xs font-semibold text-muted">
-              <CircleDashed size={12} aria-hidden="true" />
-              {t`No bus assigned yet`}
-            </span>
-          )}
           <span className="text-2xs text-muted">
             <Plural
               value={option.transfers}

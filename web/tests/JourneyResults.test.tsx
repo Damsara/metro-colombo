@@ -369,20 +369,3 @@ test("a live bus on the ride shows how far off it is and how full", () => {
   assert.match(unknown, /Bus live/);
   assert.doesNotMatch(unknown, /stops? away/);
 });
-
-test("a journey with no bus assigned yet is marked on the card and in its steps", () => {
-  const unassigned: JourneyOption = {
-    ...option,
-    legs: option.legs.map((leg) =>
-      leg.kind === "ride"
-        ? { ...leg, ride: { ...leg.ride, bus: undefined } }
-        : leg,
-    ),
-  };
-  const card = render(null, [], [unassigned]);
-  assert.match(card, /No bus assigned yet/);
-  assert.match(card, /border-dashed/);
-  const steps = render(unassigned, [], [unassigned]);
-  assert.match(steps, /can(&#x27;|')t be followed live/);
-  assert.doesNotMatch(render(null), /No bus assigned yet/);
-});

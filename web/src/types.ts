@@ -229,11 +229,6 @@ export function busDirection(
   return Number.isInteger(index) ? directions[index] : undefined;
 }
 
-/** Whether the operator has put a bus on this ride yet. */
-export function hasAssignedBus(ride: Ride): boolean {
-  return !!(ride.bus?.registration_number?.trim() || ride.bus?.id);
-}
-
 /** Resolve live-feed direction_id to a fare-service direction uuid. */
 export function resolveBusDirectionId(
   route: Route | undefined,
