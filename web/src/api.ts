@@ -102,6 +102,7 @@ export function useStopCatalog(routes: Route[]) {
                 ids: [stop.id],
                 routes: [route.code],
                 towards: destination ? [destination] : [],
+                services: [{ route: route.code, towards: destination }],
               });
               byName.set(name, sameName);
               return;
@@ -111,6 +112,16 @@ export function useStopCatalog(routes: Route[]) {
               existing.routes.push(route.code);
             if (destination && !existing.towards?.includes(destination))
               existing.towards?.push(destination);
+            if (
+              !existing.services?.some(
+                (item) =>
+                  item.route === route.code && item.towards === destination,
+              )
+            )
+              existing.services?.push({
+                route: route.code,
+                towards: destination,
+              });
           });
         }),
       );

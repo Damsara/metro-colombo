@@ -4,6 +4,7 @@ import { distanceMeters } from "../api";
 import { Plural, useLingui } from "@lingui/react/macro";
 import { towards } from "../i18n";
 import { usePlaceName } from "../lib/placeNames";
+import { secondaryStopName } from "../lib/stopCard";
 import { busKey, resolveBusDirectionId, stopName } from "../types";
 import type { CatalogStop, Language, LiveBus, Route, Stop } from "../types";
 import LiveBusList from "./LiveBusList";
@@ -121,7 +122,8 @@ export function RouteDetail({
   selectedBusId: string | null;
   onBusSelect: (bus: LiveBus | null) => void;
   selectedStopId: string | undefined;
-  onStopSelect: (stop: Stop) => void;
+  /** Null closes the selected stop; `keyboard` when picked without a pointer. */
+  onStopSelect: (stop: Stop | null, keyboard: boolean) => void;
   onBack: () => void;
   language: Language;
 }) {
@@ -241,48 +243,68 @@ export function RouteDetail({
         </Notice>
       )}
       <ol className="pl-3">
-        {ordered.flatMap((stop, index) => [
-          <li
-            key={stop.id}
-            className="relative flex items-center gap-4 not-last:before:absolute not-last:before:top-1/2 not-last:before:-bottom-1/2 not-last:before:-left-px not-last:before:w-0.5 not-last:before:bg-line"
-          >
-            <span
-              className="z-10 -ml-1.5 size-3 shrink-0 rounded-full border-2 bg-white"
-              style={{ borderColor: color }}
-            />
-            <button
-              type="button"
-              className="grid min-h-16 min-w-0 flex-1 grid-cols-[1fr_auto] border-b border-line py-4 text-left aria-pressed:bg-tint-100 hover-fine:bg-tint-50"
-              aria-pressed={selectedStopId === stop.id}
-              onClick={() => onStopSelect(stop)}
+        {ordered.flatMap((stop, index) => {
+          const selected = selectedStopId === stop.id;
+          const secondary = secondaryStopName(stop, language);
+          return [
+            <li
+              key={stop.id}
+              className="relative not-last:before:absolute not-last:before:top-1/2 not-last:before:-bottom-1/2 not-last:before:-left-px not-last:before:w-0.5 not-last:before:bg-line"
             >
-              <strong className="text-base font-semibold">
-                {stopName(stop, language)}
-              </strong>
-              <small className="col-start-1 mt-0.5 text-2xs text-muted">
-                {stop.stop_code}
-              </small>
-              <ChevronRight
-                className="col-start-2 row-[1/3] self-center text-faint"
-                size={17}
-              />
-            </button>
-          </li>,
-          ...(busesByStop.get(index) ?? []).map((bus) => {
-            const key = busKey(bus);
-            const selected = key !== "" && key === selectedBusId;
-            return (
-              <BusAtStop
-                key={`bus-${key || `${bus.lat}:${bus.lng}`}`}
-                bus={bus}
-                nearName={stopName(stop, language)}
-                color={color}
-                selected={selected}
-                onToggle={() => onBusSelect(selected ? null : bus)}
-              />
-            );
-          }),
-        ])}
+              {/* The whole row, dot included, opens the stop's card; tapping
+                  the open stop again closes it. */}
+              <button
+                type="button"
+                className="group relative -ml-3 flex min-h-16 w-[calc(100%+12px)] items-center gap-3.5 rounded-md py-3 pr-2 pl-1.5 text-left aria-pressed:bg-tint-100 hover-fine:not-aria-pressed:bg-tint-50"
+                aria-pressed={selected}
+                onClick={(event) =>
+                  onStopSelect(selected ? null : stop, event.detail === 0)
+                }
+              >
+                <span
+                  className="z-10 size-3 shrink-0 rounded-full border-2 bg-card group-aria-pressed:-mx-0.5 group-aria-pressed:size-4 group-aria-pressed:border-ink group-aria-pressed:bg-card group-aria-pressed:ring-3 group-aria-pressed:ring-paper"
+                  style={selected ? undefined : { borderColor: color }}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 flex-1">
+                  <strong className="block text-base leading-snug font-semibold">
+                    {stopName(stop, language)}
+                  </strong>
+                  {secondary && (
+                    <span
+                      lang={language === "en" ? "si" : "en"}
+                      className="block text-sm leading-snug text-muted"
+                    >
+                      {secondary}
+                    </span>
+                  )}
+                  <small className="mt-0.5 block text-2xs text-muted">
+                    {stop.stop_code}
+                  </small>
+                </span>
+                <ChevronRight
+                  className="shrink-0 text-faint group-aria-pressed:text-ink"
+                  size={17}
+                  aria-hidden="true"
+                />
+              </button>
+            </li>,
+            ...(busesByStop.get(index) ?? []).map((bus) => {
+              const key = busKey(bus);
+              const selected = key !== "" && key === selectedBusId;
+              return (
+                <BusAtStop
+                  key={`bus-${key || `${bus.lat}:${bus.lng}`}`}
+                  bus={bus}
+                  nearName={stopName(stop, language)}
+                  color={color}
+                  selected={selected}
+                  onToggle={() => onBusSelect(selected ? null : bus)}
+                />
+              );
+            }),
+          ];
+        })}
       </ol>
     </div>
   );

@@ -29,11 +29,18 @@ export interface Stop {
   longitude: number;
   sequence_number?: number;
 }
+/** A route calling at a stop, and where that direction's buses end up. */
+export interface StopService {
+  route: string;
+  towards?: string;
+}
 export interface CatalogStop extends Stop {
   /** Ids of every direction-specific stop merged into this entry. */
   ids: string[];
   routes: string[];
   towards?: string[];
+  /** Each route and direction calling here. */
+  services?: StopService[];
 }
 /** A landmark and the stop nearest to it. */
 export interface Place {
@@ -257,7 +264,8 @@ export interface MapViewProps {
   selectedBus: LiveBus | null;
   followBus: boolean;
   language: Language;
-  onStopSelect: (stop: Stop) => void;
+  /** A tapped stop, or null for a tap on the map away from any stop or bus. */
+  onStopSelect: (stop: Stop | null) => void;
   onBusSelect: (bus: LiveBus | null) => void;
   onFollowChange: (follow: boolean) => void;
   showLive: boolean;

@@ -82,9 +82,9 @@ test("opening a route shows it at half", () => {
   assert.equal(intentSnap(list, { ...list, routeCode: "100" }, "peek"), "half");
 });
 
-test("a picked stop drops the drawer so its card and the map show", () => {
-  assert.equal(intentSnap(form, { ...form, stopId: "s1" }, "full"), "peek");
-  assert.equal(intentSnap(form, { ...form, stopId: "s1" }, "half"), "peek");
+test("a picked stop sets the drawer to half for its card, with the map above", () => {
+  assert.equal(intentSnap(form, { ...form, stopId: "s1" }, "full"), "half");
+  assert.equal(intentSnap(form, { ...form, stopId: "s1" }, "peek"), "half");
 });
 
 test("tracking drops the drawer to the map, and leaving it brings results up", () => {
