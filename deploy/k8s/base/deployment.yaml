@@ -4,6 +4,16 @@ metadata:
   name: metro
 automountServiceAccountToken: false
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: metro-state
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 64Mi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,10 +22,7 @@ spec:
   replicas: 1
   revisionHistoryLimit: 5
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: metro
@@ -32,6 +39,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -44,6 +52,8 @@ spec:
           env:
             - name: NODE_OPTIONS
               value: --max-old-space-size=384
+            - name: AUTH_STATE_PATH
+              value: /data/auth-state
           envFrom:
             - secretRef:
                 name: metro-secrets
@@ -83,7 +93,12 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: state
+              mountPath: /data
       volumes:
         - name: tmp
           emptyDir:
             sizeLimit: 64Mi
+        - name: state
+          persistentVolumeClaim:
+            claimName: metro-state

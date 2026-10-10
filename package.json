@@ -2,6 +2,7 @@
   "name": "lmt-go-ui",
   "version": "1.0.0",
   "description": "Colombo bus trip planner and live map for Lanka Metro Transit, with an Effect v4 transit API",
+  "license": "MIT",
   "type": "module",
   "private": true,
   "engines": {

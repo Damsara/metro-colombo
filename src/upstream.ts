@@ -12,7 +12,8 @@ import {
   Redacted,
   Schema,
 } from "effect";
-import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/http";
+import { HttpClient, HttpClientResponse } from "effect/http";
+import { Auth } from "./auth.js";
 import { UpstreamConfig } from "./config.js";
 import * as S from "./schemas.js";
 
@@ -179,7 +180,7 @@ export class UpstreamApi extends Context.Service<
     Effect.gen(function* () {
       const config = yield* UpstreamConfig;
       const http = yield* HttpClient.HttpClient;
-      const auth = { authorization: `Bearer ${Redacted.value(config.token)}` };
+      const auth = yield* Auth;
       const fareApi = `${config.eimskyBase}/fare-service/api/v1`;
 
       const getJson = <A>(
@@ -216,10 +217,28 @@ export class UpstreamApi extends Context.Service<
           ),
         );
 
+      // Same as getJson but attaches the current auto-renewed bearer token.
+      const getAuthed = <A>(schema: Schema.Codec<A, unknown>, url: string) =>
+        Effect.gen(function* () {
+          const token = yield* auth.currentToken.pipe(
+            Effect.mapError(
+              (error) =>
+                new UpstreamError({
+                  message: error.message,
+                  status: 502,
+                  cause: error,
+                }),
+            ),
+          );
+          return yield* getJson(schema, url, {
+            authorization: `Bearer ${Redacted.value(token)}`,
+          });
+        });
+
       const fetchRoutes = Effect.gen(function* () {
         const [eimsky, lk] = yield* Effect.all(
           [
-            getJson(EimskyRoutesResponse, `${fareApi}/routes/geo`),
+            getAuthed(EimskyRoutesResponse, `${fareApi}/routes/geo`),
             getJson(
               LkRoutesResponse,
               `${config.lankametroBase}/api/routes`,
@@ -238,10 +257,9 @@ export class UpstreamApi extends Context.Service<
       });
 
       const fetchStops = (routeId: string, directionId: string) =>
-        getJson(
+        getAuthed(
           StopsResponse,
           `${fareApi}/routes/${encodeURIComponent(routeId)}/stops?${new URLSearchParams({ direction_id: directionId })}`,
-          auth,
         ).pipe(
           // Upstream names often arrive with stray spaces and newlines attached.
           Effect.map((r) =>
@@ -255,10 +273,9 @@ export class UpstreamApi extends Context.Service<
         );
 
       const fetchJourney = (from: string, to: string, date: string) =>
-        getJson(
+        getAuthed(
           JourneyResponse,
           `${fareApi}/journeys/plan?${new URLSearchParams({ from_stop_id: from, to_stop_id: to, date })}`,
-          auth,
         ).pipe(
           // `option_token` is for booking, which this API does not offer.
           Effect.map(({ data }) => ({
@@ -367,5 +384,5 @@ export class UpstreamApi extends Context.Service<
         geometry,
       });
     }),
-  ).pipe(Layer.provide(FetchHttpClient.layer));
+  );
 }

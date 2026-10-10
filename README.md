@@ -29,16 +29,16 @@ Not affiliated with Lanka Metro Transit, Smart Metro or the official LMT GO app.
 
 ## Quick start
 
-Requires Node.js **22.19+**.
+Requires Node.js **22.19+** and a phone number that can receive an SMS OTP
+from the LMT GO service.
 
 ```bash
 npm install
 npm --prefix web install
-npm --prefix web run build  # the API server also serves the built UI
-npm start                   # -> http://127.0.0.1:8788
+npm --prefix web run build             # the API server also serves the built UI
+node scripts/otp-login.mjs 0712345678  # one-time login; see "The token"
+npm start                              # -> http://127.0.0.1:8788
 ```
-
-No configuration is needed; see [the token](#the-token) for why.
 
 For frontend development, run the API with `npm run dev` and, in a second
 terminal, `npm --prefix web run dev` (http://localhost:5173). Vite forwards
@@ -47,26 +47,30 @@ Vite with `npm --prefix web run dev -- --host`.
 
 ### The token
 
-Stops, journeys and the live fleet feed need a bearer token; routes and
-geometry don't. The server has the token built in that the official tracker
-(`lmtgo.eimsky.com`) hardcodes in its public client bundle.
-`METRO_API_TOKEN` overrides it.
+The operator's API needs a signed-in account for everything this app uses:
+routes, stops, journeys and the live feed. The server signs in with one
+account on behalf of every visitor, so visitors never log in.
 
-That token is in the source on purpose. It isn't a secret: every visitor to
-the official tracker downloads it, it only reads public transit data, and
-revoking it would break the official tracker too. Security scanners will flag
-it as a hardcoded credential; that's expected.
+`scripts/otp-login.mjs` does the one-time sign-in. It sends an OTP to the
+phone number, asks for the code (and, for a new account, a name and NIC) and
+saves the resulting refresh token as `METRO_REFRESH_TOKEN` in `.env`. It
+never prints the token.
 
-- Use that token specifically: it's the one that receives the real fleet.
-  Other tokens may be accepted but get test data, a synthetic feed of made-up
-  bus positions. If the map shows buses that don't match reality, check
-  whether `METRO_API_TOKEN` is set.
-- If the operator rotates or expires it, stops, journeys and live buses stop
-  loading until the built-in token is updated or `METRO_API_TOKEN` is set.
-  `/api/health` still reports the upstream as reachable, because routes need
-  no token.
-- Every copy of this project shares the token, so the operator sees all of
-  that traffic under it, as it does for the official tracker.
+```bash
+node scripts/otp-login.mjs <phone>                  # 07XXXXXXXX, 94XXXXXXXXX or +94XXXXXXXXX
+node scripts/otp-login.mjs --token <refresh_token>  # save a refresh token you already have
+node scripts/otp-login.mjs --refresh                # swap the token in .env for a new one
+```
+
+From then on the server renews its own access. A refresh token works once, so
+after each renewal the server saves the new one to `.auth-state` (or
+`AUTH_STATE_PATH`) and reads it from there on restart, ignoring the spent one
+in `.env`. If the saved token stops working, for example after the server was
+off for more than about 7 days, run the login again: the server falls back to
+the new token in `.env`.
+
+Treat `.env` and `.auth-state` like a password: they act as the account that
+signed in. Both are gitignored.
 
 ## Checks
 
@@ -101,13 +105,14 @@ the catalogs.
 
 ## Configuration
 
-| Variable          | Default                              | Purpose                                                     |
-| ----------------- | ------------------------------------ | ----------------------------------------------------------- |
-| `METRO_API_TOKEN` | the tracker's public reader token    | upstream bearer token                                       |
-| `EIMSKY_BASE`     | `https://metrobusapiprod.eimsky.com` | MetroBus backend                                            |
-| `LANKAMETRO_BASE` | `https://lankametro.lk`              | route colours, landmarks, geometry fallback                 |
-| `HOST` / `PORT`   | `127.0.0.1` / `8788`                 | listen address; set `HOST=0.0.0.0` to accept other machines |
-| `WEB_DIST`        | `web/dist`                           | built UI served next to the API                             |
+| Variable              | Default                              | Purpose                                                     |
+| --------------------- | ------------------------------------ | ----------------------------------------------------------- |
+| `METRO_REFRESH_TOKEN` | none (required)                      | upstream refresh token from `scripts/otp-login.mjs`         |
+| `AUTH_STATE_PATH`     | `.auth-state`                        | where the renewed refresh token is saved                    |
+| `EIMSKY_BASE`         | `https://metrobusapiprod.eimsky.com` | MetroBus backend                                            |
+| `LANKAMETRO_BASE`     | `https://lankametro.lk`              | route colours, landmarks, geometry fallback                 |
+| `HOST` / `PORT`       | `127.0.0.1` / `8788`                 | listen address; set `HOST=0.0.0.0` to accept other machines |
+| `WEB_DIST`            | `web/dist`                           | built UI served next to the API                             |
 
 `npm start` and `npm run dev` load `.env` when present; `.env.example` lists
 the variables.
@@ -240,16 +245,20 @@ The server is a single process that serves the API and the built UI. The
 
 ```bash
 docker build -t metro .
-docker run -p 8788:8788 metro
+docker run -p 8788:8788 --env-file .env -v metro-state:/data metro
 ```
+
+The `/data` volume keeps the renewed token; without it, every new container
+starts from the token in `.env`, which is spent after the first run.
 
 `deploy/k8s/` has Kustomize manifests, with `example.com` placeholders for
 the image registry and hostname:
 
 - `base/` is the app itself: a namespace that enforces the restricted Pod
-  Security Standard, the Deployment, its Service and ServiceAccount, and a
-  NetworkPolicy that only lets in the ingress controller and only lets out DNS
-  and HTTPS to the public internet.
+  Security Standard, the Deployment, its Service and ServiceAccount, a small
+  PersistentVolumeClaim for the renewed token, and a NetworkPolicy that only
+  lets in the ingress controller and only lets out DNS and HTTPS to the public
+  internet.
 - `overlays/example/` adds an Ingress (Traefik with cert-manager) and pins the
   image tag. Copy it, set your image, tag and hostname, then:
 
@@ -264,14 +273,21 @@ the image registry and hostname:
 
 Things to know:
 
-- Run one replica. Each instance holds its own connection to the live feed
-  and its own caches; rollouts briefly run a second pod, so there's no gap.
+- After the first `kubectl apply`, create the token Secret from a `.env` made
+  by `scripts/otp-login.mjs` (never commit it), then restart the pod:
+
+  ```bash
+  kubectl -n metro create secret generic metro-secrets \
+    --from-literal=METRO_REFRESH_TOKEN="$(grep '^METRO_REFRESH_TOKEN=' .env | cut -d= -f2-)"
+  kubectl -n metro rollout restart deployment/metro
+  ```
+
+- Run one replica. Two pods would share one account and spend each other's
+  refresh tokens, so rollouts use `Recreate`: a few seconds of downtime.
 - The liveness probe only checks the port is open, because `/api/health`
   calls the upstream and would restart a healthy pod during an upstream
   slowdown. Readiness uses `/api/health`, which stays 200 while the API serves
   its stale cache.
-- To replace the built-in token, create the optional `metro-secrets` Secret
-  with a `METRO_API_TOKEN` key; never commit it.
 - The NetworkPolicy assumes the ingress controller runs in `kube-system` (as
   k3s's Traefik does) and needs a CNI that enforces policies. `preStop.sleep`
   needs Kubernetes 1.30 or newer.
@@ -283,10 +299,12 @@ src/                 Effect API server
   server.ts          routes, static UI hosting, entry point
   upstream.ts        UpstreamApi service: upstream clients + stale-on-error caches
   live-fleet.ts      LiveFleet service: persistent GPS feed connection
-  config.ts          environment configuration and the built-in token
+  auth.ts            Auth service: renews and saves the upstream token
+  config.ts          environment configuration
   params.ts          request parameter parsing
   schemas.ts         domain schemas
 tests/               API tests
+scripts/otp-login.mjs  one-time phone-OTP sign-in
 deploy/k8s/          Kustomize manifests: base, an example overlay, a Cloudflare Tunnel rule
 web/                 React + Vite UI (TanStack Router/Query, MapLibre, three.js, Tailwind CSS v4, Lingui)
   src/App.tsx        page layout: side panel and map
@@ -299,7 +317,6 @@ web/                 React + Vite UI (TanStack Router/Query, MapLibre, three.js,
   src/locales/       translation catalogs (English source, Sinhala, Tamil)
   src/styles.css     design tokens (colours, type scale, radii) and base styles
   tests/             frontend tests
-skill/               Python client for the same upstream APIs (agent skill)
 ```
 
 ## Caveats
@@ -309,3 +326,8 @@ skill/               Python client for the same upstream APIs (agent skill)
   distance is straight-line, not walking distance.
 - The basemap is OpenFreeMap's Positron style. Keep the OpenFreeMap,
   OpenMapTiles and OpenStreetMap attribution when hosting the UI.
+
+## License
+
+[MIT](LICENSE). Transit data belongs to its operators; the basemap is
+© OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors.

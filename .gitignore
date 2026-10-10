@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+.auth-state
 .DS_Store
 __pycache__/
 *.pyc

@@ -1,0 +1,168 @@
+#!/usr/bin/env node
+// Seed the LMT-GO refresh token into `.env` (gitignored). The API server
+// auto-renews from it, so this only needs to run once (or after ~7 days
+// offline, once the refresh token has expired).
+//
+// Usage:
+//   node scripts/otp-login.mjs <phone>               # full phone-OTP login
+//   node scripts/otp-login.mjs --refresh             # rotate the stored token
+//   node scripts/otp-login.mjs --token <refresh_token>  # set a token you have
+//
+// `<phone>` accepts `07XXXXXXXX`, `94XXXXXXXXX`, or `+94XXXXXXXXX`.
+
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { createInterface } from "node:readline";
+import { fileURLToPath } from "node:url";
+
+const BASE = process.env.EIMSKY_BASE ?? "https://metrobusapiprod.eimsky.com";
+const AUTH = `${BASE}/user-service/api/v1/auth`;
+const ENV_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "..", ".env");
+
+const fail = (message) => {
+  console.error(message);
+  process.exit(1);
+};
+
+function readEnv() {
+  return existsSync(ENV_PATH) ? readFileSync(ENV_PATH, "utf8") : "";
+}
+
+function envValue(name) {
+  const match = readEnv().match(new RegExp(`^${name}=(.*)$`, "m"));
+  return match ? match[1].trim() : undefined;
+}
+
+function upsertEnv(entries) {
+  let env = readEnv();
+  for (const [key, value] of Object.entries(entries)) {
+    const line = `${key}=${value}`;
+    env = new RegExp(`^${key}=`, "m").test(env)
+      ? env.replace(new RegExp(`^${key}=.*$`, "m"), line)
+      : `${env.trimEnd()}\n${line}\n`;
+  }
+  writeFileSync(ENV_PATH, env, { mode: 0o600 });
+}
+
+function normalizePhone(raw) {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("94") && digits.length === 11) return `+${digits}`;
+  if (digits.startsWith("0") && digits.length === 10)
+    return `+94${digits.slice(1)}`;
+  return undefined;
+}
+
+async function post(path, body, token) {
+  const headers = { "content-type": "application/json" };
+  if (token) headers.authorization = `Bearer ${token}`;
+  const res = await fetch(`${AUTH}${path}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body ?? {}),
+  });
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = null;
+  }
+  return { status: res.status, json, text };
+}
+
+function prompt(question) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolvePromise) =>
+    rl.question(question, (answer) => {
+      rl.close();
+      resolvePromise(answer.trim());
+    }),
+  );
+}
+
+function extractTokens(obj, found = {}) {
+  if (!obj || typeof obj !== "object") return found;
+  for (const key of [
+    "access_token",
+    "accessToken",
+    "refresh_token",
+    "refreshToken",
+  ]) {
+    if (typeof obj[key] === "string" && obj[key]) found[key] = obj[key];
+  }
+  for (const value of Object.values(obj)) extractTokens(value, found);
+  return found;
+}
+
+function persist(tokens) {
+  const refresh = tokens.refresh_token ?? tokens.refreshToken;
+  if (!refresh) fail("no refresh token in response");
+  upsertEnv({ METRO_REFRESH_TOKEN: refresh });
+  console.log("Wrote METRO_REFRESH_TOKEN to .env");
+}
+
+// --- refresh mode ---------------------------------------------------------
+if (process.argv.includes("--refresh")) {
+  const refreshToken = envValue("METRO_REFRESH_TOKEN");
+  if (!refreshToken) fail("No METRO_REFRESH_TOKEN in .env — log in first.");
+  const res = await post("/refresh", { refresh_token: refreshToken });
+  if (res.status >= 400) fail(`refresh failed (HTTP ${res.status})`);
+  persist(extractTokens(res.json));
+  process.exit(0);
+}
+
+// --- direct token mode ----------------------------------------------------
+const tokenIndex = process.argv.indexOf("--token");
+if (tokenIndex !== -1) {
+  const token = process.argv[tokenIndex + 1];
+  if (!token) fail("usage: node scripts/otp-login.mjs --token <refresh_token>");
+  upsertEnv({ METRO_REFRESH_TOKEN: token });
+  console.log("Wrote METRO_REFRESH_TOKEN to .env");
+  process.exit(0);
+}
+
+// --- full login flow ------------------------------------------------------
+const phone = normalizePhone(process.argv[2] ?? process.env.PHONE ?? "");
+if (!phone) {
+  fail("usage: node scripts/otp-login.mjs <phone>  (e.g. 0712345678)");
+}
+
+const check = await post("/customer/check-phone", { phone });
+if (check.status !== 200 || !check.json?.data) {
+  fail(`check-phone failed: ${check.text}`);
+}
+const { otp_reference, has_account } = check.json.data;
+console.log(
+  `OTP sent to ${phone}${has_account === false ? " (new account)" : ""}`,
+);
+
+const code = await prompt("Enter the OTP code: ");
+
+const verify = await post("/customer/verify-otp", {
+  otp_reference,
+  otp_code: code,
+});
+if (verify.status >= 400) fail(`verify-otp failed (HTTP ${verify.status})`);
+
+// New accounts: verify-otp returns a `verified_reference` (purpose: register);
+// `register` then creates the account and returns the tokens.
+let tokens = extractTokens(verify.json);
+if (verify.json?.data?.purpose === "register" && !tokens.access_token) {
+  console.log("\nNew account: registration required.");
+  const verified_reference =
+    verify.json.data.verified_reference ?? otp_reference;
+  const reg = await post("/customer/register", {
+    verified_reference,
+    first_name: await prompt("First name: "),
+    last_name: await prompt("Last name: "),
+    national_id: await prompt("National ID: "),
+  });
+  if (reg.status >= 400) fail(`registration failed (HTTP ${reg.status})`);
+  tokens = extractTokens(reg.json);
+}
+
+if (!tokens.refresh_token && !tokens.refreshToken) {
+  fail("no refresh token in response");
+}
+
+persist(tokens);

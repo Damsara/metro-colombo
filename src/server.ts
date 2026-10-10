@@ -1,6 +1,7 @@
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node";
 import { Clock, Effect, Layer, Schema } from "effect";
 import {
+  FetchHttpClient,
   HttpRouter,
   HttpServerRequest,
   HttpServerResponse,
@@ -8,6 +9,7 @@ import {
 } from "effect/http";
 import { createServer } from "node:http";
 import path from "node:path";
+import { Auth } from "./auth.js";
 import { ServerConfig } from "./config.js";
 import { LiveFleet } from "./live-fleet.js";
 import { directionMatches, isIsoDate, isStopUuid } from "./params.js";
@@ -243,6 +245,12 @@ const HttpLive = Layer.unwrap(
   }),
 );
 
+const App = LiveFleet.layer.pipe(
+  Layer.provideMerge(UpstreamApi.layer),
+  Layer.provideMerge(Auth.layer),
+  Layer.provideMerge(FetchHttpClient.layer),
+);
+
 const Main = HttpRouter.serve(
   Layer.mergeAll(
     ApiRoutes,
@@ -250,10 +258,7 @@ const Main = HttpRouter.serve(
     HttpRouter.cors({ allowedMethods: ["GET"] }),
   ),
 ).pipe(
-  Layer.provide([
-    LiveFleet.layer.pipe(Layer.provideMerge(UpstreamApi.layer)),
-    HttpLive,
-  ]),
+  Layer.provide([App, HttpLive]),
 );
 
 Layer.launch(Main).pipe(NodeRuntime.runMain);

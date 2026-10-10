@@ -24,7 +24,10 @@ FROM node:${NODE_VERSION}-alpine
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=8788 \
-    WEB_DIST=/app/web/dist
+    WEB_DIST=/app/web/dist \
+    AUTH_STATE_PATH=/data/auth-state
+RUN mkdir /data && chown node:node /data
+VOLUME /data
 WORKDIR /app
 COPY --from=api /app/package.json ./
 COPY --from=api /app/node_modules ./node_modules

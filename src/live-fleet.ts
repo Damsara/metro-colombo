@@ -10,6 +10,7 @@ import {
   Schedule,
 } from "effect";
 import { WebSocket } from "ws";
+import { Auth } from "./auth.js";
 import { UpstreamConfig } from "./config.js";
 import type * as S from "./schemas.js";
 import { UpstreamApi } from "./upstream.js";
@@ -111,13 +112,10 @@ export class LiveFleet extends Context.Service<
       const config = yield* UpstreamConfig;
       const clock = yield* Clock.Clock;
       const upstream = yield* UpstreamApi;
+      const auth = yield* Auth;
       const fixes = new Map<string, Fix>();
       let lastUpdate = 0;
       let connected = false;
-
-      const url = new URL("/ticketing-service/ws", config.eimskyBase);
-      url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-      url.searchParams.set("token", Redacted.value(config.token));
 
       // Returns whether the message carried position data.
       const onMessage = (
@@ -139,37 +137,50 @@ export class LiveFleet extends Context.Service<
       // whether any positions arrived. Only a session that actually delivered
       // data resets the reconnect backoff, so an upstream that keeps picking
       // up and hanging up on us isn't redialled in a tight loop.
-      const session = Effect.callback<never, LiveFeedClosed>((resume) => {
-        let receivedData = false;
-        let lastMessage = clock.currentTimeMillisUnsafe();
-        const socket = new WebSocket(url, {
-          headers: { origin: "https://lmtgo.eimsky.com" },
-          handshakeTimeout: 15_000,
-          maxPayload: 2 * 1024 * 1024,
-          followRedirects: false,
-        });
-        const watchdog = setInterval(() => {
-          if (
-            clock.currentTimeMillisUnsafe() - lastMessage >
-            Duration.toMillis(SILENT_AFTER)
-          ) {
+      const session = Effect.gen(function* () {
+        // Fetch a fresh token for this connection; a failure counts as a
+        // dropped session so the retry/backoff dials again later.
+        const token = yield* auth.currentToken.pipe(
+          Effect.catch(
+            () => Effect.fail(new LiveFeedClosed({ receivedData: false })),
+          ),
+        );
+        const url = new URL("/ticketing-service/ws", config.eimskyBase);
+        url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+        url.searchParams.set("token", Redacted.value(token));
+
+        yield* Effect.callback<never, LiveFeedClosed>((resume) => {
+          let receivedData = false;
+          let lastMessage = clock.currentTimeMillisUnsafe();
+          const socket = new WebSocket(url, {
+            headers: { origin: "https://lmtgo.eimsky.com" },
+            handshakeTimeout: 15_000,
+            maxPayload: 2 * 1024 * 1024,
+            followRedirects: false,
+          });
+          const watchdog = setInterval(() => {
+            if (
+              clock.currentTimeMillisUnsafe() - lastMessage >
+              Duration.toMillis(SILENT_AFTER)
+            ) {
+              socket.terminate();
+            }
+          }, WATCHDOG_EVERY_MS);
+          socket.on("message", (bytes, isBinary) => {
+            lastMessage = clock.currentTimeMillisUnsafe();
+            if (onMessage(bytes, isBinary)) receivedData = connected = true;
+          });
+          // 'close' always follows 'error'.
+          socket.on("error", () => {});
+          socket.on("close", () => {
+            clearInterval(watchdog);
+            connected = false;
+            resume(Effect.fail(new LiveFeedClosed({ receivedData })));
+          });
+          return Effect.sync(() => {
+            clearInterval(watchdog);
             socket.terminate();
-          }
-        }, WATCHDOG_EVERY_MS);
-        socket.on("message", (bytes, isBinary) => {
-          lastMessage = clock.currentTimeMillisUnsafe();
-          if (onMessage(bytes, isBinary)) receivedData = connected = true;
-        });
-        // 'close' always follows 'error'.
-        socket.on("error", () => {});
-        socket.on("close", () => {
-          clearInterval(watchdog);
-          connected = false;
-          resume(Effect.fail(new LiveFeedClosed({ receivedData })));
-        });
-        return Effect.sync(() => {
-          clearInterval(watchdog);
-          socket.terminate();
+          });
         });
       });
 

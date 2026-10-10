@@ -5,6 +5,7 @@
 .env
 .env.*
 !.env.example
+.auth-state
 .claude
 re
 skill
