@@ -82,7 +82,7 @@ const LEG_TEXT = "mb-1 text-base leading-relaxed";
 const LEG_META = "mb-1 text-sm leading-relaxed text-muted";
 const LEG_LIVE = "mb-1 text-sm leading-relaxed font-semibold text-brand";
 
-function journeyKey(option: JourneyOption): string {
+export function journeyKey(option: JourneyOption): string {
   return [
     option.departure_time,
     option.arrival_time,

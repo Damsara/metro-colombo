@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { Landmark, MapPin, Search, X } from "lucide-react";
 import type { I18n } from "@lingui/core";
 import { plural, t } from "@lingui/core/macro";
@@ -427,64 +428,68 @@ export default function StopPicker({
         </div>
       )}
 
-      {sheetOpen && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col bg-white pt-[env(safe-area-inset-top)]"
-          role="dialog"
-          aria-modal="true"
-          aria-label={label}
-        >
-          <header className="relative flex items-center border-b border-line px-3 pt-3 pb-2">
-            <IconButton
-              className="absolute top-2 right-2"
-              label={t`Close`}
-              onClick={closePicker}
-            >
-              <X size={22} aria-hidden="true" />
-            </IconButton>
-            <h2 className="flex-1 px-11 text-center text-xl font-semibold">
-              {label}
-            </h2>
-          </header>
-          <div className="mx-4 mt-3 flex items-center gap-2.5 rounded-md border border-line-strong bg-paper px-3.5 py-1 [&>svg]:text-muted">
-            <Search size={20} aria-hidden="true" />
-            <input
-              ref={sheetInputRef}
-              className="min-h-12 min-w-0 flex-1 bg-transparent text-lg font-semibold text-ink"
-              role="combobox"
-              type="search"
-              inputMode="search"
-              enterKeyHint="search"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              placeholder={placeholder}
-              value={displayValue}
-              aria-autocomplete="list"
-              aria-expanded="true"
-              aria-controls={listId}
-              aria-describedby={helpId}
-              aria-activedescendant={
-                activeStop ? `${listId}-${activeIndex}` : undefined
-              }
-              onChange={(event) => onInputChange(event.target.value)}
-              onKeyDown={onListKeyDown}
-            />
-          </div>
-          <p
-            id={helpId}
-            className={`mx-4 mt-2 rounded-md ${STATUS}`}
-            role="status"
-            aria-live="polite"
+      {/* In the body, so the phone drawer's transform can't trap it. */}
+      {sheetOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex flex-col bg-white pt-[env(safe-area-inset-top)]"
+            data-vaul-no-drag
+            role="dialog"
+            aria-modal="true"
+            aria-label={label}
           >
-            {help}
-          </p>
-          <div className="min-h-0 flex-1 overflow-hidden px-2 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            {list(true)}
-          </div>
-        </div>
-      )}
+            <header className="relative flex items-center border-b border-line px-3 pt-3 pb-2">
+              <IconButton
+                className="absolute top-2 right-2"
+                label={t`Close`}
+                onClick={closePicker}
+              >
+                <X size={22} aria-hidden="true" />
+              </IconButton>
+              <h2 className="flex-1 px-11 text-center text-xl font-semibold">
+                {label}
+              </h2>
+            </header>
+            <div className="mx-4 mt-3 flex items-center gap-2.5 rounded-md border border-line-strong bg-paper px-3.5 py-1 [&>svg]:text-muted">
+              <Search size={20} aria-hidden="true" />
+              <input
+                ref={sheetInputRef}
+                className="min-h-12 min-w-0 flex-1 bg-transparent text-lg font-semibold text-ink"
+                role="combobox"
+                type="search"
+                inputMode="search"
+                enterKeyHint="search"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                placeholder={placeholder}
+                value={displayValue}
+                aria-autocomplete="list"
+                aria-expanded="true"
+                aria-controls={listId}
+                aria-describedby={helpId}
+                aria-activedescendant={
+                  activeStop ? `${listId}-${activeIndex}` : undefined
+                }
+                onChange={(event) => onInputChange(event.target.value)}
+                onKeyDown={onListKeyDown}
+              />
+            </div>
+            <p
+              id={helpId}
+              className={`mx-4 mt-2 rounded-md ${STATUS}`}
+              role="status"
+              aria-live="polite"
+            >
+              {help}
+            </p>
+            <div className="min-h-0 flex-1 overflow-hidden px-2 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              {list(true)}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

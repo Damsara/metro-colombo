@@ -1,21 +1,35 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { resolveBusDirectionId, type Route } from "../types";
+import { useSearchFlag } from "../useSearchFlag";
 
 /** The route opened on the Bus routes tab, and which direction is showing. */
 export function useRouteBrowser(routes: Route[]) {
-  const [routeCode, setRouteCode] = useState<string | null>(null);
+  const [openCode, setOpenCode] = useState<string | null>(null);
   const [directionIndex, setDirectionIndex] = useState(0);
+  // In the URL, so the Back button returns from a route to the list.
+  const [detailOpen, setDetailOpen] = useSearchFlag("route");
+  const routeCode = detailOpen ? openCode : null;
 
-  const open = useCallback((code: string) => {
-    setRouteCode(code);
-    setDirectionIndex(0);
-  }, []);
-  const close = useCallback(() => setRouteCode(null), []);
+  // A reload forgets which route was open, so it shows the list.
+  useEffect(() => {
+    if (detailOpen && !openCode) setDetailOpen(false);
+  }, [detailOpen, openCode, setDetailOpen]);
+
+  const open = useCallback(
+    (code: string) => {
+      setOpenCode(code);
+      setDirectionIndex(0);
+      setDetailOpen(true);
+    },
+    [setDetailOpen],
+  );
+  const close = useCallback(() => setDetailOpen(false), [setDetailOpen]);
 
   // Open the route a bus is on, turned to the direction it's heading.
   const showRouteOf = useCallback(
     (code: string, busDirection: string | undefined) => {
-      setRouteCode(code);
+      setOpenCode(code);
+      setDetailOpen(true);
       const route = routes.find((item) => item.code === code);
       const directionId = resolveBusDirectionId(route, busDirection);
       const index = route?.directions.findIndex(
@@ -23,7 +37,7 @@ export function useRouteBrowser(routes: Route[]) {
       );
       if (index !== undefined && index >= 0) setDirectionIndex(index);
     },
-    [routes],
+    [routes, setDetailOpen],
   );
 
   return {

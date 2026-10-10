@@ -13,13 +13,11 @@ import { IconButton } from "./ui/IconButton";
 export function FollowBusPill({
   bus,
   following,
-  immersive,
   onFollow,
   onRelease,
 }: {
   bus: LiveBus;
   following: boolean;
-  immersive: boolean;
   onFollow: () => void;
   onRelease: () => void;
 }) {
@@ -31,11 +29,8 @@ export function FollowBusPill({
 
   return (
     <div
-      className={`absolute z-10 flex items-center gap-3 bg-card py-2 pr-2 pl-3.5 text-ink shadow-float ${
-        immersive
-          ? "inset-x-3 top-[calc(56px+env(safe-area-inset-top))] rounded-lg"
-          : "top-3.5 left-1/2 max-w-[68%] -translate-x-1/2 rounded-2xl max-md:top-auto max-md:bottom-50 max-md:max-w-[calc(100%-32px)]"
-      }`}
+      // On phones it rides just above the drawer.
+      className="absolute top-3.5 left-1/2 z-10 flex max-w-[68%] -translate-x-1/2 items-center gap-3 rounded-2xl bg-card py-2 pr-2 pl-3.5 text-ink shadow-float max-md:top-auto max-md:bottom-[calc(var(--drawer-inset,0px)+12px)] max-md:w-[calc(100%-24px)] max-md:max-w-none"
       role="group"
       aria-label={t`Tracked bus`}
     >

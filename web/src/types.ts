@@ -262,8 +262,11 @@ export interface MapViewProps {
   onFollowChange: (follow: boolean) => void;
   showLive: boolean;
   onShowLiveChange: (show: boolean) => void;
-  /** Full-screen phone map — adjusts padding and hides redundant HUD chrome. */
-  immersive?: boolean;
+  /**
+   * On phones, how much of the map the header (top) and the drawer (bottom)
+   * cover, in pixels, so framing and following keep clear of them.
+   */
+  insets?: { top: number; bottom: number };
 }
 
 export function stopName(stop: Stop, language: Language): string {

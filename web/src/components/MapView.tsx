@@ -43,8 +43,6 @@ const FALLBACK_ROUTE_COLOR = "#146c94";
 const FOLLOW_FOCUS = "bus-follow";
 const CAMERA_MS = 900;
 const FOLLOW_MIN_ZOOM = 15;
-// On the phone map the followed bus sits this many pixels above centre.
-const FOLLOW_OFFSET_PX = 56;
 // Basemap sources whose errors mean the tile provider couldn't be reached.
 const TILE_SOURCES: unknown[] = ["openmaptiles", "ne2_shaded"];
 type Line = LineString | MultiLineString;
@@ -59,11 +57,23 @@ type Scene = {
 const NO_ROUTES: RouteRef[] = [];
 type Warning = "tiles" | "map" | "location" | "permission" | null;
 
-// Keeps fitted content clear of the caption, legend and control column.
-function viewportPadding(immersive: boolean): maplibregl.PaddingOptions {
-  return immersive
-    ? { top: 64, bottom: 100, left: 40, right: 76 }
-    : { top: 140, bottom: 110, left: 60, right: 80 };
+type Insets = MapViewProps["insets"];
+
+// Keeps fitted content clear of the caption, legend and control column, or
+// on phones of the header, the drawer and the control column.
+function viewportPadding(insets: Insets): maplibregl.PaddingOptions {
+  if (!insets) return { top: 140, bottom: 110, left: 60, right: 80 };
+  return {
+    top: insets.top + 24,
+    bottom: insets.bottom + 32,
+    left: 40,
+    right: 72,
+  };
+}
+
+/** How far below the visible map's centre the screen's centre sits. */
+function followShift(insets: Insets): number {
+  return insets ? (insets.bottom - insets.top) / 2 : 0;
 }
 
 function coordinatesValid(position: Position): boolean {
@@ -450,7 +460,7 @@ export default function MapView(props: MapViewProps) {
     onBusSelect,
     onFollowChange,
     showLive,
-    immersive = false,
+    insets,
     routeLock = null,
     emphasizeRoutes = NO_ROUTES,
   } = props;
@@ -463,6 +473,8 @@ export default function MapView(props: MapViewProps) {
   const ready = useRef(false);
   const appliedScene = useRef<Scene | null>(null);
   const appliedFocus = useRef<string | null>(null);
+  // Whether the user has moved the map since it was last framed.
+  const userMoved = useRef(false);
   const [status, setStatus] = useState<"loading" | "ready" | "unavailable">(
     "loading",
   );
@@ -633,8 +645,9 @@ export default function MapView(props: MapViewProps) {
       bounds.extend([position[0], position[1]]),
     );
     const single = next.coordinates.length === 1;
+    userMoved.current = false;
     map.fitBounds(bounds, {
-      padding: viewportPadding(latest.current.props.immersive ?? false),
+      padding: viewportPadding(latest.current.props.insets),
       maxZoom: single ? 16 : 14,
       // MapLibre skips the animation when the user prefers reduced motion.
       duration: firstView ? 0 : CAMERA_MS,
@@ -714,6 +727,11 @@ export default function MapView(props: MapViewProps) {
           );
       });
       labelControls(activeMap);
+      activeMap.on("movestart", (event) => {
+        // Gestures carry the event that started them; our own camera moves don't.
+        if ("originalEvent" in event && event.originalEvent)
+          userMoved.current = true;
+      });
       activeMap.on("error", (event) => {
         if (disposed) return;
         if (/webgl|context lost/i.test(event.error.message)) markUnavailable();
@@ -833,6 +851,19 @@ export default function MapView(props: MapViewProps) {
     }
   }, [scene, focus, applyFocus]);
 
+  // When the phone drawer settles at a new height, frame the view again above
+  // it, unless the user has moved the map since.
+  const insetTop = insets?.top ?? 0;
+  const insetBottom = insets?.bottom ?? 0;
+  useEffect(() => {
+    const map = mapRef.current;
+    const applied = appliedFocus.current;
+    if (!map || !ready.current || userMoved.current) return;
+    if (applied === null || applied === FOLLOW_FOCUS) return;
+    appliedFocus.current = "";
+    applyFocus(map, latest.current.focus);
+  }, [insetTop, insetBottom, applyFocus]);
+
   useEffect(() => {
     if (ready.current) syncBuses();
   }, [buses, showLive, routes, routeCatalog, syncBuses]);
@@ -880,19 +911,18 @@ export default function MapView(props: MapViewProps) {
             zoom: firstGlide
               ? Math.max(map.getZoom(), FOLLOW_MIN_ZOOM)
               : map.getZoom(),
-            // On the phone map, keep the bus above the bottom toolbar.
-            offset: immersive ? [0, -FOLLOW_OFFSET_PX] : [0, 0],
+            // On phones, keep the bus in the map left between header and drawer.
+            offset: [0, -followShift(latest.current.props.insets)],
             duration: firstGlide ? CAMERA_MS : CAMERA_MS / 2,
           });
           firstGlide = false;
         } else if (phase === "tracking" && map.isMoving()) {
           phase = "start";
         } else if (phase === "tracking") {
-          const center = immersive
+          const shift = followShift(latest.current.props.insets);
+          const center = shift
             ? map.unproject(
-                map
-                  .project(position)
-                  .add(new maplibregl.Point(0, FOLLOW_OFFSET_PX)),
+                map.project(position).add(new maplibregl.Point(0, shift)),
               )
             : position;
           map.jumpTo({ center });
@@ -909,7 +939,7 @@ export default function MapView(props: MapViewProps) {
       map.touchZoomRotate.disable();
       map.touchZoomRotate.enable();
     };
-  }, [following, selectedBusKey, immersive, status]);
+  }, [following, selectedBusKey, status]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -973,7 +1003,6 @@ export default function MapView(props: MapViewProps) {
           <FollowBusPill
             bus={selectedBus}
             following={followBus}
-            immersive={immersive}
             onFollow={() => onFollowChange(true)}
             onRelease={() => onBusSelect(null)}
           />
@@ -1010,11 +1039,7 @@ export default function MapView(props: MapViewProps) {
         <Notice
           tone="warning"
           icon={<AlertTriangle aria-hidden="true" size={20} />}
-          className={`absolute max-w-88 text-xs ${
-            immersive
-              ? "inset-x-3 top-[calc(56px+env(safe-area-inset-top))] max-w-none"
-              : "top-31 left-7.5 max-md:top-20 max-md:right-16 max-md:left-4 max-md:max-w-none"
-          }`}
+          className="absolute top-31 left-7.5 max-w-88 text-xs max-md:top-[calc(var(--header-height,60px)+8px)] max-md:right-16 max-md:left-3 max-md:max-w-none"
           action={
             (warning === "tiles" || warning === "map") && (
               <Button
