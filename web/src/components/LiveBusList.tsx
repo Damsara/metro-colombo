@@ -52,12 +52,12 @@ export default function LiveBusList({
 
   return (
     <section aria-label={t`Live buses on this route`}>
-      <div className="mb-2 flex items-center gap-2 text-live">
-        <BusFront size={15} aria-hidden="true" />
+      <div className="mb-2 flex items-center gap-2 text-ink">
+        <BusFront className="text-live" size={15} aria-hidden="true" />
         <strong className="flex-1 text-sm font-bold">
           {t`Live on this direction`}
         </strong>
-        <Badge tone="live">{filtered.length}</Badge>
+        <Badge>{filtered.length}</Badge>
       </div>
 
       {unavailable ? (
@@ -71,7 +71,7 @@ export default function LiveBusList({
               {t`None heading this way right now · ${elsewhere} on the other direction`}{" "}
               <Button
                 variant="link"
-                className="text-green"
+                className="text-ink"
                 onClick={onShowOtherDirection}
               >
                 {t`Show that direction`}
@@ -91,7 +91,7 @@ export default function LiveBusList({
               <li key={key || `${bus.lat}:${bus.lng}`}>
                 <button
                   type="button"
-                  className="inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border border-line bg-white px-3 text-sm text-ink aria-pressed:border-green aria-pressed:bg-tint-100 aria-pressed:ring-1 aria-pressed:ring-green aria-pressed:ring-inset hover-fine:not-aria-pressed:bg-tint-50"
+                  className="inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border border-line bg-white px-3 text-sm text-ink aria-pressed:border-brand aria-pressed:bg-tint-100 aria-pressed:ring-1 aria-pressed:ring-brand aria-pressed:ring-inset hover-fine:not-aria-pressed:bg-tint-50"
                   aria-pressed={isSelected}
                   onClick={() => onBusSelect(isSelected ? null : bus)}
                 >

@@ -4,11 +4,11 @@ type ButtonVariant = "primary" | "secondary" | "neutral" | "quiet" | "link";
 type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "border border-green bg-green text-white",
-  secondary: "border border-green bg-white text-green",
+  primary: "border border-brand bg-brand text-white",
+  secondary: "border border-line-strong bg-white text-ink",
   neutral: "border border-line bg-white text-ink",
   // Text-only actions inside panels, e.g. "Use my location".
-  quiet: "text-green",
+  quiet: "text-ink",
   // Inline actions inside a sentence or notice.
   link: "min-h-6 font-semibold text-inherit underline",
 };
@@ -49,7 +49,12 @@ export function buttonClass({
     align === "start"
       ? "justify-start [&>svg:last-child]:ml-auto"
       : "justify-center",
-    "disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-progress aria-disabled:opacity-50",
+    "disabled:cursor-not-allowed aria-disabled:cursor-progress aria-disabled:opacity-50",
+    // A disabled main action turns grey rather than a faded red, which reads
+    // as an error.
+    variant === "primary"
+      ? "disabled:border-line-strong disabled:bg-tint-200 disabled:text-muted"
+      : "disabled:opacity-50",
     VARIANTS[variant],
     shape,
     block ? "w-full" : "",

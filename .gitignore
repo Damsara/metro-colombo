@@ -10,3 +10,6 @@ skill/**/.venv/
 # Local research notes
 re/
 *.tsbuildinfo
+
+# Brainstorming mockups
+.superpowers/

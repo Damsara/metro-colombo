@@ -1,6 +1,6 @@
 // Tailwind class lists shared by more than one component.
 
-export const HEADER_LINK = "text-md font-semibold whitespace-nowrap text-green";
+export const HEADER_LINK = "text-md font-semibold whitespace-nowrap text-ink";
 
 /** Readable long-form text. Shared with the not-found page. */
 export const DOCS_MAIN =

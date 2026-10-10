@@ -27,7 +27,7 @@ export function LanguageSwitcher() {
             lang={option.value}
             aria-pressed={active}
             onClick={() => setLanguage(option.value)}
-            className="relative rounded-full px-2.5 py-1.5 text-xs leading-none font-semibold text-muted transition-colors after:absolute after:inset-x-0 after:-inset-y-2.5 hover:not-aria-pressed:text-ink aria-pressed:bg-green aria-pressed:text-white"
+            className="relative rounded-full px-2.5 py-1.5 text-xs leading-none font-semibold text-muted transition-colors after:absolute after:inset-x-0 after:-inset-y-2.5 hover:not-aria-pressed:text-ink aria-pressed:bg-ink aria-pressed:text-white"
           >
             {option.label}
           </button>

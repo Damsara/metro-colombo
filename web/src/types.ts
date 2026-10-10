@@ -123,10 +123,14 @@ export function isOnRide(bus: LiveBus, ride: Ride, now: number): boolean {
   return true;
 }
 
+/** How crowded a bus feels: roomy, filling up or crowded. */
+export type Crowding = "roomy" | "filling" | "crowded";
+
 interface Occupancy {
   current: number;
   total: number;
   percent: number;
+  crowding: Crowding;
 }
 
 export function occupancy(bus: LiveBus): Occupancy | null {
@@ -140,11 +144,12 @@ export function occupancy(bus: LiveBus): Occupancy | null {
     total <= 0
   )
     return null;
-  return {
-    current,
-    total,
-    percent: Math.min(1, Math.max(0, current / total)),
-  };
+  const percent = Math.min(1, Math.max(0, current / total));
+  // Total capacity counts standing room, so "filling up" starts around when
+  // the seats run out.
+  const crowding =
+    percent >= 0.85 ? "crowded" : percent >= 0.55 ? "filling" : "roomy";
+  return { current, total, percent, crowding };
 }
 export interface LiveFeed {
   success: boolean;
@@ -209,25 +214,27 @@ export interface MapRoute {
   color: string;
   geometry: RouteGeometry;
 }
+/** The direction a live bus reports, or undefined when it doesn't say. */
+export function busDirection(
+  route: Route | undefined,
+  raw?: string,
+): Direction | undefined {
+  const directions = route?.directions ?? [];
+  if (!raw) return undefined;
+  const match = directions.find((item) => item.id === raw);
+  if (match) return match;
+  if (raw.toLowerCase() === "forward") return directions[0];
+  if (raw.toLowerCase() === "reverse") return directions[1];
+  const index = Number(raw);
+  return Number.isInteger(index) ? directions[index] : undefined;
+}
+
 /** Resolve live-feed direction_id to a fare-service direction uuid. */
 export function resolveBusDirectionId(
   route: Route | undefined,
   raw?: string,
 ): string | undefined {
-  if (!route?.directions.length) return undefined;
-  const directions = route.directions;
-  if (raw) {
-    const match = directions.find((item) => item.id === raw);
-    if (match) return match.id;
-    if (raw === "0" || raw.toLowerCase() === "forward")
-      return directions[0]?.id;
-    if (raw === "1" || raw.toLowerCase() === "reverse")
-      return directions[1]?.id;
-    const index = Number(raw);
-    if (Number.isInteger(index) && directions[index])
-      return directions[index].id;
-  }
-  return directions[0]?.id;
+  return (busDirection(route, raw) ?? route?.directions[0])?.id;
 }
 export interface RouteRef {
   routeCode: string;

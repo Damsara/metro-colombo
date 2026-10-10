@@ -1,14 +1,14 @@
 import type { ReactNode } from "react";
 
 const TONES = {
-  green: "bg-tint-100 text-green",
+  neutral: "bg-tint-100 text-ink",
   live: "bg-live-50 text-live",
   warning: "bg-warning-50 text-warning",
   danger: "bg-danger-50 text-danger",
 };
 
 export function Badge({
-  tone = "green",
+  tone = "neutral",
   className = "",
   children,
 }: {

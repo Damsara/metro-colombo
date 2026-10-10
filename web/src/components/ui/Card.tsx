@@ -4,5 +4,5 @@
  * items and plain boxes.
  */
 export function cardClass({ selected = false }: { selected?: boolean } = {}) {
-  return `rounded-lg border bg-white ${selected ? "border-green ring-1 ring-green" : "border-line"}`;
+  return `rounded-lg border bg-white ${selected ? "border-ink ring-1 ring-ink" : "border-line"}`;
 }

@@ -1,4 +1,4 @@
-import { useLingui } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -43,6 +43,9 @@ import { useMapLayers } from "./state/useMapLayers";
 import { useRouteBrowser } from "./state/useRouteBrowser";
 import { useTrip } from "./state/useTrip";
 import type { CatalogStop, JourneyOption, LiveBus, Stop } from "./types";
+
+const FOOTER_LINK =
+  "font-semibold underline underline-offset-2 hover-fine:text-ink";
 import { stopName } from "./types";
 import { useSearchFlag } from "./useSearchFlag";
 const MapView = lazy(() => import("./components/MapView"));
@@ -423,7 +426,17 @@ like to go?`}
               </Button>
             </div>
             <footer className="min-h-11 border-t border-line px-4 pt-2.5 pb-[calc(10px+env(safe-area-inset-bottom))] text-center text-2xs leading-normal text-muted">
-              {t`Not affiliated with Lanka Metro Transit or the official LMT GO app.`}
+              <Trans>
+                Not affiliated with{" "}
+                <a className={FOOTER_LINK} href="https://lankametro.lk">
+                  Lanka Metro Transit
+                </a>{" "}
+                or the official{" "}
+                <a className={FOOTER_LINK} href="https://lmtgo.eimsky.com">
+                  LMT GO app
+                </a>
+                .
+              </Trans>
             </footer>
           </section>
           <section

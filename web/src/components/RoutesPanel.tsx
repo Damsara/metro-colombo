@@ -72,7 +72,7 @@ export function RouteList({
                     <Plural value={count} one="# stop" other="# stops" />
                   )}
                   {live > 0 && (
-                    <Badge tone="live">
+                    <Badge>
                       <span
                         className="mr-1 size-1.5 rounded-full bg-live"
                         aria-hidden="true"
@@ -175,9 +175,9 @@ export function RouteDetail({
             {route.name}
           </strong>
           {!liveUnavailable && (
-            <span className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-live">
+            <span className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-ink">
               <span
-                className={`inline-block size-2 shrink-0 rounded-full ${live > 0 ? "bg-green" : "bg-faint"}`}
+                className={`inline-block size-2 shrink-0 rounded-full ${live > 0 ? "bg-brand" : "bg-faint"}`}
               />
               {`${live} ${t`live`}`}
             </span>
@@ -252,7 +252,7 @@ export function RouteDetail({
             />
             <button
               type="button"
-              className="grid min-h-16 min-w-0 flex-1 grid-cols-[1fr_auto] border-b border-line py-4 text-left aria-pressed:text-green hover-fine:bg-tint-50 hover-fine:text-green"
+              className="grid min-h-16 min-w-0 flex-1 grid-cols-[1fr_auto] border-b border-line py-4 text-left aria-pressed:bg-tint-100 hover-fine:bg-tint-50"
               aria-pressed={selectedStopId === stop.id}
               onClick={() => onStopSelect(stop)}
             >
@@ -316,7 +316,7 @@ function BusAtStop({
         type="button"
         aria-pressed={selected}
         onClick={onToggle}
-        className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-md border border-line bg-white px-3 text-left text-sm aria-pressed:border-green aria-pressed:bg-tint-100 hover-fine:not-aria-pressed:bg-tint-50"
+        className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-md border border-line bg-white px-3 text-left text-sm aria-pressed:border-brand aria-pressed:bg-tint-100 hover-fine:not-aria-pressed:bg-tint-50"
       >
         <span className="min-w-0 flex-1 truncate">
           <strong className="font-semibold">
@@ -325,7 +325,7 @@ function BusAtStop({
           <span className="text-muted">{t`near ${nearName}`}</span>
         </span>
         <OccupancyBadge bus={bus} />
-        <span className="text-2xs font-semibold text-green">
+        <span className="text-2xs font-semibold text-brand">
           {selected ? t`On map` : t`Follow`}
         </span>
       </button>

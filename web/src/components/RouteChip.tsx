@@ -17,7 +17,7 @@ export function RouteChip({
   return (
     <span
       className={`inline-flex items-center justify-center rounded-sm font-bold whitespace-nowrap text-white ${SIZES[size]}`}
-      style={{ background: color || "var(--color-green)" }}
+      style={{ background: color || "var(--color-brand)" }}
     >
       {code}
     </span>

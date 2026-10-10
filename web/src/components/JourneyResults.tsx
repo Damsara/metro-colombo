@@ -65,10 +65,10 @@ const STATE = "mt-5";
 const LEG =
   "relative flex gap-3 pb-5 not-last:after:absolute not-last:after:top-10 not-last:after:bottom-1 not-last:after:left-4 not-last:after:border-l-2 not-last:after:border-dotted not-last:after:border-line-strong";
 const LEG_ICON =
-  "grid size-8 shrink-0 place-items-center rounded-md bg-tint-100 text-green";
+  "grid size-8 shrink-0 place-items-center rounded-md bg-tint-100 text-brand";
 const LEG_TEXT = "mb-1 text-base leading-relaxed";
 const LEG_META = "mb-1 text-sm leading-relaxed text-muted";
-const LEG_LIVE = "mb-1 text-sm leading-relaxed font-semibold text-green";
+const LEG_LIVE = "mb-1 text-sm leading-relaxed font-semibold text-brand";
 
 function journeyKey(option: JourneyOption): string {
   return [
@@ -234,7 +234,7 @@ function LiveBusButton({
     return (
       <Button variant="secondary" size="xs" pill onClick={() => onShowBus(bus)}>
         <span
-          className="size-2 shrink-0 animate-follow-pulse rounded-full bg-green"
+          className="size-2 shrink-0 animate-follow-pulse rounded-full bg-brand"
           aria-hidden="true"
         />
         {t`Live · show on map`}
@@ -456,7 +456,7 @@ function JourneyCard({
           <span className="text-md font-semibold">
             {fareLabel(i18n, option.total_fare)}
           </span>
-          <span className="flex items-center gap-1 text-2xs text-green">
+          <span className="flex items-center gap-1 text-2xs text-muted">
             {isSelected ? (
               <Check size={16} aria-hidden="true" />
             ) : (

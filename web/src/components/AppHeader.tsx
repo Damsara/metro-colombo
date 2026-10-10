@@ -28,11 +28,11 @@ export function AppHeader({
         reloadDocument={reloadHome}
         aria-label={homeLabel}
       >
-        <span className="grid h-12 w-11 place-items-center rounded-lg bg-green text-white max-md:h-11 max-md:w-10">
+        <span className="grid h-12 w-11 place-items-center rounded-lg bg-brand text-white max-md:h-11 max-md:w-10">
           <BusFront size={25} />
         </span>
         <span>
-          metro<span className="text-green">.</span>
+          metro<span className="text-brand">.</span>
           {suffix && <small>{suffix}</small>}
         </span>
       </Link>

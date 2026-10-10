@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 const TONES = {
-  neutral: "border-line bg-tint-50 text-muted [&_svg]:text-green",
+  neutral: "border-line bg-tint-50 text-muted [&_svg]:text-muted",
   warning: "border-warning-200 bg-warning-50 text-ink [&_svg]:text-warning",
   danger: "border-danger-200 bg-danger-50 text-danger [&_svg]:text-danger",
 };

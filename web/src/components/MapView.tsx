@@ -13,19 +13,18 @@ import type {
   Point,
   Position,
 } from "geojson";
-import { AlertTriangle, BusFront, LocateFixed, MapPin, X } from "lucide-react";
+import { AlertTriangle, MapPin } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { i18n } from "../i18n";
 import { MAP_STATUS } from "../classNames";
 import { BusModelLayer } from "./BusModelLayer";
+import { FollowBusPill } from "./FollowBusPill";
 import { Button } from "./ui/Button";
-import { IconButton } from "./ui/IconButton";
 import { Notice } from "./ui/Notice";
 import {
   busKey,
-  occupancy,
   stopName,
   type MapViewProps,
   type RouteRef,
@@ -38,8 +37,8 @@ const ROUTES = "metro-routes";
 const STOPS = "metro-stops";
 const STOP_HIT = "metro-stop-hit";
 // Matches --color-ink and --color-muted in styles.css.
-const STOP_COLOR = "#21362d";
-const WALK_COLOR = "#63766c";
+const STOP_COLOR = "#26221f";
+const WALK_COLOR = "#6b645d";
 const FALLBACK_ROUTE_COLOR = "#146c94";
 const FOLLOW_FOCUS = "bus-follow";
 const CAMERA_MS = 900;
@@ -449,7 +448,6 @@ export default function MapView(props: MapViewProps) {
   } = props;
   const { t } = useLingui();
   const selectedBusKey = selectedBus ? busKey(selectedBus) : "";
-  const selectedOccupancy = selectedBus ? occupancy(selectedBus) : null;
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LibreMap | null>(null);
   const liveControlRef = useRef<LiveBusesControl | null>(null);
@@ -920,7 +918,7 @@ export default function MapView(props: MapViewProps) {
       // A pin whose point sits on the stop.
       element.className = `relative grid size-8 place-items-center rounded-full border-2 border-white text-sm font-bold text-white shadow-float after:absolute after:top-full after:left-1/2 after:-mt-px after:-translate-x-1/2 after:border-x-[6px] after:border-t-[9px] after:border-x-transparent ${
         kind === "from"
-          ? "bg-green after:border-t-green"
+          ? "bg-brand after:border-t-brand"
           : "bg-destination after:border-t-destination"
       }`;
       element.setAttribute("role", "img");
@@ -961,54 +959,13 @@ export default function MapView(props: MapViewProps) {
           aria-hidden={status === "unavailable"}
         />
         {status === "ready" && selectedBus && (
-          <div
-            className={`absolute z-10 flex items-center gap-2.5 bg-white py-2 pr-2 pl-3 text-sm text-ink shadow-float ${
-              immersive
-                ? "inset-x-3 top-[calc(56px+env(safe-area-inset-top))] rounded-lg"
-                : "top-3.5 left-1/2 max-w-[68%] -translate-x-1/2 rounded-full max-md:top-auto max-md:bottom-50 max-md:max-w-[calc(100%-32px)]"
-            }`}
-            role="status"
-          >
-            {followBus ? (
-              <span
-                className="size-3 shrink-0 animate-follow-pulse rounded-full bg-green"
-                aria-hidden="true"
-              />
-            ) : (
-              <BusFront
-                className="shrink-0 text-bus"
-                size={18}
-                aria-hidden="true"
-              />
-            )}
-            <span className="min-w-0 flex-1 truncate">
-              {followBus ? t`Following` : t`Paused`}{" "}
-              <strong>{selectedBus.registration_number || "—"}</strong>
-              {selectedBus.route_code ? ` · ${selectedBus.route_code}` : ""}
-              {selectedOccupancy
-                ? ` · ${selectedOccupancy.current}/${selectedOccupancy.total}`
-                : ""}
-            </span>
-            {!followBus && (
-              <Button
-                variant="primary"
-                size="xs"
-                pill
-                onClick={() => onFollowChange(true)}
-              >
-                <LocateFixed size={15} aria-hidden="true" />
-                {t`Follow`}
-              </Button>
-            )}
-            <IconButton
-              variant="soft"
-              size="sm"
-              label={t`Stop tracking this bus`}
-              onClick={() => onBusSelect(null)}
-            >
-              <X size={16} aria-hidden="true" />
-            </IconButton>
-          </div>
+          <FollowBusPill
+            bus={selectedBus}
+            following={followBus}
+            immersive={immersive}
+            onFollow={() => onFollowChange(true)}
+            onRelease={() => onBusSelect(null)}
+          />
         )}
         {status === "loading" && (
           <p className={MAP_STATUS} role="status">

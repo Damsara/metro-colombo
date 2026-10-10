@@ -31,6 +31,10 @@ msgstr "{0, plural, one {# stop. Use the arrow keys to choose, then press Enter.
 msgid "{count, plural, one {# stop} other {# stops}}"
 msgstr "{count, plural, one {# stop} other {# stops}}"
 
+#: src/components/OccupancyBadge.tsx:27
+msgid "{current} of {total} places taken"
+msgstr "{current} of {total} places taken"
+
 #: src/components/StopPicker.tsx:30
 msgid "{distance} walk"
 msgstr "{distance} walk"
@@ -73,7 +77,7 @@ msgstr "<0>Get off at</0> {alightName}"
 msgid "<0>Get on at</0> {boardName}"
 msgstr "<0>Get on at</0> {boardName}"
 
-#: src/components/MapView.tsx:1082
+#: src/components/MapView.tsx:1039
 msgid "A: Start · B: Destination"
 msgstr "A: Start · B: Destination"
 
@@ -99,7 +103,7 @@ msgctxt "month"
 msgid "Aug"
 msgstr "Aug"
 
-#: src/App.tsx:485
+#: src/App.tsx:498
 msgid "Back to my trip"
 msgstr "Back to my trip"
 
@@ -121,15 +125,15 @@ msgstr "Bus"
 msgid "Bus live"
 msgstr "Bus live"
 
-#: src/App.tsx:434
+#: src/App.tsx:447
 msgid "Bus route map"
 msgstr "Bus route map"
 
-#: src/App.tsx:228
+#: src/App.tsx:231
 msgid "Bus routes"
 msgstr "Bus routes"
 
-#: src/App.tsx:244
+#: src/App.tsx:247
 msgctxt "tab"
 msgid "Bus routes"
 msgstr "Bus routes"
@@ -159,7 +163,7 @@ msgstr "Check your connection and try again."
 msgid "Choose a different destination from your starting stop."
 msgstr "Choose a different destination from your starting stop."
 
-#: src/App.tsx:286
+#: src/App.tsx:289
 msgid "Choose two stops. We’ll help with the rest."
 msgstr "Choose two stops. We’ll help with the rest."
 
@@ -187,7 +191,7 @@ msgstr "Close stop details"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 
-#: src/App.tsx:496
+#: src/App.tsx:509
 msgid "Colombo & beyond"
 msgstr "Colombo & beyond"
 
@@ -195,12 +199,16 @@ msgstr "Colombo & beyond"
 msgid "Could not load journeys"
 msgstr "Could not load journeys"
 
+#: src/components/OccupancyBadge.tsx:9
+msgid "Crowded"
+msgstr "Crowded"
+
 #: src/i18n.ts:55
 msgctxt "month"
 msgid "Dec"
 msgstr "Dec"
 
-#: src/components/MapView.tsx:929
+#: src/components/MapView.tsx:927
 msgid "Destination: {stopLabel}"
 msgstr "Destination: {stopLabel}"
 
@@ -216,7 +224,7 @@ msgstr "Duration unavailable"
 msgid "Edit"
 msgstr "Edit"
 
-#: src/App.tsx:232
+#: src/App.tsx:235
 msgid "Explore Metro"
 msgstr "Explore Metro"
 
@@ -237,15 +245,19 @@ msgctxt "month"
 msgid "Feb"
 msgstr "Feb"
 
+#: src/components/OccupancyBadge.tsx:8
+msgid "Filling up"
+msgstr "Filling up"
+
 #: src/components/TripForm.tsx:161
 msgid "Find my bus"
 msgstr "Find my bus"
 
-#: src/components/MapView.tsx:338
+#: src/components/MapView.tsx:337
 msgid "Find my location"
 msgstr "Find my location"
 
-#: src/App.tsx:498
+#: src/App.tsx:511
 msgid "Find your way around."
 msgstr "Find your way around."
 
@@ -261,12 +273,12 @@ msgstr "Finding your buses…"
 msgid "Finding your location…"
 msgstr "Finding your location…"
 
-#: src/components/MapView.tsx:1000
+#: src/components/FollowBusPill.tsx:87
 #: src/components/RoutesPanel.tsx:329
 msgid "Follow"
 msgstr "Follow"
 
-#: src/components/MapView.tsx:985
+#: src/components/FollowBusPill.tsx:53
 msgid "Following"
 msgstr "Following"
 
@@ -295,7 +307,7 @@ msgstr "Go here"
 msgid "Going to"
 msgstr "Going to"
 
-#: src/components/MapView.tsx:379
+#: src/components/MapView.tsx:378
 msgid "Hide live buses"
 msgstr "Hide live buses"
 
@@ -313,7 +325,7 @@ msgstr "Jan"
 msgid "Journey steps"
 msgstr "Journey steps"
 
-#: src/components/MapView.tsx:1073
+#: src/components/MapView.tsx:1030
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "Journey stops; rings show boarding and getting off"
 
@@ -351,7 +363,7 @@ msgstr "Live bus"
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "Live bus positions are unavailable right now. Timetables still work."
 
-#: src/components/MapView.tsx:1079
+#: src/components/MapView.tsx:1036
 msgid "Live bus; tap to select and follow"
 msgstr "Live bus; tap to select and follow"
 
@@ -367,16 +379,16 @@ msgstr "Live departure estimate"
 msgid "Live on this direction"
 msgstr "Live on this direction"
 
-#: src/App.tsx:404
+#: src/App.tsx:407
 msgid "Load missing stops"
 msgstr "Load missing stops"
 
-#: src/App.tsx:350
+#: src/App.tsx:353
 msgid "Loading bus routes…"
 msgstr "Loading bus routes…"
 
-#: src/App.tsx:440
-#: src/components/MapView.tsx:1015
+#: src/App.tsx:453
+#: src/components/MapView.tsx:972
 msgid "Loading map…"
 msgstr "Loading map…"
 
@@ -388,11 +400,11 @@ msgstr "Loading stops…"
 msgid "Loading the stops…"
 msgstr "Loading the stops…"
 
-#: src/components/MapView.tsx:946
+#: src/components/MapView.tsx:944
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "Location permission was not granted. You can still choose your stops."
 
-#: src/components/MapView.tsx:339
+#: src/components/MapView.tsx:338
 msgid "Location unavailable"
 msgstr "Location unavailable"
 
@@ -400,19 +412,19 @@ msgstr "Location unavailable"
 msgid "Location was not available. You can still type your starting stop."
 msgstr "Location was not available. You can still type your starting stop."
 
-#: src/components/MapView.tsx:340
+#: src/components/MapView.tsx:339
 msgid "Map credits"
 msgstr "Map credits"
 
-#: src/components/MapView.tsx:1065
+#: src/components/MapView.tsx:1022
 msgid "Map key"
 msgstr "Map key"
 
-#: src/components/MapView.tsx:950
+#: src/components/MapView.tsx:948
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 
-#: src/components/MapView.tsx:1025
+#: src/components/MapView.tsx:982
 msgid "Map unavailable"
 msgstr "Map unavailable"
 
@@ -426,7 +438,7 @@ msgctxt "month"
 msgid "May"
 msgstr "May"
 
-#: src/App.tsx:205
+#: src/App.tsx:208
 msgid "Metro home"
 msgstr "Metro home"
 
@@ -463,9 +475,9 @@ msgstr "No scheduled journeys found"
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "None heading this way right now · {elsewhere} on the other direction"
 
-#: src/App.tsx:426
-msgid "Not affiliated with Lanka Metro Transit or the official LMT GO app."
-msgstr "Not affiliated with Lanka Metro Transit or the official LMT GO app."
+#: src/App.tsx:429
+msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
+msgstr "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
 
 #: src/i18n.ts:54
 msgctxt "month"
@@ -485,7 +497,7 @@ msgstr "On another trip now · see where"
 msgid "On map"
 msgstr "On map"
 
-#: src/App.tsx:347
+#: src/App.tsx:350
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "Open a route to see its stops and where its buses are now."
 
@@ -493,15 +505,15 @@ msgstr "Open a route to see its stops and where its buses are now."
 msgid "Page not found :c"
 msgstr "Page not found :c"
 
-#: src/components/MapView.tsx:985
+#: src/components/FollowBusPill.tsx:53
 msgid "Paused"
 msgstr "Paused"
 
-#: src/App.tsx:239
+#: src/App.tsx:242
 msgid "Plan a trip"
 msgstr "Plan a trip"
 
-#: src/App.tsx:228
+#: src/App.tsx:231
 msgid "Plan your bus trip"
 msgstr "Plan your bus trip"
 
@@ -509,15 +521,19 @@ msgstr "Plan your bus trip"
 msgid "Please wait a moment."
 msgstr "Please wait a moment."
 
+#: src/components/OccupancyBadge.tsx:7
+msgid "Plenty of room"
+msgstr "Plenty of room"
+
 #: src/i18n.ts:76
 msgid "PM"
 msgstr "PM"
 
-#: src/components/MapView.tsx:337
+#: src/components/MapView.tsx:336
 msgid "Point north"
 msgstr "Point north"
 
-#: src/App.tsx:312
+#: src/App.tsx:315
 msgid "Popular starting stops"
 msgstr "Popular starting stops"
 
@@ -525,11 +541,11 @@ msgstr "Popular starting stops"
 msgid "Press “Find my bus”. Select a departure for boarding instructions."
 msgstr "Press “Find my bus”. Select a departure for boarding instructions."
 
-#: src/App.tsx:515
+#: src/App.tsx:528
 msgid "Retry map route"
 msgstr "Retry map route"
 
-#: src/App.tsx:519
+#: src/App.tsx:532
 msgid "Route line unavailable. Stops and trip planning still work."
 msgstr "Route line unavailable. Stops and trip planning still work."
 
@@ -537,7 +553,7 @@ msgstr "Route line unavailable. Stops and trip planning still work."
 msgid "Routes"
 msgstr "Routes"
 
-#: src/components/MapView.tsx:955
+#: src/components/MapView.tsx:953
 msgid "Routes and stops map"
 msgstr "Routes and stops map"
 
@@ -554,7 +570,7 @@ msgstr "Scheduled arrival"
 msgid "Scheduled departure"
 msgstr "Scheduled departure"
 
-#: src/App.tsx:422
+#: src/App.tsx:425
 msgid "See the map"
 msgstr "See the map"
 
@@ -563,7 +579,7 @@ msgctxt "month"
 msgid "Sep"
 msgstr "Sep"
 
-#: src/components/MapView.tsx:379
+#: src/components/MapView.tsx:378
 msgid "Show live buses"
 msgstr "Show live buses"
 
@@ -575,7 +591,7 @@ msgstr "Show more journeys ({remaining} more)"
 msgid "Show that direction"
 msgstr "Show that direction"
 
-#: src/App.tsx:336
+#: src/App.tsx:339
 msgid "Show the buses for this trip"
 msgstr "Show the buses for this trip"
 
@@ -587,11 +603,11 @@ msgstr "Show the next day"
 msgid "Show tomorrow’s buses"
 msgstr "Show tomorrow’s buses"
 
-#: src/components/MapView.tsx:951
+#: src/components/MapView.tsx:949
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 
-#: src/App.tsx:408
+#: src/App.tsx:411
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
 msgstr "Some stops couldn’t be loaded. Search may be incomplete."
 
@@ -599,7 +615,7 @@ msgstr "Some stops couldn’t be loaded. Search may be incomplete."
 msgid "Start here"
 msgstr "Start here"
 
-#: src/components/MapView.tsx:929
+#: src/components/MapView.tsx:927
 msgid "Start: {stopLabel}"
 msgstr "Start: {stopLabel}"
 
@@ -607,11 +623,11 @@ msgstr "Start: {stopLabel}"
 msgid "Starting from"
 msgstr "Starting from"
 
-#: src/components/MapView.tsx:1068
+#: src/components/MapView.tsx:1025
 msgid "Stop"
 msgstr "Stop"
 
-#: src/components/MapView.tsx:1006
+#: src/components/FollowBusPill.tsx:93
 msgid "Stop tracking this bus"
 msgstr "Stop tracking this bus"
 
@@ -636,7 +652,7 @@ msgstr "Tap a stop to plan · tap a bus to follow"
 msgid "Tap a stop to plan a trip"
 msgstr "Tap a stop to plan a trip"
 
-#: src/components/MapView.tsx:1028
+#: src/components/MapView.tsx:985
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 
@@ -669,7 +685,11 @@ msgstr "To {toName}"
 msgid "Towards {place}"
 msgstr "Towards {place}"
 
-#: src/components/MapView.tsx:370
+#: src/components/FollowBusPill.tsx:40
+msgid "Tracked bus"
+msgstr "Tracked bus"
+
+#: src/components/MapView.tsx:369
 msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
 msgstr "Transit map. Use arrow keys to move and plus or minus to zoom."
 
@@ -678,14 +698,14 @@ msgstr "Transit map. Use arrow keys to move and plus or minus to zoom."
 msgid "Travel date"
 msgstr "Travel date"
 
-#: src/App.tsx:390
+#: src/App.tsx:393
 #: src/components/JourneyResults.tsx:592
 #: src/components/RoutesPanel.tsx:236
 msgid "Try again"
 msgstr "Try again"
 
-#: src/components/MapView.tsx:1036
-#: src/components/MapView.tsx:1057
+#: src/components/MapView.tsx:993
+#: src/components/MapView.tsx:1014
 msgid "Try map again"
 msgstr "Try map again"
 
@@ -718,7 +738,7 @@ msgstr "Wait about {waitLabel}"
 msgid "Walk"
 msgstr "Walk"
 
-#: src/App.tsx:394
+#: src/App.tsx:397
 msgid "We can’t connect to Metro right now."
 msgstr "We can’t connect to Metro right now."
 
@@ -731,7 +751,7 @@ msgstr "Wed"
 msgid "Where do you want to go?"
 msgstr "Where do you want to go?"
 
-#: src/App.tsx:282
+#: src/App.tsx:285
 msgid "Where would you\n"
 "like to go?"
 msgstr "Where would you\n"
@@ -745,14 +765,14 @@ msgstr "Where would you like to go?"
 msgid "Your browser cannot find your location. Please choose a stop."
 msgstr "Your browser cannot find your location. Please choose a stop."
 
-#: src/components/MapView.tsx:948
+#: src/components/MapView.tsx:946
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "Your location could not be found. Choose your stops instead."
 
-#: src/components/MapView.tsx:335
+#: src/components/MapView.tsx:334
 msgid "Zoom in"
 msgstr "Zoom in"
 
-#: src/components/MapView.tsx:336
+#: src/components/MapView.tsx:335
 msgid "Zoom out"
 msgstr "Zoom out"

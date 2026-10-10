@@ -73,10 +73,10 @@ export function TripForm({
         className={`relative flex items-stretch gap-2.5 px-3 py-3.5 max-md:gap-2 ${cardClass()}`}
       >
         <div
-          className="flex w-6 flex-col items-center pt-5 pb-4 text-green"
+          className="flex w-6 flex-col items-center pt-5 pb-4 text-ink"
           aria-hidden="true"
         >
-          <span className="size-3 rounded-full border-2 border-green" />
+          <span className="size-3 rounded-full border-2 border-ink" />
           <i className="my-1 min-h-12 flex-1 border-l-2 border-dotted border-line-strong" />
           <MapPin size={19} />
         </div>
