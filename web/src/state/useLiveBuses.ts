@@ -36,6 +36,10 @@ export function useLiveBuses(routeCodeById: ReadonlyMap<string, string>) {
     unavailable,
     /** Whether any response has arrived yet. */
     loaded: liveQuery.data !== undefined,
+    /** When the latest response arrived, on this device's clock. */
+    receivedAt: liveQuery.dataUpdatedAt,
+    /** The latest response's own timestamp, on the server's clock. */
+    feedTimestamp: liveQuery.data?.timestamp,
     routeCodeOf,
     liveCountByRoute,
   };

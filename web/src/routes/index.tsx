@@ -8,6 +8,8 @@ export interface HomeSearch {
   trip?: 1;
   /** An open bus route, so the Back button returns to the list. */
   route?: 1;
+  /** Tracking a journey's bus, so the Back button returns to the results. */
+  track?: 1;
 }
 
 const flag = (value: unknown) => value === 1 || value === "1";
@@ -17,6 +19,7 @@ export const Route = createFileRoute("/")({
     ...(flag(search.map) ? { map: 1 } : {}),
     ...(flag(search.trip) ? { trip: 1 } : {}),
     ...(flag(search.route) ? { route: 1 } : {}),
+    ...(flag(search.track) ? { track: 1 } : {}),
   }),
   component: App,
 });

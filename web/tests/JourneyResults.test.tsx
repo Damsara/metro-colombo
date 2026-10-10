@@ -105,6 +105,7 @@ function render(
   selected: JourneyOption | null,
   liveBuses: LiveBus[] = [],
   options: JourneyOption[] = [option],
+  onTrack?: () => void,
 ): string {
   return markup(
     createElement(JourneyResults, {
@@ -112,6 +113,7 @@ function render(
       selected,
       liveBuses,
       onShowBus: () => {},
+      onTrack,
       loading: false,
       error: null,
       language: "en",
@@ -202,6 +204,10 @@ test("an assigned bus running this ride now can be shown on the map", () => {
   const html = render(soon, [live], [soon]);
   assert.equal((html.match(/show on map/g) ?? []).length, 1);
   assert.match(html, /Bus live/);
+  // With tracking on offer it leads, and the plain map view stays.
+  const trackable = render(soon, [live], [soon], () => {});
+  assert.equal((trackable.match(/Track this bus/g) ?? []).length, 1);
+  assert.match(trackable, /Show on map/);
 });
 
 test("an assigned bus that is live elsewhere is not presented as this trip", () => {
@@ -310,13 +316,15 @@ const line = ["a", "b", "c", "d", "e", "f"].map((id, index) =>
   stopAt(id, 6.8 + index * 0.01),
 );
 
-test("stops away counts the stops the bus has still to make", () => {
+test("stops away counts the stops until the bus reaches yours", () => {
   const near = (latitude: number) => ({ lat: latitude, lng: 79.9 });
   assert.equal(stopsAway(near(6.8), line, "e"), 4);
-  // Just past b, heading for c.
-  assert.equal(stopsAway(near(6.8115), line, "e"), 2);
+  // Just past b, heading for c: c, d, then e.
+  assert.equal(stopsAway(near(6.8115), line, "e"), 3);
   // Nearly at c.
-  assert.equal(stopsAway(near(6.819), line, "e"), 2);
+  assert.equal(stopsAway(near(6.819), line, "e"), 3);
+  // Between d and e, e is next.
+  assert.equal(stopsAway(near(6.835), line, "e"), 1);
   assert.equal(stopsAway(near(6.84), line, "e"), 0);
   assert.equal(stopsAway(near(6.85), line, "e"), -1);
   assert.equal(stopsAway(near(6.8), line, "missing"), null);

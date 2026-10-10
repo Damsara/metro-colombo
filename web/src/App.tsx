@@ -6,6 +6,7 @@ import {
   Navigation,
   RotateCcw,
   Route as RouteIcon,
+  Search,
 } from "lucide-react";
 import {
   lazy,
@@ -27,6 +28,7 @@ import { MapLegend } from "./components/MapLegend";
 import { PhoneDrawer } from "./components/PhoneDrawer";
 import { RouteDetail, RouteList } from "./components/RoutesPanel";
 import { StopCard } from "./components/StopCard";
+import { TrackingPanel } from "./components/TrackingPanel";
 import { TripForm } from "./components/TripForm";
 import { TripSummary } from "./components/TripSummary";
 import { Button, buttonClass } from "./components/ui/Button";
@@ -49,12 +51,14 @@ import { useBusSelection } from "./state/useBusSelection";
 import { useLiveBuses } from "./state/useLiveBuses";
 import { useMapLayers } from "./state/useMapLayers";
 import { useRouteBrowser } from "./state/useRouteBrowser";
+import { useTracking } from "./state/useTracking";
 import { useTrip } from "./state/useTrip";
 import {
   busKey,
   type CatalogStop,
   type JourneyOption,
   type LiveBus,
+  type Ride,
   type Stop,
 } from "./types";
 
@@ -72,6 +76,8 @@ const STOP_CARD_ROOM_PX = 200;
 // The control column and the attribution under it, so the column stops short
 // of the header.
 const CONTROLS_PX = 210;
+// Refreshes the tracked journey's live estimates.
+const TRACK_REFRESH_MS = 60_000;
 
 export default function App() {
   return (
@@ -116,6 +122,19 @@ function Home() {
   const { selectedJourney, request, journey, showResults } = trip;
   const { buses, routeCodeOf } = live;
   const { selectedBus, release: releaseBus } = selection;
+  const tracking = useTracking({
+    buses: live.unavailable ? NO_BUSES : buses,
+    liveLoaded: live.loaded,
+    receivedAt: live.receivedAt,
+    feedTimestamp: live.feedTimestamp,
+    plan: journey.data,
+  });
+  const trackingPlan = tab === "plan" && tracking.active;
+  const trackedKey = tracking.bus ? busKey(tracking.bus) : null;
+  // The tracked bus's identity lives in the panel, so the map's pill only
+  // shows for some other bus picked on the map.
+  const trackedSelected =
+    tracking.active && !!selectedBus && busKey(selectedBus) === trackedKey;
 
   // The Plan tab shows the selected journey's first ride; the Routes tab shows
   // the route the user opened.
@@ -169,6 +188,29 @@ function Home() {
     if (tab === "plan") releaseBus();
   }, [tab, releaseBus]);
 
+  // While tracking, the map comes back to the tracked bus whenever nothing
+  // else is picked, e.g. after it drops out of the feed for a moment.
+  const trackedLive = tracking.liveBus;
+  useEffect(() => {
+    if (trackingPlan && trackedLive && !selection.selectedBusId)
+      selectBus(trackedLive);
+  }, [trackingPlan, trackedLive, selection.selectedBusId, selectBus]);
+  // Ending tracking, by button or by Back, lets go of the bus.
+  const wasTracking = useRef(false);
+  useEffect(() => {
+    if (wasTracking.current && !tracking.active) releaseBus();
+    wasTracking.current = tracking.active;
+  }, [tracking.active, releaseBus]);
+  const refetchJourney = journey.refetch;
+  useEffect(() => {
+    if (!tracking.active) return;
+    const interval = window.setInterval(
+      () => void refetchJourney(),
+      TRACK_REFRESH_MS,
+    );
+    return () => window.clearInterval(interval);
+  }, [tracking.active, refetchJourney]);
+
   useEffect(() => {
     if (!selectedStop) return;
     const close = (event: KeyboardEvent) => {
@@ -190,6 +232,7 @@ function Home() {
     busId: viewBus,
     routeCode: viewRoute,
     stopId: viewStop,
+    tracking: trackingPlan,
   });
   useEffect(() => {
     const view = {
@@ -199,16 +242,25 @@ function Home() {
       busId: viewBus,
       routeCode: viewRoute,
       stopId: viewStop,
+      tracking: trackingPlan,
     };
     const previous = lastView.current;
     lastView.current = view;
     setSnap((current) => intentSnap(previous, view, current));
-  }, [tab, showResults, viewJourney, viewBus, viewRoute, viewStop]);
+  }, [
+    tab,
+    showResults,
+    viewJourney,
+    viewBus,
+    viewRoute,
+    viewStop,
+    trackingPlan,
+  ]);
 
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     panelRef.current?.scrollTo({ top: 0 });
-  }, [showResults, tab]);
+  }, [showResults, tab, trackingPlan]);
 
   const fromName = trip.from ? stopName(trip.from, language) : "";
   const toName = trip.to ? stopName(trip.to, language) : "";
@@ -255,6 +307,11 @@ function Home() {
     },
     [selectTripJourney],
   );
+  const startTracking = (option: JourneyOption, ride: Ride, bus: LiveBus) => {
+    selectJourney(option);
+    tracking.start(option, ride, bus);
+    handleBusSelect(bus);
+  };
   const changeTab = (next: "plan" | "routes") => {
     setTab(next);
     setSelectedStop(null);
@@ -278,7 +335,11 @@ function Home() {
     ? 0
     : Math.min(
         mapInset +
-          (selectedStop ? STOP_CARD_ROOM_PX : selectedBus ? PILL_ROOM_PX : 0),
+          (selectedStop
+            ? STOP_CARD_ROOM_PX
+            : selectedBus && !trackedSelected
+              ? PILL_ROOM_PX
+              : 0),
         viewport - headerHeight - CONTROLS_PX,
       );
 
@@ -286,10 +347,42 @@ function Home() {
   // On phones the panel scrolls only at full height; lower, a drag on it
   // moves the drawer.
   const panelScrolls = !phone || snap === "full";
+  const formRef = useRef<HTMLDivElement>(null);
+  // At peek a phone shows "Where to?" first, Uber-style; it opens the
+  // form's own destination picker.
+  const whereToBar = phone && snap === "peek" && tab === "plan" && !showResults;
   const panel = (
     <>
+      {whereToBar && (
+        <div className="px-4 pb-2">
+          <button
+            type="button"
+            className={`flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left ${cardClass()}`}
+            onClick={() =>
+              formRef.current
+                ?.querySelector<HTMLInputElement>('[role="combobox"]')
+                ?.focus({ preventScroll: true })
+            }
+          >
+            <Search size={20} className="shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-xl font-semibold tracking-tight">
+                {t`Where to?`}
+              </span>
+              {toName && (
+                <span className="block truncate text-sm text-muted">
+                  {toName}
+                </span>
+              )}
+            </span>
+          </button>
+        </div>
+      )}
       <Tabs
-        className="border-b border-line px-6 pt-4.5 pb-3.5 max-md:px-4 max-md:pt-0 max-md:pb-2"
+        // While tracking, a phone's drawer keeps to the bus.
+        className={`border-b border-line px-6 pt-4.5 pb-3.5 max-md:px-4 max-md:pt-0 max-md:pb-2 ${
+          trackingPlan ? "max-md:hidden" : ""
+        }`}
         label={t`Explore Metro`}
         value={tab}
         onChange={changeTab}
@@ -314,7 +407,22 @@ function Home() {
         // At full height, a drag inside scrolls the panel instead.
         data-vaul-no-drag={phone && panelScrolls ? "" : undefined}
       >
-        {tab === "plan" && showResults && request ? (
+        {trackingPlan ? (
+          <div key="tracking">
+            <TrackingPanel
+              tracking={tracking}
+              language={language}
+              routeColors={routeColors}
+              following={trackedSelected && selection.followBus}
+              onFollow={() => {
+                if (!tracking.liveBus) return;
+                if (trackedSelected) selection.changeFollow(true);
+                else handleBusSelect(tracking.liveBus);
+              }}
+              onStop={tracking.stop}
+            />
+          </div>
+        ) : tab === "plan" && showResults && request ? (
           <div key="trip" className="motion-safe:animate-page-forward">
             <TripSummary
               fromName={fromName}
@@ -332,6 +440,7 @@ function Home() {
               routeColors={routeColors}
               liveBuses={live.unavailable ? NO_BUSES : buses}
               onShowBus={handleBusSelect}
+              onTrack={startTracking}
               onRetry={() => void journey.refetch()}
               onNextDay={trip.searchNextDay}
             />
@@ -342,16 +451,9 @@ function Home() {
             // Coming back from the results page slides the form in from the left.
             className={request ? "motion-safe:animate-page-back" : ""}
           >
-            <div className="pb-6 max-md:sr-only">
-              <h1 className="mt-3 mb-3 text-5xl leading-tight font-semibold tracking-tight whitespace-pre-line max-md:text-4xl">
-                {t`Where would you
-like to go?`}
-              </h1>
-              <p className="text-base leading-relaxed text-muted max-md:text-md">
-                {t`Choose two stops. We’ll help with the rest.`}
-              </p>
-            </div>
+            <h1 className="sr-only">{t`Where would you like to go?`}</h1>
             <div
+              ref={formRef}
               // Picking a stop on a phone lifts the drawer to full height, under
               // the full-screen stop sheet.
               onFocusCapture={(event) => {
@@ -547,6 +649,13 @@ like to go?`}
           </a>
           .
         </Trans>
+        {/* Phones keep the header to the logo and language; the API link lives here. */}
+        <span className="md:hidden">
+          <span aria-hidden="true"> · </span>
+          <Link className={FOOTER_LINK} to="/docs">
+            API
+          </Link>
+        </span>
       </footer>
     </>
   );
@@ -575,11 +684,11 @@ like to go?`}
           >
             <div className="flex items-center gap-3">
               <Link
-                className={buttonClass({
+                className={`${buttonClass({
                   variant: "neutral",
                   size: "xs",
                   pill: true,
-                })}
+                })} max-md:hidden`}
                 to="/docs"
               >
                 API
@@ -631,6 +740,7 @@ like to go?`}
                 selectedJourney={tab === "plan" ? selectedJourney : null}
                 selectedBus={selectedBus}
                 followBus={selection.followBus}
+                showBusPill={!trackedSelected}
                 language={language}
                 onStopSelect={setSelectedStop}
                 onBusSelect={handleBusSelect}

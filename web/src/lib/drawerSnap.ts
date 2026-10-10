@@ -39,18 +39,23 @@ export interface DrawerView {
   busId: string | null;
   routeCode: string | null;
   stopId: string | null;
+  /** Following a journey's bus in tracking mode. */
+  tracking: boolean;
 }
 
 /**
  * Where the drawer should go when the view changes: down to peek to watch a
  * bus or to show a stop's card over the map, up to half for new results or a
- * route. Anything else leaves it where the user put it.
+ * route, or when tracking ends. Anything else leaves it where the user put it.
  */
 export function intentSnap(
   previous: DrawerView,
   next: DrawerView,
   current: Snap,
 ): Snap {
+  // Tracking keeps the map in view; leaving it brings the results back up.
+  if (next.tracking && !previous.tracking) return "peek";
+  if (!next.tracking && previous.tracking) return "half";
   if (next.busId && next.busId !== previous.busId) return "peek";
   if (next.showResults && !previous.showResults) return "half";
   if (next.routeCode && next.routeCode !== previous.routeCode) return "half";

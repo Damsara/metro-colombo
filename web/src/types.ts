@@ -267,6 +267,8 @@ export interface MapViewProps {
    * cover, in pixels, so framing and following keep clear of them.
    */
   insets?: { top: number; bottom: number };
+  /** The floating card for the selected bus; tracking shows it in the panel instead. */
+  showBusPill?: boolean;
 }
 
 export function stopName(stop: Stop, language: Language): string {

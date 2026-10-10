@@ -463,6 +463,7 @@ export default function MapView(props: MapViewProps) {
     insets,
     routeLock = null,
     emphasizeRoutes = NO_ROUTES,
+    showBusPill = true,
   } = props;
   const { t } = useLingui();
   const selectedBusKey = selectedBus ? busKey(selectedBus) : "";
@@ -999,7 +1000,7 @@ export default function MapView(props: MapViewProps) {
           className={`relative h-full w-full ${status === "unavailable" ? "invisible" : ""}`}
           aria-hidden={status === "unavailable"}
         />
-        {status === "ready" && selectedBus && (
+        {status === "ready" && selectedBus && showBusPill && (
           <FollowBusPill
             bus={selectedBus}
             following={followBus}

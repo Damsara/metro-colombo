@@ -14,7 +14,7 @@ import {
   Footprints,
   LocateFixed,
 } from "lucide-react";
-import { ApiError, distanceMeters, useRouteStops } from "../api";
+import { ApiError, useRouteStops } from "../api";
 import type { I18n } from "@lingui/core";
 import { t } from "@lingui/core/macro";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
@@ -27,6 +27,7 @@ import {
   towards,
 } from "../i18n";
 import { usePlaceName } from "../lib/placeNames";
+import { busPosition, stopsUntil } from "../lib/tracking";
 import { OccupancyMeter } from "./OccupancyBadge";
 import { RouteChip } from "./RouteChip";
 import { Badge } from "./ui/Badge";
@@ -58,6 +59,8 @@ interface JourneyResultsProps {
   routeColors: ReadonlyMap<string, string>;
   liveBuses: readonly LiveBus[];
   onShowBus: (bus: LiveBus) => void;
+  /** Follow a live bus on this ride through to the stop you get off at. */
+  onTrack?: (option: JourneyOption, ride: Ride, bus: LiveBus) => void;
 }
 
 const PAGE_SIZE = 5;
@@ -69,8 +72,6 @@ const FARE_FORMAT = new Intl.NumberFormat("en-LK", {
 // How often the list re-checks which departures have already gone, which also
 // keeps the countdowns current.
 const CLOCK_TICK_MS = 15_000;
-// Slack for a bus waiting at a stop, so GPS drift doesn't count it as gone.
-const AT_STOP_METERS = 25;
 
 const STATE = "mt-5";
 // Each step's icon is joined to the next by a dotted line.
@@ -140,9 +141,9 @@ function liveRide(
 }
 
 /**
- * How many stops the bus still has to make before `boardId`, counted on the
- * direction's full stop list: 0 means it is there, negative that it has
- * passed, null that the stop isn't on the list.
+ * How many stops the bus makes until it reaches `boardId`, on the direction's
+ * full stop list: 1 when it is next, 0 while the bus is there, negative once
+ * it has passed, null when the stop isn't on the list.
  */
 export function stopsAway(
   bus: Pick<LiveBus, "lat" | "lng">,
@@ -150,27 +151,9 @@ export function stopsAway(
   boardId: string,
 ): number | null {
   const board = stops.findIndex((stop) => stop.id === boardId);
-  if (board < 0) return null;
-  const position = { latitude: bus.lat, longitude: bus.lng };
-  let nearest = 0;
-  let best = Infinity;
-  stops.forEach((stop, index) => {
-    const distance = distanceMeters(position, stop);
-    if (distance < best) {
-      best = distance;
-      nearest = index;
-    }
-  });
-  // The nearest stop may be one the bus just left: once past it, the bus is
-  // closer to the next stop than that stop is.
-  const next = stops[nearest + 1];
-  if (
-    next &&
-    distanceMeters(position, next) + AT_STOP_METERS <
-      distanceMeters(stops[nearest], next)
-  )
-    nearest += 1;
-  return board - nearest;
+  const position = busPosition(bus, stops);
+  if (board < 0 || position === null) return null;
+  return stopsUntil(position, board);
 }
 
 /** The option to mark "Next bus": the soonest one still to leave today. */
@@ -291,12 +274,37 @@ function LiveBusButton({
   bus,
   onRide,
   onShowBus,
+  onTrack,
 }: {
   bus: LiveBus;
   onRide: boolean;
   onShowBus: (bus: LiveBus) => void;
+  onTrack?: () => void;
 }) {
   const { t } = useLingui();
+  if (onRide && onTrack) {
+    // Tracking leads; a plain look at the map stays one tap away.
+    return (
+      <>
+        <Button variant="bus" size="xs" pill onClick={onTrack}>
+          <span
+            className="size-2 shrink-0 animate-follow-pulse rounded-full bg-white"
+            aria-hidden="true"
+          />
+          {t`Track this bus`}
+        </Button>
+        <Button
+          variant="secondary"
+          size="xs"
+          pill
+          onClick={() => onShowBus(bus)}
+        >
+          {t`Show on map`}
+          <LocateFixed size={14} aria-hidden="true" />
+        </Button>
+      </>
+    );
+  }
   if (onRide) {
     return (
       <Button variant="secondary" size="xs" pill onClick={() => onShowBus(bus)}>
@@ -322,6 +330,7 @@ interface RideDisplayProps {
   routeColors: ReadonlyMap<string, string>;
   liveBuses: readonly LiveBus[];
   onShowBus: (bus: LiveBus) => void;
+  onTrack?: (ride: Ride, bus: LiveBus) => void;
   now: number;
 }
 
@@ -331,6 +340,7 @@ function RideLeg({
   routeColors,
   liveBuses,
   onShowBus,
+  onTrack,
   now,
 }: { ride: Ride; language: Language } & RideDisplayProps) {
   const { t, i18n } = useLingui();
@@ -366,6 +376,7 @@ function RideLeg({
                 bus={liveBus}
                 onRide={onRide}
                 onShowBus={onShowBus}
+                onTrack={onTrack && (() => onTrack(ride, liveBus))}
               />
             )}
           </div>
@@ -630,6 +641,7 @@ export default function JourneyResults({
   routeColors,
   liveBuses,
   onShowBus,
+  onTrack,
 }: JourneyResultsProps) {
   const id = useId();
   const { t } = useLingui();
@@ -800,6 +812,7 @@ export default function JourneyResults({
               routeColors={routeColors}
               liveBuses={liveBuses}
               onShowBus={onShowBus}
+              onTrack={onTrack && ((ride, bus) => onTrack(option, ride, bus))}
               now={now}
             />
           );

@@ -17,6 +17,7 @@ const form: DrawerView = {
   busId: null,
   routeCode: null,
   stopId: null,
+  tracking: false,
 };
 
 test("the handle cycles peek, half, full, half, peek", () => {
@@ -84,6 +85,15 @@ test("opening a route shows it at half", () => {
 test("a picked stop drops the drawer so its card and the map show", () => {
   assert.equal(intentSnap(form, { ...form, stopId: "s1" }, "full"), "peek");
   assert.equal(intentSnap(form, { ...form, stopId: "s1" }, "half"), "peek");
+});
+
+test("tracking drops the drawer to the map, and leaving it brings results up", () => {
+  const results = { ...form, showResults: true, journeyKey: "j1" };
+  const tracking = { ...results, busId: "b1", tracking: true };
+  assert.equal(intentSnap(results, tracking, "full"), "peek");
+  // Live updates while tracking leave the drawer alone.
+  assert.equal(intentSnap(tracking, tracking, "half"), "half");
+  assert.equal(intentSnap(tracking, results, "peek"), "half");
 });
 
 test("unrelated changes leave the drawer where the user put it", () => {
