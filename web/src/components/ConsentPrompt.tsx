@@ -83,20 +83,17 @@ export function ConsentPrompt() {
 }
 
 /** The footer link that reopens the prompt; absent when there's nothing to choose. */
-export function PrivacyChoicesLink({ separated = false }) {
+export function PrivacyChoicesLink({ className = "" }) {
   const { t } = useLingui();
   const { available, reopen } = useConsent();
   if (!available) return null;
   return (
-    <>
-      {separated && <span aria-hidden="true"> · </span>}
-      <button
-        type="button"
-        className="font-semibold underline underline-offset-2 hover-fine:text-ink"
-        onClick={reopen}
-      >
-        {t`Privacy choices`}
-      </button>
-    </>
+    <button
+      type="button"
+      className={`font-semibold underline underline-offset-2 hover-fine:text-ink ${className}`}
+      onClick={reopen}
+    >
+      {t`Privacy choices`}
+    </button>
   );
 }

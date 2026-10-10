@@ -290,12 +290,11 @@ export default function StopPicker({
                 {t`Nearest stop: ${stopLabel} · ${walk}`}
               </span>
             ) : (
-              <span className={OPTION_DETAIL}>
-                {stop.towards?.length
-                  ? `${towards(i18n, stop.towards.map(localPlace).join(" / "))} · `
-                  : ""}
-                {stop.stop_code}
-              </span>
+              !!stop.towards?.length && (
+                <span className={OPTION_DETAIL}>
+                  {towards(i18n, stop.towards.map(localPlace).join(" / "))}
+                </span>
+              )
             )}
           </span>
           <span

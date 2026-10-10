@@ -60,7 +60,6 @@ export function StopCard({
   const opener = useRef<Element | null>(null);
 
   const name = stopName(stop, language);
-  const code = stop.stop_code;
   const secondary = secondaryStopName(stop, language);
   const routes = servedBy(entry?.services, stop.stop_name_en);
   const actions = stopActions(stop, from, to);
@@ -139,15 +138,11 @@ export function StopCard({
             {secondary}
           </p>
         )}
-        <p className="mt-1 text-xs text-muted">
-          {actions.current === "from"
-            ? t`Your start`
-            : actions.current === "to"
-              ? t`Your destination`
-              : null}
-          {actions.current && <span aria-hidden="true"> · </span>}
-          {t`Stop code ${code}`}
-        </p>
+        {actions.current && (
+          <p className="mt-1 text-xs text-muted">
+            {actions.current === "from" ? t`Your start` : t`Your destination`}
+          </p>
+        )}
         <a
           className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-ink underline underline-offset-2"
           href={googleMapsUrl(stop)}

@@ -620,17 +620,6 @@ function Home() {
                 </div>
               </div>
             )}
-            {request && !showResults && (
-              <Button
-                size="sm"
-                block
-                className="mt-4"
-                onClick={() => trip.setTripOpen(true)}
-              >
-                {t`Show the buses for this trip`}
-                <ArrowRight size={18} />
-              </Button>
-            )}
           </div>
         ) : (
           <>
@@ -703,26 +692,30 @@ function Home() {
         )}
         <HowToUse hidden={tab === "plan" && showResults} />
       </div>
-      <footer className="min-h-11 border-t border-line px-4 pt-2.5 pb-[calc(10px+env(safe-area-inset-bottom))] text-center text-2xs leading-normal text-muted">
-        <Trans>
-          Not affiliated with{" "}
-          <a className={FOOTER_LINK} href="https://lankametro.lk">
-            Lanka Metro Transit
-          </a>{" "}
-          or the official{" "}
-          <a className={FOOTER_LINK} href="https://lmtgo.eimsky.com">
-            LMT GO app
-          </a>
-          .
-        </Trans>
-        {/* Phones keep the header to the logo and language; the API link lives here. */}
-        <span className="md:hidden">
-          <span aria-hidden="true"> · </span>
-          <Link className={FOOTER_LINK} to="/docs">
+      <footer className="flex min-h-11 flex-col items-center gap-0.5 border-t border-line px-4 pt-2.5 pb-[calc(8px+env(safe-area-inset-bottom))] text-center text-2xs leading-normal text-muted">
+        <p className="text-balance">
+          <Trans>
+            Not affiliated with{" "}
+            <a className={FOOTER_LINK} href="https://lankametro.lk">
+              Lanka Metro Transit
+            </a>{" "}
+            or the official{" "}
+            <a className={FOOTER_LINK} href="https://lmtgo.eimsky.com">
+              LMT GO app
+            </a>
+            .
+          </Trans>
+        </p>
+        <div className="flex flex-wrap justify-center gap-x-5 empty:hidden">
+          {/* Phones keep the header to the logo and language; the API link lives here. */}
+          <Link
+            className={`${FOOTER_LINK} inline-flex min-h-9 items-center md:hidden`}
+            to="/docs"
+          >
             API
           </Link>
-        </span>
-        <PrivacyChoicesLink separated />
+          <PrivacyChoicesLink className="min-h-9 max-md:inline-flex max-md:items-center md:min-h-0" />
+        </div>
       </footer>
     </>
   );

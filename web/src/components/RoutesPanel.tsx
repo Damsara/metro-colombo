@@ -278,9 +278,6 @@ export function RouteDetail({
                       {secondary}
                     </span>
                   )}
-                  <small className="mt-0.5 block text-2xs text-muted">
-                    {stop.stop_code}
-                  </small>
                 </span>
                 <ChevronRight
                   className="shrink-0 text-faint group-aria-pressed:text-ink"
