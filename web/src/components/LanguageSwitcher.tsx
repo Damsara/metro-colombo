@@ -4,7 +4,7 @@ import { useLanguage } from "../lib/language";
 import { isLanguage, type Language } from "../types";
 
 const OPTIONS: { value: Language; label: string }[] = [
-  { value: "en", label: "EN" },
+  { value: "en", label: "English" },
   { value: "si", label: "සිංහල" },
   { value: "ta", label: "தமிழ்" },
 ];
