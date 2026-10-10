@@ -11,6 +11,10 @@ msgstr ""
 msgid "(nearest)"
 msgstr "(அருகிலுள்ளது)"
 
+#: src/components/StopCard.tsx:159
+msgid "(opens in a new tab)"
+msgstr "(புதிய தாவலில் திறக்கும்)"
+
 #. placeholder {0}: option.transfers
 #: src/components/JourneyResults.tsx:615
 msgid "{0, plural, =0 {Direct · no bus change} =1 {Change bus once} other {Change bus # times}}"
@@ -248,7 +252,7 @@ msgstr "{label} நீக்கவும்"
 msgid "Close"
 msgstr "மூடு"
 
-#: src/components/StopCard.tsx:119
+#: src/components/StopCard.tsx:120
 msgid "Close stop details"
 msgstr "நிறுத்த விவரங்களை மூடுங்கள்"
 
@@ -381,7 +385,7 @@ msgstr "{fromName} இலிருந்து"
 msgid "From {fromName} to {toName}"
 msgstr "{fromName} இலிருந்து {toName} வரை"
 
-#: src/components/StopCard.tsx:100
+#: src/components/StopCard.tsx:101
 msgid "From {start} → here"
 msgstr "{start} இலிருந்து → இங்கே"
 
@@ -398,7 +402,7 @@ msgstr "அடுத்த நிறுத்தத்தில் இறங்�
 msgid "Get off here"
 msgstr "இங்கே இறங்கவும்"
 
-#: src/components/StopCard.tsx:67
+#: src/components/StopCard.tsx:68
 msgid "Go here"
 msgstr "இங்கே செல்"
 
@@ -411,7 +415,7 @@ msgstr "இப்போது நிறுத்தத்துக்குச�
 msgid "Help us make Metro better?"
 msgstr "Metro-வை மேம்படுத்த எங்களுக்கு உதவுவீர்களா?"
 
-#: src/components/StopCard.tsx:106
+#: src/components/StopCard.tsx:107
 msgid "Here → {end}"
 msgstr "இங்கிருந்து → {end}"
 
@@ -747,11 +751,11 @@ msgstr "சமீபத்திய பயணங்கள்"
 msgid "Retry map route"
 msgstr "மீண்டும் முயலுங்கள்"
 
-#: src/components/StopCard.tsx:198
+#: src/components/StopCard.tsx:209
 msgid "Route {route}"
 msgstr "வழி {route}"
 
-#: src/components/StopCard.tsx:197
+#: src/components/StopCard.tsx:208
 msgid "Route {route} towards {spokenPlaces}"
 msgstr "{spokenPlaces} நோக்கிச் செல்லும் வழி {route}"
 
@@ -790,12 +794,16 @@ msgstr "திட்டமிட்ட வருகை"
 msgid "Scheduled departure"
 msgstr "திட்டமிட்ட புறப்பாடு"
 
+#: src/components/StopCard.tsx:157
+msgid "See on Google Maps"
+msgstr "Google Maps-இல் பார்க்கவும்"
+
 #: src/i18n.ts:52
 msgctxt "month"
 msgid "Sep"
 msgstr "செப்."
 
-#: src/components/StopCard.tsx:179
+#: src/components/StopCard.tsx:190
 msgid "Served by"
 msgstr "இங்கு நிற்கும் வழிகள்"
 
@@ -835,7 +843,7 @@ msgstr "சில வரைபடத் தகவல்களை ஏற்ற �
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
 msgstr "சில நிறுத்தங்களை ஏற்ற முடியவில்லை. தேடல் முழுமையடையாமல் இருக்கலாம்."
 
-#: src/components/StopCard.tsx:67
+#: src/components/StopCard.tsx:68
 msgid "Start here"
 msgstr "இங்கே புறப்படு"
 
@@ -847,7 +855,7 @@ msgstr "தொடக்கம்: {stopLabel}"
 msgid "Stop"
 msgstr "நிறுத்தம்"
 
-#: src/components/StopCard.tsx:148
+#: src/components/StopCard.tsx:149
 msgid "Stop code {code}"
 msgstr "நிறுத்தக் குறியீடு {code}"
 
@@ -940,11 +948,11 @@ msgstr "போக்குவரத்து வரைபடம். நகர �
 msgid "Travel date"
 msgstr "பயண தேதி"
 
-#: src/components/StopCard.tsx:101
+#: src/components/StopCard.tsx:102
 msgid "Trip from {start} to this stop"
 msgstr "{start} இலிருந்து இந்த நிறுத்தத்திற்கு பயணம்"
 
-#: src/components/StopCard.tsx:107
+#: src/components/StopCard.tsx:108
 msgid "Trip from this stop to {end}"
 msgstr "இந்த நிறுத்தத்திலிருந்து {end} வரை பயணம்"
 
@@ -1037,7 +1045,7 @@ msgstr "உங்கள் இருப்பிடத்தைக் கண்�
 msgid "Your bus"
 msgstr "உங்கள் பேருந்து"
 
-#: src/components/StopCard.tsx:145
+#: src/components/StopCard.tsx:146
 msgid "Your destination"
 msgstr "உங்கள் சேருமிடம்"
 
@@ -1045,7 +1053,7 @@ msgstr "உங்கள் சேருமிடம்"
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "உங்கள் இருப்பிடத்தைக் கண்டறிய முடியவில்லை. நிறுத்தங்களைத் தேர்ந்தெடுக்கவும்."
 
-#: src/components/StopCard.tsx:143
+#: src/components/StopCard.tsx:144
 msgid "Your start"
 msgstr "உங்கள் புறப்பாடு"
 

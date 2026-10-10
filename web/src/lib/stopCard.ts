@@ -88,3 +88,11 @@ export function stopActions(
   if (end) return { primary: "from", current, completes: { to: end } };
   return { primary: "to", current, completes: null };
 }
+
+/** Opens the stop in Google Maps: the app on phones, the website elsewhere. */
+export function googleMapsUrl(
+  stop: Pick<Stop, "latitude" | "longitude">,
+): string {
+  const query = `${stop.latitude},${stop.longitude}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}

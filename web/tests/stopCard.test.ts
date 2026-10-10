@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import {
+  googleMapsUrl,
   sameStop,
   secondaryStopName,
   servedBy,
@@ -129,4 +130,11 @@ test("a stop that is already one end of the trip says so", () => {
     current: "from",
     completes: null,
   });
+});
+
+test("links a stop to Google Maps by its coordinates", () => {
+  assert.equal(
+    googleMapsUrl({ latitude: 6.840692, longitude: 79.975769 }),
+    "https://www.google.com/maps/search/?api=1&query=6.840692%2C79.975769",
+  );
 });

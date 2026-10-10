@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef } from "react";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, ExternalLink, X } from "lucide-react";
 import { useLingui } from "@lingui/react/macro";
 import { towards } from "../i18n";
 import { usePlaceName } from "../lib/placeNames";
 import {
+  googleMapsUrl,
   secondaryStopName,
   servedBy,
   stopActions,
@@ -147,6 +148,16 @@ export function StopCard({
           {actions.current && <span aria-hidden="true"> · </span>}
           {t`Stop code ${code}`}
         </p>
+        <a
+          className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-ink underline underline-offset-2"
+          href={googleMapsUrl(stop)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {t`See on Google Maps`}
+          <ExternalLink size={14} aria-hidden="true" />
+          <span className="sr-only">{t`(opens in a new tab)`}</span>
+        </a>
       </div>
 
       {completes && (
