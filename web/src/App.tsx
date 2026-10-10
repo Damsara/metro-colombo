@@ -42,6 +42,7 @@ import { Tabs } from "./components/ui/Tabs";
 import { intentSnap, snapHeights, type Snap } from "./lib/drawerSnap";
 import { useLanguage } from "./lib/language";
 import { findStop, type RecentStop } from "./lib/recentTrips";
+import { sameStop } from "./lib/stopCard";
 import { useMediaQuery } from "./lib/useMediaQuery";
 import {
   useElementHeight,
@@ -71,10 +72,9 @@ const MapView = lazy(() => import("./components/MapView"));
 
 const NO_BUSES: LiveBus[] = [];
 const POPULAR_STOPS = ["makumbura", "colombo fort", "kottawa"];
-// On phones the map controls climb above the tracked-bus pill or a stop card
-// sitting on the drawer, so neither covers them.
+// On phones the map controls climb above the tracked-bus pill sitting on the
+// drawer, so it doesn't cover them.
 const PILL_ROOM_PX = 92;
-const STOP_CARD_ROOM_PX = 200;
 // The control column and the attribution under it, so the column stops short
 // of the header.
 const CONTROLS_PX = 210;
@@ -96,6 +96,8 @@ function Home() {
     useTransitData();
   const [tab, setTab] = useState<"plan" | "routes">("plan");
   const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
+  // A stop opened from the keyboard moves focus to its card.
+  const [stopFromKeyboard, setStopFromKeyboard] = useState(false);
   // Phones show the map full screen with everything else in a drawer over it.
   const phone = !useMediaQuery("(min-width: 761px)");
   const [snap, setSnap] = useState<Snap>("peek");
@@ -214,15 +216,6 @@ function Home() {
     return () => window.clearInterval(interval);
   }, [tracking.active, refetchJourney]);
 
-  useEffect(() => {
-    if (!selectedStop) return;
-    const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedStop(null);
-    };
-    document.addEventListener("keydown", close);
-    return () => document.removeEventListener("keydown", close);
-  }, [selectedStop]);
-
   // Move the drawer to suit what the user just asked for.
   const viewJourney = selectedJourney ? journeyKey(selectedJourney) : null;
   const viewBus = selectedBus ? busKey(selectedBus) : null;
@@ -289,16 +282,59 @@ function Home() {
     return entry ? stopName(entry, language) : stop.name;
   };
 
-  const chooseStop = (stop: Stop, target: "from" | "to") => {
-    const entry = catalog.stops.find((item) => item.ids.includes(stop.id)) ?? {
+  const selectedEntry = useMemo(
+    () =>
+      selectedStop
+        ? catalog.stops.find((item) => item.ids.includes(selectedStop.id))
+        : undefined,
+    [catalog.stops, selectedStop],
+  );
+  // On phones the card takes over the drawer; closing it puts the drawer
+  // back where it was.
+  const snapBeforeStop = useRef<Snap | null>(null);
+  const openStop = (stop: Stop, keyboard = false) => {
+    if (!selectedStop) snapBeforeStop.current = snap;
+    setSelectedStop(stop);
+    setStopFromKeyboard(keyboard);
+  };
+  const closeStop = () => {
+    setSelectedStop(null);
+    if (snapBeforeStop.current) setSnap(snapBeforeStop.current);
+    snapBeforeStop.current = null;
+  };
+  const changeSnap = (next: Snap) => {
+    // Lowering the drawer to peek puts the stop's card away.
+    if (next === "peek" && selectedStop) {
+      setSelectedStop(null);
+      snapBeforeStop.current = null;
+    }
+    setSnap(next);
+  };
+  const chooseStop = (stop: Stop, target: "from" | "to", search: boolean) => {
+    const entry = selectedEntry ?? {
       ...stop,
       ids: [stop.id],
       routes: activeRoute ? [activeRoute.code] : [],
     };
-    if (target === "from") trip.changeFrom(entry);
-    else trip.changeTo(entry);
     setSelectedStop(null);
+    snapBeforeStop.current = null;
     setTab("plan");
+    if (search && target === "to" && trip.from) {
+      trip.searchFromStop(trip.from, entry);
+      return;
+    }
+    if (search && target === "from" && trip.to) {
+      trip.searchFromStop(entry, trip.to);
+      return;
+    }
+    // A stop can't be both ends, so taking one end frees the other.
+    if (target === "from") {
+      trip.changeFrom(entry);
+      if (trip.to && sameStop(stop, trip.to)) trip.changeTo(null);
+    } else {
+      trip.changeTo(entry);
+      if (trip.from && sameStop(stop, trip.from)) trip.changeFrom(null);
+    }
     // Bring the form up enough to show both stops and the search button.
     setSnap((current) => (current === "peek" ? "half" : current));
   };
@@ -307,6 +343,7 @@ function Home() {
     (option: JourneyOption | null) => {
       selectTripJourney(option);
       setSelectedStop(null);
+      snapBeforeStop.current = null;
     },
     [selectTripJourney],
   );
@@ -337,12 +374,7 @@ function Home() {
   const controlsInset = !phone
     ? 0
     : Math.min(
-        mapInset +
-          (selectedStop
-            ? STOP_CARD_ROOM_PX
-            : selectedBus && !trackedSelected
-              ? PILL_ROOM_PX
-              : 0),
+        mapInset + (selectedBus && !trackedSelected ? PILL_ROOM_PX : 0),
         viewport - headerHeight - CONTROLS_PX,
       );
 
@@ -354,9 +386,37 @@ function Home() {
   // At peek a phone shows "Where to?" first, Uber-style; it opens the
   // form's own destination picker.
   const whereToBar = phone && snap === "peek" && tab === "plan" && !showResults;
+  const stopCard = selectedStop && (
+    <StopCard
+      key={selectedStop.id}
+      stop={selectedStop}
+      entry={selectedEntry}
+      language={language}
+      routeColors={routeColors}
+      from={trip.from}
+      to={trip.to}
+      inline={phone}
+      focusHeading={stopFromKeyboard}
+      onClose={closeStop}
+      onChoose={(target, search) => chooseStop(selectedStop, target, search)}
+    />
+  );
+  // On phones a selected stop's card stands in for the drawer's content,
+  // which stays mounted underneath to come back as it was.
+  const stopInDrawer = phone && !!selectedStop;
   const panel = (
     <>
-      {whereToBar && (
+      {stopInDrawer && (
+        <div
+          className={`min-h-0 flex-1 overscroll-contain ${
+            panelScrolls ? "touch-pan-y overflow-y-auto" : "overflow-hidden"
+          }`}
+          data-vaul-no-drag={panelScrolls ? "" : undefined}
+        >
+          {stopCard}
+        </div>
+      )}
+      {whereToBar && !stopInDrawer && (
         <div className="px-4 pb-2">
           <button
             type="button"
@@ -384,7 +444,7 @@ function Home() {
       <Tabs
         // While tracking, a phone's drawer keeps to the bus.
         className={`border-b border-line px-6 pt-4.5 pb-3.5 max-md:px-4 max-md:pt-0 max-md:pb-2 ${
-          trackingPlan ? "max-md:hidden" : ""
+          trackingPlan || stopInDrawer ? "max-md:hidden" : ""
         }`}
         label={t`Explore Metro`}
         value={tab}
@@ -404,6 +464,7 @@ function Home() {
       />
       <div
         ref={panelRef}
+        hidden={stopInDrawer}
         className={`min-h-0 flex-1 overscroll-contain px-7.5 pt-7.5 pb-5 max-lg:px-6 max-lg:py-6 max-md:px-4 max-md:pt-3 max-md:pb-6 2xl:px-10 2xl:py-9 ${
           panelScrolls ? "touch-pan-y overflow-y-auto" : "overflow-hidden"
         }`}
@@ -603,7 +664,9 @@ function Home() {
                 selectedBusId={selection.selectedBusId}
                 onBusSelect={handleBusSelect}
                 selectedStopId={selectedStop?.id}
-                onStopSelect={setSelectedStop}
+                onStopSelect={(stop, keyboard) =>
+                  stop ? openStop(stop, keyboard) : closeStop()
+                }
                 onBack={closeRoute}
                 language={language}
               />
@@ -708,7 +771,7 @@ function Home() {
               snap={snap}
               heights={snapHeight}
               viewport={viewport}
-              onSnapChange={setSnap}
+              onSnapChange={changeSnap}
             >
               {panel}
             </PhoneDrawer>
@@ -746,7 +809,7 @@ function Home() {
                 followBus={selection.followBus}
                 showBusPill={!trackedSelected}
                 language={language}
-                onStopSelect={setSelectedStop}
+                onStopSelect={(stop) => (stop ? openStop(stop) : closeStop())}
                 onBusSelect={handleBusSelect}
                 onFollowChange={selection.changeFollow}
                 showLive={selection.showLive}
@@ -786,14 +849,7 @@ function Home() {
                 {t`Route line unavailable. Stops and trip planning still work.`}
               </Notice>
             )}
-            {selectedStop && (
-              <StopCard
-                stop={selectedStop}
-                language={language}
-                onClose={() => setSelectedStop(null)}
-                onChoose={(target) => chooseStop(selectedStop, target)}
-              />
-            )}
+            {!phone && stopCard}
             {/* Phones keep the map clear; MapView still names the key for screen readers. */}
             <MapLegend showLive={selection.showLive} hidden={phone} />
           </section>

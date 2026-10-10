@@ -45,7 +45,7 @@ export interface DrawerView {
 
 /**
  * Where the drawer should go when the view changes: down to peek to watch a
- * bus or to show a stop's card over the map, up to half for new results or a
+ * bus, to half for a stop's card (shown in the drawer), new results or a
  * route, or when tracking ends. Anything else leaves it where the user put it.
  */
 export function intentSnap(
@@ -63,7 +63,7 @@ export function intentSnap(
   // so the drawer comes up from peek but never hides the steps.
   if (next.journeyKey && next.journeyKey !== previous.journeyKey)
     return current === "peek" ? "half" : current;
-  if (next.stopId && next.stopId !== previous.stopId) return "peek";
+  if (next.stopId && next.stopId !== previous.stopId) return "half";
   if (next.tab !== previous.tab && current === "peek") return "half";
   return current;
 }

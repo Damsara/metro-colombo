@@ -218,8 +218,9 @@ function setScene(map: LibreMap, next: Scene, previous: Scene | null): void {
 
 function addTransitLayers(map: LibreMap): void {
   const empty: FeatureCollection = { type: "FeatureCollection", features: [] };
-  for (const id of [ROUTES, STOPS])
-    map.addSource(id, { type: "geojson", data: empty });
+  map.addSource(ROUTES, { type: "geojson", data: empty });
+  // Stops are keyed so the one under the mouse can carry a hover state.
+  map.addSource(STOPS, { type: "geojson", data: empty, promoteId: "key" });
   // Route lines go under the basemap's place labels; stops stay on top.
   const firstLabel = map
     .getStyle()
@@ -249,7 +250,8 @@ function addTransitLayers(map: LibreMap): void {
   // Stops follow transit-map convention: a white dot ringed in the route's
   // colour, laid flat on the (tilted) map and growing with zoom so the
   // network view stays readable. Journey ends and the selected stop are
-  // larger and drawn on top.
+  // larger and drawn on top. The selected stop also gets an ink ring on a
+  // paper halo, so it reads on any basemap and not by colour alone.
   const end: ExpressionSpecification = [
     "any",
     ["get", "board"],
@@ -270,15 +272,22 @@ function addTransitLayers(map: LibreMap): void {
     journey,
     stop,
   ];
+  const hovered: ExpressionSpecification = [
+    "boolean",
+    ["feature-state", "hover"],
+    false,
+  ];
   map.addLayer({
     id: "metro-stop-halo",
     type: "circle",
     source: STOPS,
     filter: ["get", "selected"],
     paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 12, 16, 20],
-      "circle-color": ["get", "color"],
-      "circle-opacity": 0.2,
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 15, 16, 22],
+      "circle-color": palette.paper,
+      "circle-opacity": 0.92,
+      "circle-stroke-width": 3,
+      "circle-stroke-color": palette.ink,
       "circle-pitch-alignment": "map",
     },
   });
@@ -304,20 +313,20 @@ function addTransitLayers(map: LibreMap): void {
         ["linear"],
         ["zoom"],
         10,
-        bySize(6, 5, 3, 2.5),
+        ["+", bySize(6, 5, 3, 2.5), ["case", hovered, 1.5, 0]],
         13,
-        bySize(8, 7, 5, 4.5),
+        ["+", bySize(8, 7, 5, 4.5), ["case", hovered, 2, 0]],
         16,
-        bySize(10, 9, 7, 7),
+        ["+", bySize(10, 9, 7, 7), ["case", hovered, 2, 0]],
       ],
       "circle-stroke-width": [
         "interpolate",
         ["linear"],
         ["zoom"],
         10,
-        ["case", ["any", ["get", "selected"], end], 2, 1],
+        ["case", ["any", ["get", "selected"], end, hovered], 2, 1],
         14,
-        ["case", ["any", ["get", "selected"], end], 3, 2],
+        ["case", ["any", ["get", "selected"], end, hovered], 3, 2],
       ],
       "circle-color": [
         "case",
@@ -329,6 +338,8 @@ function addTransitLayers(map: LibreMap): void {
         "case",
         ["get", "selected"],
         "#ffffff",
+        hovered,
+        palette.ink,
         ["get", "color"],
       ],
       "circle-pitch-alignment": "map",
@@ -785,15 +796,41 @@ export default function MapView(props: MapViewProps) {
           event.point,
           latest.current.scene.stopLookup,
         );
-        if (nearest) latest.current.props.onStopSelect(nearest);
+        // A tap away from any stop or bus puts the stop's card away.
+        latest.current.props.onStopSelect(nearest ?? null);
       });
+      // The stop under the mouse lifts a little, on pointers that can hover.
+      let hoverKey: string | null = null;
+      const setHover = (key: string | null) => {
+        if (key === hoverKey) return;
+        if (hoverKey !== null)
+          activeMap.setFeatureState(
+            { source: STOPS, id: hoverKey },
+            { hover: false },
+          );
+        hoverKey = key;
+        if (key !== null)
+          activeMap.setFeatureState(
+            { source: STOPS, id: key },
+            { hover: true },
+          );
+      };
       activeMap.on("mousemove", (event) => {
         if (!ready.current || !activeMap.getLayer(STOP_HIT)) return;
-        const overStop = activeMap.queryRenderedFeatures(event.point, {
-          layers: [STOP_HIT],
-        }).length;
         const overBus = busLayerRef.current?.pick(event.point);
+        const overStop = overBus
+          ? undefined
+          : nearestStop(
+              activeMap,
+              event.point,
+              latest.current.scene.stopLookup,
+            );
+        if (window.matchMedia("(hover: hover)").matches)
+          setHover(overStop ? stopKey(overStop) : null);
         canvas!.style.cursor = overStop || overBus ? "pointer" : "";
+      });
+      activeMap.on("mouseout", () => {
+        if (ready.current) setHover(null);
       });
       // Panning away from the bus (drag or arrow keys) pauses following;
       // zooming and rotating keep it. A two-finger pinch also reports a

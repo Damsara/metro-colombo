@@ -118,7 +118,7 @@ export function useTrip(stops: CatalogStop[]) {
   const search = (
     start: CatalogStop | null,
     end: CatalogStop | null,
-    source: "form" | "recent" | "return" = "form",
+    source: "form" | "recent" | "return" | "stop" = "form",
   ) => {
     if (journey.isFetching) return;
     if (!start || !end || start.id === end.id) return;
@@ -145,6 +145,9 @@ export function useTrip(stops: CatalogStop[]) {
     saveRecentTrips(trips);
   };
   const submit = () => search(from, to);
+  /** Searches straight away, for a trip finished from a stop's card. */
+  const searchFromStop = (start: CatalogStop, end: CatalogStop) =>
+    search(start, end, "stop");
   /** Runs a remembered trip, or its way back when `reverse` is set. */
   const searchRecent = (trip: RecentTrip, reverse = false) => {
     const start = findStop(stops, reverse ? trip.to : trip.from);
@@ -282,6 +285,7 @@ export function useTrip(stops: CatalogStop[]) {
     swap,
     changeDate,
     submit,
+    searchFromStop,
     searchNextDay,
     locationBusy,
     locationMessage,

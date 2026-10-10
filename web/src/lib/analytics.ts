@@ -7,7 +7,7 @@ type Events = {
     from_stop: string;
     to_stop: string;
     days_ahead: number;
-    source: "form" | "recent" | "return";
+    source: "form" | "recent" | "return" | "stop";
   };
   search_next_day: { days_ahead: number };
   trip_results: { options: number; days_ahead: number };

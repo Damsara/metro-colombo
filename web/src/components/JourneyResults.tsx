@@ -156,6 +156,21 @@ export function stopsAway(
   return stopsUntil(position, board);
 }
 
+/**
+ * Whether the operator has put a bus on the option's rides yet: "all",
+ * "some" (a transfer with only one bus known) or "none". A ride without one
+ * can't be tracked live.
+ */
+export function busAssignment(option: JourneyOption): "all" | "some" | "none" {
+  const rides = option.legs.flatMap((leg) =>
+    leg.kind === "ride" ? [leg.ride] : [],
+  );
+  const assigned = rides.filter(
+    (ride) => !!ride.bus?.registration_number?.trim(),
+  ).length;
+  return assigned === rides.length ? "all" : assigned ? "some" : "none";
+}
+
 /** The option to mark "Next bus": the soonest one still to leave today. */
 export function nextBusIndex(
   options: readonly JourneyOption[],
@@ -363,6 +378,12 @@ function RideLeg({
           />{" "}
           <strong>{towards(i18n, place(ride.end_location))}</strong>
         </p>
+        {!ride.bus?.registration_number?.trim() && (
+          <p className="mb-2 flex items-center gap-1.5 text-sm leading-relaxed text-muted">
+            <BusFront size={15} className="shrink-0" aria-hidden="true" />
+            {t`No bus assigned yet, so it can’t be followed live.`}
+          </p>
+        )}
         {ride.bus?.registration_number && (
           <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <p className="text-sm leading-relaxed text-muted">
@@ -518,6 +539,7 @@ function JourneyCard({
     leg.kind === "ride" ? [leg.ride.route.code] : [],
   );
   const live = liveRide(option, liveBuses, now);
+  const assignment = busAssignment(option);
   const firstRide = option.legs.find((leg) => leg.kind === "ride");
   const liveEstimate =
     firstRide?.kind === "ride" && hasLiveEstimate(firstRide.ride.board);
@@ -540,7 +562,7 @@ function JourneyCard({
   const timeSource = liveEstimate ? t`Live estimate` : t`Scheduled`;
   return (
     <li
-      className={`overflow-hidden ${cardClass({ selected: isSelected })}`}
+      className={`overflow-hidden ${cardClass({ selected: isSelected, tentative: assignment !== "all" })}`}
       id={cardId}
     >
       <button
@@ -597,6 +619,16 @@ function JourneyCard({
               other="Change bus # times"
             />
           </span>
+          {assignment !== "all" && (
+            // Dashed and quiet: the trip is still on, it just can't be
+            // followed live until a bus is put on it.
+            <span className="inline-flex min-h-5 items-center gap-1 rounded-full border border-dashed border-line-strong px-2 text-2xs font-semibold text-muted">
+              <BusFront size={12} aria-hidden="true" />
+              {assignment === "none"
+                ? t`No bus assigned yet`
+                : t`Not every bus assigned yet`}
+            </span>
+          )}
         </span>
         <span className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
           <span>
