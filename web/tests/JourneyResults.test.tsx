@@ -5,6 +5,7 @@ import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import JourneyResults, {
+  busAssignment,
   nextBusIndex,
   stopsAway,
 } from "../src/components/JourneyResults";
@@ -368,4 +369,31 @@ test("a live bus on the ride shows how far off it is and how full", () => {
   const unknown = renderToday([soon], [bus]);
   assert.match(unknown, /Bus live/);
   assert.doesNotMatch(unknown, /stops? away/);
+});
+
+test("an option says whether its rides have buses assigned yet", () => {
+  assert.equal(busAssignment(option), "all");
+  const withoutBus = (index: number): JourneyOption => ({
+    ...option,
+    legs: option.legs.map((leg, legIndex) =>
+      leg.kind === "ride" && legIndex === index
+        ? { ...leg, ride: { ...leg.ride, bus: undefined } }
+        : leg,
+    ),
+  });
+  assert.equal(busAssignment(withoutBus(0)), "some");
+  const none: JourneyOption = {
+    ...option,
+    legs: option.legs.map((leg) =>
+      leg.kind === "ride"
+        ? { ...leg, ride: { ...leg.ride, bus: undefined } }
+        : leg,
+    ),
+  };
+  assert.equal(busAssignment(none), "none");
+  // The card says so, and so does the ride in its steps.
+  const html = render(none, [], [none]);
+  assert.match(html, /No bus assigned yet<\/span>/);
+  assert.match(html, /can’t be followed live/);
+  assert.doesNotMatch(render(option), /No bus assigned/);
 });
