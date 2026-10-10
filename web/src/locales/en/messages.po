@@ -245,10 +245,11 @@ msgid "Clear"
 msgstr "Clear"
 
 #: src/components/StopPicker.tsx:408
+#: src/components/StopPicker.tsx:483
 msgid "Clear {label}"
 msgstr "Clear {label}"
 
-#: src/components/StopPicker.tsx:443
+#: src/components/StopPicker.tsx:444
 msgid "Close"
 msgstr "Close"
 
@@ -618,8 +619,8 @@ msgid "No buses reporting here right now."
 msgstr "No buses reporting here right now."
 
 #: src/components/StopPicker.tsx:222
-msgid "No matching stops. Try another name or stop code."
-msgstr "No matching stops. Try another name or stop code."
+msgid "No matching stops. Try another stop name or a place."
+msgstr "No matching stops. Try another stop name or a place."
 
 #: src/components/JourneyResults.tsx:804
 msgid "No more scheduled departures today"

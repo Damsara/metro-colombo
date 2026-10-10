@@ -245,10 +245,11 @@ msgid "Clear"
 msgstr "මකන්න"
 
 #: src/components/StopPicker.tsx:408
+#: src/components/StopPicker.tsx:483
 msgid "Clear {label}"
 msgstr "{label} ඉවත් කරන්න"
 
-#: src/components/StopPicker.tsx:443
+#: src/components/StopPicker.tsx:444
 msgid "Close"
 msgstr "වසන්න"
 
@@ -618,8 +619,8 @@ msgid "No buses reporting here right now."
 msgstr "දැනට මෙහි බස් නොපෙනේ."
 
 #: src/components/StopPicker.tsx:222
-msgid "No matching stops. Try another name or stop code."
-msgstr "ගැළපෙන නැවතුම් නැත. වෙනත් නමක් හෝ නැවතුම් අංකයක් සොයන්න."
+msgid "No matching stops. Try another stop name or a place."
+msgstr "ගැළපෙන නැවතුම් නැත. වෙනත් නැවතුම් නමක් හෝ ස්ථානයක් උත්සාහ කරන්න."
 
 #: src/components/JourneyResults.tsx:804
 msgid "No more scheduled departures today"

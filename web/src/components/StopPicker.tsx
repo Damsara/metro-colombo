@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
-import { Landmark, MapPin, Search, X } from "lucide-react";
+import { ArrowLeft, Landmark, MapPin, Search, X } from "lucide-react";
 import type { I18n } from "@lingui/core";
 import { plural, t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
@@ -219,7 +219,7 @@ export default function StopPicker({
   const help = loading
     ? t`Loading stops…`
     : choices.length === 0
-      ? t`No matching stops. Try another name or stop code.`
+      ? t`No matching stops. Try another stop name or a place.`
       : mobile
         ? t({
             message: plural(stopCount, {
@@ -270,7 +270,7 @@ export default function StopPicker({
           role="option"
           tabIndex={-1}
           aria-selected={isValue}
-          className={`flex w-full items-center gap-2 rounded-md text-left active:bg-tint-100 hover-fine:bg-tint-100 [&>svg]:text-muted ${
+          className={`flex w-full items-start gap-2.5 rounded-md text-left active:bg-tint-100 hover-fine:bg-tint-100 [&>svg]:mt-1 [&>svg]:text-muted ${
             index === activeIndex || isValue ? "bg-tint-100" : ""
           } ${inSheet ? "min-h-14 px-3 py-3.5" : "min-h-13 px-2 py-3"}`}
           onClick={() => choose(stop)}
@@ -291,14 +291,14 @@ export default function StopPicker({
               </span>
             ) : (
               !!stop.towards?.length && (
-                <span className={OPTION_DETAIL}>
+                <span className="mt-0.5 line-clamp-2 text-xs text-muted">
                   {towards(i18n, stop.towards.map(localPlace).join(" / "))}
                 </span>
               )
             )}
           </span>
           <span
-            className="flex max-w-26 flex-wrap justify-end gap-1"
+            className="mt-1 flex max-w-26 flex-wrap justify-end gap-1"
             aria-label={t`Routes`}
           >
             {stop.routes.map((route) => (
@@ -431,53 +431,71 @@ export default function StopPicker({
       {sheetOpen &&
         createPortal(
           <div
-            className="fixed inset-0 z-50 flex flex-col bg-white pt-[env(safe-area-inset-top)]"
+            className="fixed inset-0 z-50 flex flex-col bg-paper pt-[env(safe-area-inset-top)]"
             data-vaul-no-drag
             role="dialog"
             aria-modal="true"
             aria-label={label}
           >
-            <header className="relative flex items-center border-b border-line px-3 pt-3 pb-2">
+            {/* Back and the search field share one row, like any phone search. */}
+            <div className="flex items-center gap-1.5 border-b border-line py-2 pr-3 pl-1.5">
               <IconButton
-                className="absolute top-2 right-2"
+                variant="plain"
                 label={t`Close`}
                 onClick={closePicker}
               >
-                <X size={22} aria-hidden="true" />
+                <ArrowLeft size={22} aria-hidden="true" />
               </IconButton>
-              <h2 className="flex-1 px-11 text-center text-xl font-semibold">
-                {label}
-              </h2>
-            </header>
-            <div className="mx-4 mt-3 flex items-center gap-2.5 rounded-md border border-line-strong bg-paper px-3.5 py-1 [&>svg]:text-muted">
-              <Search size={20} aria-hidden="true" />
-              <input
-                ref={sheetInputRef}
-                className="min-h-12 min-w-0 flex-1 bg-transparent text-lg font-semibold text-ink"
-                role="combobox"
-                type="search"
-                inputMode="search"
-                enterKeyHint="search"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                placeholder={placeholder}
-                value={displayValue}
-                aria-autocomplete="list"
-                aria-expanded="true"
-                aria-controls={listId}
-                aria-describedby={helpId}
-                aria-activedescendant={
-                  activeStop ? `${listId}-${activeIndex}` : undefined
-                }
-                onChange={(event) => onInputChange(event.target.value)}
-                onKeyDown={onListKeyDown}
-              />
+              <div className="flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-full bg-field pr-1.5 pl-4 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink">
+                <Search
+                  className="shrink-0 text-muted"
+                  size={18}
+                  aria-hidden="true"
+                />
+                <input
+                  ref={sheetInputRef}
+                  className="min-h-11 min-w-0 flex-1 bg-transparent text-lg font-semibold text-ink outline-none placeholder:font-normal placeholder:text-muted"
+                  role="combobox"
+                  type="text"
+                  inputMode="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  placeholder={placeholder}
+                  value={displayValue}
+                  aria-label={label}
+                  aria-autocomplete="list"
+                  aria-expanded="true"
+                  aria-controls={listId}
+                  aria-describedby={helpId}
+                  aria-activedescendant={
+                    activeStop ? `${listId}-${activeIndex}` : undefined
+                  }
+                  onChange={(event) => onInputChange(event.target.value)}
+                  onKeyDown={onListKeyDown}
+                />
+                {displayValue && (
+                  <IconButton
+                    variant="plain"
+                    size="sm"
+                    label={t`Clear ${label}`}
+                    onClick={clearValue}
+                  >
+                    <X size={18} aria-hidden="true" />
+                  </IconButton>
+                )}
+              </div>
             </div>
+            {/* Spoken always; shown only when there's nothing to list. */}
             <p
               id={helpId}
-              className={`mx-4 mt-2 rounded-md ${STATUS}`}
+              className={
+                !loading && choices.length === 0
+                  ? "px-8 pt-12 text-center text-sm leading-normal text-muted"
+                  : "sr-only"
+              }
               role="status"
               aria-live="polite"
             >

@@ -245,10 +245,11 @@ msgid "Clear"
 msgstr "அழி"
 
 #: src/components/StopPicker.tsx:408
+#: src/components/StopPicker.tsx:483
 msgid "Clear {label}"
 msgstr "{label} நீக்கவும்"
 
-#: src/components/StopPicker.tsx:443
+#: src/components/StopPicker.tsx:444
 msgid "Close"
 msgstr "மூடு"
 
@@ -618,8 +619,8 @@ msgid "No buses reporting here right now."
 msgstr "இப்போது இங்கு பேருந்துகள் இல்லை."
 
 #: src/components/StopPicker.tsx:222
-msgid "No matching stops. Try another name or stop code."
-msgstr "பொருந்தும் நிறுத்தங்கள் இல்லை. வேறு பெயர் அல்லது நிறுத்தக் குறியீட்டை முயற்சிக்கவும்."
+msgid "No matching stops. Try another stop name or a place."
+msgstr "பொருந்தும் நிறுத்தங்கள் இல்லை. வேறு நிறுத்தப் பெயர் அல்லது இடத்தை முயற்சிக்கவும்."
 
 #: src/components/JourneyResults.tsx:804
 msgid "No more scheduled departures today"
