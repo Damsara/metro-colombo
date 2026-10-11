@@ -41,6 +41,7 @@ import { IconButton } from "./components/ui/IconButton";
 import { Notice } from "./components/ui/Notice";
 import { Tabs } from "./components/ui/Tabs";
 import { intentSnap, snapHeights, type Snap } from "./lib/drawerSnap";
+import type { FollowState } from "./lib/follow";
 import { useLanguage } from "./lib/language";
 import { findStop, type RecentStop } from "./lib/recentTrips";
 import { sameStop } from "./lib/stopCard";
@@ -122,11 +123,9 @@ function Home() {
 
   const trip = useTrip(catalog.stops);
   const live = useLiveBuses(routeCodeById);
-  const selection = useBusSelection(live.buses, live.loaded);
   const browser = useRouteBrowser(routes);
   const { selectedJourney, request, journey, showResults } = trip;
   const { buses, routeCodeOf } = live;
-  const { selectedBus, release: releaseBus } = selection;
   const tracking = useTracking({
     buses: live.unavailable ? NO_BUSES : buses,
     liveLoaded: live.loaded,
@@ -136,10 +135,21 @@ function Home() {
   });
   const trackingPlan = tab === "plan" && tracking.active;
   const trackedKey = tracking.bus ? busKey(tracking.bus) : null;
-  // The tracked bus's identity lives in the panel, so the map's pill only
-  // shows for some other bus picked on the map.
+  const selection = useBusSelection(live.buses, live.loaded, trackedKey);
+  const { selectedBus, release: releaseBus } = selection;
   const trackedSelected =
     tracking.active && !!selectedBus && busKey(selectedBus) === trackedKey;
+  // The tracked bus's identity lives in the panel, so the map's pill only
+  // shows for some other bus picked on the map.
+  const showBusPill = !(trackingPlan && trackedSelected);
+  const trackedFollow: FollowState = tracking.lost
+    ? "lost"
+    : trackedSelected && selection.followState
+      ? selection.followState
+      : tracking.liveBus
+        ? "lookingAround"
+        : "waiting";
+  const [frameRide, setFrameRide] = useState<Ride | null>(null);
 
   // The Plan tab shows the selected journey's first ride; the Routes tab shows
   // the route the user opened.
@@ -155,9 +165,7 @@ function Home() {
   const routeStops = useRouteStops(activeRoute?.code, direction);
   const geometry = useGeometry(activeRoute?.code, direction);
   const lineKey = `${activeRoute?.code}|${direction}`;
-  const [closedLineNotice, setClosedLineNotice] = useState<string | null>(
-    null,
-  );
+  const [closedLineNotice, setClosedLineNotice] = useState<string | null>(null);
   const { mapRoutes: networkMapRoutes } = useAllRouteGeometries(routes);
   const mapLayers = useMapLayers({
     tab,
@@ -179,6 +187,7 @@ function Home() {
   const handleBusSelect = useCallback(
     (bus: LiveBus | null) => {
       selectBus(bus);
+      if (bus) setFrameRide(null);
       if (bus) track("follow_bus", { route: routeCodeOf(bus) ?? "unknown" });
       if (!bus || tab !== "routes") return;
       const code = routeCodeOf(bus);
@@ -194,9 +203,6 @@ function Home() {
     },
     [setShowLive, handleBusSelect],
   );
-  useEffect(() => {
-    if (tab === "plan") releaseBus();
-  }, [tab, releaseBus]);
 
   // While tracking, the map comes back to the tracked bus whenever nothing
   // else is picked, e.g. after it drops out of the feed for a moment.
@@ -207,8 +213,15 @@ function Home() {
   }, [trackingPlan, trackedLive, selection.selectedBusId, selectBus]);
   // Ending tracking, by button or by Back, lets go of the bus.
   const wasTracking = useRef(false);
+  const trackedRide = useRef<Ride | null>(null);
   useEffect(() => {
-    if (wasTracking.current && !tracking.active) releaseBus();
+    if (tracking.ride) trackedRide.current = tracking.ride;
+  }, [tracking.ride]);
+  useEffect(() => {
+    if (wasTracking.current && !tracking.active) {
+      releaseBus();
+      setFrameRide(trackedRide.current);
+    }
     wasTracking.current = tracking.active;
   }, [tracking.active, releaseBus]);
   const refetchJourney = journey.refetch;
@@ -323,7 +336,7 @@ function Home() {
     };
     setSelectedStop(null);
     snapBeforeStop.current = null;
-    setTab("plan");
+    changeTab("plan");
     if (search && target === "to" && trip.from) {
       trip.searchFromStop(trip.from, entry);
       return;
@@ -347,6 +360,7 @@ function Home() {
   const selectJourney = useCallback(
     (option: JourneyOption | null) => {
       selectTripJourney(option);
+      setFrameRide(null);
       setSelectedStop(null);
       snapBeforeStop.current = null;
     },
@@ -357,10 +371,11 @@ function Home() {
     tracking.start(option, ride, bus);
     handleBusSelect(bus);
   };
-  const changeTab = (next: "plan" | "routes") => {
+  function changeTab(next: "plan" | "routes") {
+    if (next === "plan" && tab !== "plan" && !trackedSelected) releaseBus();
     setTab(next);
     setSelectedStop(null);
-  };
+  }
   const openRoute = (code: string) => {
     browser.open(code);
     releaseBus();
@@ -379,7 +394,7 @@ function Home() {
   const controlsInset = !phone
     ? 0
     : Math.min(
-        mapInset + (selectedBus && !trackedSelected ? PILL_ROOM_PX : 0),
+        mapInset + (selectedBus && showBusPill ? PILL_ROOM_PX : 0),
         viewport - headerHeight - CONTROLS_PX,
       );
 
@@ -482,11 +497,10 @@ function Home() {
               tracking={tracking}
               language={language}
               routeColors={routeColors}
-              following={trackedSelected && selection.followBus}
+              followState={trackedFollow}
               onFollow={() => {
-                if (!tracking.liveBus) return;
-                if (trackedSelected) selection.changeFollow(true);
-                else handleBusSelect(tracking.liveBus);
+                if (trackedSelected) selection.dispatch({ type: "follow" });
+                else if (tracking.liveBus) handleBusSelect(tracking.liveBus);
               }}
               onStop={tracking.stop}
             />
@@ -820,11 +834,13 @@ function Home() {
                 selectedJourney={tab === "plan" ? selectedJourney : null}
                 selectedBus={selectedBus}
                 followBus={selection.followBus}
-                showBusPill={!trackedSelected}
+                followState={selection.followState}
+                frameRide={tab === "plan" ? frameRide : null}
+                showBusPill={showBusPill}
                 language={language}
                 onStopSelect={(stop) => (stop ? openStop(stop) : closeStop())}
                 onBusSelect={handleBusSelect}
-                onFollowChange={selection.changeFollow}
+                onFollowEvent={selection.dispatch}
                 showLive={selection.showLive}
                 onShowLiveChange={handleShowLiveChange}
                 insets={
