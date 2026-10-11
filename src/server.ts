@@ -29,11 +29,25 @@ type ApiError = BadRequest | NotFound | UpstreamError | Schema.SchemaError;
 const json = (body: unknown, status = 200) =>
   HttpServerResponse.jsonUnsafe(body, { status });
 
+// How long browsers (and a CDN set to cache /api) may reuse a response: fresh
+// for a while, then used while a fresh copy is fetched behind it. Reference
+// data changes a few times a day at most; errors and live data aren't reused.
+const CACHE = {
+  reference: "public, max-age=3600, stale-while-revalidate=86400",
+  geometry: "public, max-age=86400, stale-while-revalidate=604800",
+  none: "no-store",
+} as const;
+
+const noStore = HttpServerResponse.setHeader("cache-control", CACHE.none);
+
 const respond = <A, R>(
   handler: Effect.Effect<A, ApiError, R>,
+  cacheControl: string = CACHE.none,
 ): Effect.Effect<HttpServerResponse.HttpServerResponse, never, R> =>
   handler.pipe(
-    Effect.map((body) => json(body)),
+    Effect.map((body) =>
+      HttpServerResponse.setHeader(json(body), "cache-control", cacheControl),
+    ),
     Effect.catchDefect((defect) =>
       Effect.logError("unexpected failure", defect).pipe(
         Effect.as(json({ error: "internal error" }, 500)),
@@ -57,6 +71,9 @@ const respond = <A, R>(
           );
       }
     }),
+    Effect.map((response) =>
+      response.status >= 400 ? noStore(response) : response,
+    ),
   );
 
 const DirectionQuery = Schema.Struct({
@@ -105,6 +122,7 @@ const healthHandler = Effect.gen(function* () {
       onSuccess: (routes) =>
         json({ ok: true, routes_count: routes.length, upstream: "reachable" }),
     }),
+    Effect.map(noStore),
   );
 });
 
@@ -112,9 +130,10 @@ const routesHandler = respond(
   Effect.gen(function* () {
     return { routes: yield* (yield* UpstreamApi).routes };
   }),
+  CACHE.reference,
 );
 
-const routeHandler = respond(findRoute());
+const routeHandler = respond(findRoute(), CACHE.reference);
 
 const geometryHandler = respond(
   Effect.gen(function* () {
@@ -128,6 +147,7 @@ const geometryHandler = respond(
     if (!selected) return yield* invalidDirection(route);
     return yield* api.geometry(selected.geojson_url);
   }),
+  CACHE.geometry,
 );
 
 const stopsHandler = respond(
@@ -155,6 +175,7 @@ const stopsHandler = respond(
     );
     return results.length === 1 ? results[0] : { directions: results };
   }),
+  CACHE.reference,
 );
 
 const JourneyQuery = Schema.Struct({
@@ -192,16 +213,19 @@ const journeyHandler = respond(
       ),
     );
   }),
-).pipe(Effect.map(HttpServerResponse.setHeader("cache-control", "no-store")));
+  // The default date is "today", and today's plans carry live estimates.
+  CACHE.none,
+);
 
 const placesHandler = respond(
   Effect.gen(function* () {
     return { places: yield* (yield* UpstreamApi).places };
   }),
+  CACHE.reference,
 );
 
 const liveHandler = Effect.gen(function* () {
-  return json(yield* (yield* LiveFleet).snapshot);
+  return noStore(json(yield* (yield* LiveFleet).snapshot));
 });
 
 const ApiRoutes = HttpRouter.addAll(
@@ -257,8 +281,6 @@ const Main = HttpRouter.serve(
     WebRoutes,
     HttpRouter.cors({ allowedMethods: ["GET"] }),
   ),
-).pipe(
-  Layer.provide([App, HttpLive]),
-);
+).pipe(Layer.provide([App, HttpLive]));
 
 Layer.launch(Main).pipe(NodeRuntime.runMain);

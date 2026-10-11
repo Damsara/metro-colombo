@@ -104,9 +104,11 @@ export function linkPlaces(
 }
 
 // Successful lookups are kept for `freshTtl`, so a healthy origin is barely
-// bothered. If a refresh fails, the last good value keeps being served until
-// `staleTtl` after it was fetched; only then does the lookup fail. Failures
-// are retried after 2s.
+// bothered. After that the last good value is still answered straight away
+// while a single background refresh fetches a new one, so no request waits
+// on the origin for data it has seen before. Past `staleTtl` without a
+// successful refresh, requests wait for the origin again and fail with it.
+// Failures are retried after 2s.
 export const staleCache = Effect.fnUntraced(function* <A>(
   lookup: (key: string) => Effect.Effect<A, UpstreamError>,
   options: {
@@ -115,11 +117,16 @@ export const staleCache = Effect.fnUntraced(function* <A>(
     readonly capacity: number;
   },
 ) {
+  // Shares in-flight lookups, and holds a failure for 2s so a struggling
+  // origin isn't hammered.
   const cache = yield* Cache.makeWith(lookup, {
     capacity: options.capacity,
     timeToLive: (exit) =>
       Exit.isSuccess(exit) ? options.freshTtl : FAILURE_RETRY_AFTER,
   });
+  const freshMillis = Duration.toMillis(
+    Duration.fromInputUnsafe(options.freshTtl),
+  );
   const staleMillis = Duration.toMillis(
     Duration.fromInputUnsafe(options.staleTtl),
   );
@@ -128,6 +135,7 @@ export const staleCache = Effect.fnUntraced(function* <A>(
     string,
     { readonly value: A; readonly at: number }
   >();
+  const refreshing = new Set<string>();
 
   const remember = (key: string, value: A, at: number) => {
     lastGood.delete(key);
@@ -137,17 +145,29 @@ export const staleCache = Effect.fnUntraced(function* <A>(
     }
   };
 
+  const fetch = (key: string) =>
+    Effect.gen(function* () {
+      const value = yield* Cache.get(cache, key);
+      const now = yield* Clock.currentTimeMillis;
+      if (lastGood.get(key)?.value !== value) remember(key, value, now);
+      return value;
+    });
+
   return (key: string): Effect.Effect<A, UpstreamError> =>
     Effect.gen(function* () {
-      const result = yield* Effect.exit(Cache.get(cache, key));
       const now = yield* Clock.currentTimeMillis;
       const previous = lastGood.get(key);
-      if (Exit.isSuccess(result)) {
-        if (previous?.value !== result.value) remember(key, result.value, now);
-        return result.value;
+      if (!previous || now - previous.at > staleMillis)
+        return yield* fetch(key);
+      if (now - previous.at >= freshMillis && !refreshing.has(key)) {
+        refreshing.add(key);
+        yield* fetch(key).pipe(
+          Effect.ignore,
+          Effect.ensuring(Effect.sync(() => refreshing.delete(key))),
+          Effect.forkDetach,
+        );
       }
-      if (previous && now - previous.at <= staleMillis) return previous.value;
-      return yield* Effect.failCause(result.cause);
+      return previous.value;
     });
 });
 
