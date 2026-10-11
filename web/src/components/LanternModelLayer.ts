@@ -13,8 +13,12 @@ const EARTH_CIRCUMFERENCE_METERS = 40075016.686;
 const WORLD_PIXELS_AT_ZOOM_0 = 512;
 
 const LANTERN_METERS = 9;
-const MIN_LANTERN_PIXELS = 44;
-const HANG_ABOVE_GROUND = 1.35;
+const STREET_ZOOM = 15;
+const CITY_ZOOM = 12;
+const STREET_LANTERN_PIXELS = 44;
+const CITY_LANTERN_PIXELS = 20;
+// Stands closer than this many lantern heights on screen hide the later one.
+const STAND_SPACING = 1.6;
 // The south-west monsoon: lanterns lean towards the north-east.
 const WIND_TOWARDS = new THREE.Vector2(1, -1).normalize();
 const LEAN_RADIANS = 0.07;
@@ -23,11 +27,30 @@ const SWAY_RADIANS = 0.06;
 const GUST_WAVELENGTH_METERS = 900;
 const FRAME_MS = 33;
 
+// A bamboo pole beside the stop, in lantern heights.
+const POLE_HEIGHT = 2.6;
+const POLE_RADIUS = 0.035;
+const ARM_LENGTH = 0.55;
+const ARM_RISE = 0.18;
+const BAMBOO = 0xc8a464;
+
+type Stand = { group: THREE.Group; pivot: THREE.Group };
+
 function lanternScaleAtZoom(zoom: number): number {
   const metersPerPixel =
     (EARTH_CIRCUMFERENCE_METERS * Math.cos((ORIGIN[1] * Math.PI) / 180)) /
     (WORLD_PIXELS_AT_ZOOM_0 * 2 ** zoom);
-  return Math.max(LANTERN_METERS, MIN_LANTERN_PIXELS * metersPerPixel);
+  const t = THREE.MathUtils.clamp(
+    (zoom - CITY_ZOOM) / (STREET_ZOOM - CITY_ZOOM),
+    0,
+    1,
+  );
+  const pixels = THREE.MathUtils.lerp(
+    CITY_LANTERN_PIXELS,
+    STREET_LANTERN_PIXELS,
+    t,
+  );
+  return Math.max(LANTERN_METERS, pixels * metersPerPixel);
 }
 
 // A steady lean, gusts that roll across the map, and each lantern's own swing.
@@ -51,6 +74,45 @@ function dispose(root: THREE.Object3D): void {
   });
 }
 
+function poleParts(): {
+  pole: THREE.BufferGeometry;
+  arm: THREE.BufferGeometry;
+  tip: THREE.Vector3;
+} {
+  const pole = new THREE.CylinderGeometry(
+    POLE_RADIUS * 0.8,
+    POLE_RADIUS,
+    POLE_HEIGHT,
+    8,
+  ).translate(0, POLE_HEIGHT / 2, 0);
+  const top = new THREE.Vector3(0, POLE_HEIGHT * 0.96, 0);
+  const tip = top
+    .clone()
+    .add(
+      new THREE.Vector3(
+        WIND_TOWARDS.x * ARM_LENGTH,
+        ARM_RISE,
+        WIND_TOWARDS.y * ARM_LENGTH,
+      ),
+    );
+  const direction = tip.clone().sub(top);
+  const arm = new THREE.CylinderGeometry(
+    POLE_RADIUS * 0.45,
+    POLE_RADIUS * 0.6,
+    direction.length(),
+    6,
+  )
+    .translate(0, direction.length() / 2, 0)
+    .applyQuaternion(
+      new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        direction.clone().normalize(),
+      ),
+    )
+    .translate(top.x, top.y, top.z);
+  return { pole, arm, tip };
+}
+
 export class LanternModelLayer implements CustomLayerInterface {
   readonly id = "metro-festive-lanterns";
   readonly type = "custom" as const;
@@ -71,9 +133,14 @@ export class LanternModelLayer implements CustomLayerInterface {
     .scale(new THREE.Vector3(this.meter, -this.meter, this.meter))
     .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
   private readonly projection = new THREE.Matrix4();
+  private readonly parts = poleParts();
+  private readonly bamboo = new THREE.MeshStandardMaterial({
+    color: BAMBOO,
+    roughness: 0.85,
+  });
 
   private stops: [number, number][] = [];
-  private lanterns: THREE.Group[] = [];
+  private stands: Stand[] = [];
   private reducedMotion = false;
   private nextFrame?: ReturnType<typeof setTimeout>;
 
@@ -110,15 +177,21 @@ export class LanternModelLayer implements CustomLayerInterface {
     args: CustomRenderMethodInput,
   ): void {
     const map = this.map;
-    if (!this.renderer || !map || !this.lanterns.length) return;
+    if (!this.renderer || !map || !this.stands.length) return;
     const now = performance.now();
     const windy = !this.reducedMotion;
     const scale = lanternScaleAtZoom(map.getZoom());
-    this.lanterns.forEach((lantern, index) => {
-      lantern.scale.setScalar(scale);
-      lantern.position.y = scale * (1 + HANG_ABOVE_GROUND);
-      const tilt = windy ? windTilt(lantern.position, index, now) : 0;
-      lantern.rotation.set(-tilt * WIND_TOWARDS.y, 0, tilt * WIND_TOWARDS.x);
+    const spacing = scale * STAND_SPACING;
+    const shown: THREE.Vector3[] = [];
+    this.stands.forEach(({ group, pivot }, index) => {
+      group.visible = shown.every(
+        (other) => other.distanceTo(group.position) >= spacing,
+      );
+      if (!group.visible) return;
+      shown.push(group.position);
+      group.scale.setScalar(scale);
+      const tilt = windy ? windTilt(group.position, index, now) : 0;
+      pivot.rotation.set(-tilt * WIND_TOWARDS.y, 0, tilt * WIND_TOWARDS.x);
     });
     this.projection.fromArray(args.defaultProjectionData.mainMatrix);
     this.camera.projectionMatrix
@@ -128,6 +201,18 @@ export class LanternModelLayer implements CustomLayerInterface {
     this.renderer.render(this.scene, this.camera);
     this.renderer.resetState();
     if (windy && this.onScreen(map)) this.scheduleFrame(map);
+  }
+
+  onRemove(): void {
+    this.disposed = true;
+    clearTimeout(this.nextFrame);
+    this.scene.clear();
+    this.templates.forEach(dispose);
+    this.parts.pole.dispose();
+    this.parts.arm.dispose();
+    this.bamboo.dispose();
+    this.renderer?.dispose();
+    this.map = undefined;
   }
 
   private onScreen(map: LibreMap): boolean {
@@ -141,15 +226,6 @@ export class LanternModelLayer implements CustomLayerInterface {
       this.nextFrame = undefined;
       map.triggerRepaint();
     }, FRAME_MS);
-  }
-
-  onRemove(): void {
-    this.disposed = true;
-    clearTimeout(this.nextFrame);
-    this.scene.clear();
-    this.templates.forEach(dispose);
-    this.renderer?.dispose();
-    this.map = undefined;
   }
 
   private load(): void {
@@ -177,22 +253,27 @@ export class LanternModelLayer implements CustomLayerInterface {
   }
 
   private rebuild(): void {
-    for (const lantern of this.lanterns) this.scene.remove(lantern);
-    this.lanterns = [];
+    for (const { group } of this.stands) this.scene.remove(group);
+    this.stands = [];
     if (this.templates.length) {
       this.stops.forEach(([lng, lat], index) => {
         const coordinate = MercatorCoordinate.fromLngLat({ lng, lat });
-        const lantern = new THREE.Group();
+        const group = new THREE.Group();
+        group.add(new THREE.Mesh(this.parts.pole, this.bamboo));
+        group.add(new THREE.Mesh(this.parts.arm, this.bamboo));
+        const pivot = new THREE.Group();
+        pivot.position.copy(this.parts.tip);
         const model = this.templates[index % this.templates.length].clone(true);
         model.rotation.y = index * 0.9;
-        lantern.add(model);
-        lantern.position.set(
+        pivot.add(model);
+        group.add(pivot);
+        group.position.set(
           (coordinate.x - this.origin.x) / this.meter,
           0,
           (coordinate.y - this.origin.y) / this.meter,
         );
-        this.scene.add(lantern);
-        this.lanterns.push(lantern);
+        this.scene.add(group);
+        this.stands.push({ group, pivot });
       });
     }
     this.map?.triggerRepaint();

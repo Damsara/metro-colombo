@@ -1280,9 +1280,9 @@ export default function MapView(props: Props) {
       ? (map?.getSource(FESTIVE) as GeoJSONSource | undefined)
       : undefined;
     if (!map || !source) return;
-    const lanterns = stopMark === "lantern";
-    const modelled = lanterns && mapMode === "3d";
     const stops = stopMark ? (markedStops ?? []) : [];
+    const lanterns = stopMark === "lantern" && stops.length > 0;
+    const modelled = lanterns && mapMode === "3d";
     lanternLayerRef.current?.setStops(
       modelled ? stops.map((stop) => [stop.longitude, stop.latitude]) : [],
     );
