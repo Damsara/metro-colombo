@@ -30,3 +30,52 @@ export function todaysOccasion(
       .sort((a, b) => rank(a.kind) - rank(b.kind))[0] ?? null
   );
 }
+
+export type KeyValueStore = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+const MOMENT_KEY = "lmt.occasionMoment";
+const OFF_KEY = "lmt.festiveOff";
+
+export const momentKey = (occasion: Occasion) =>
+  `${occasion.date}:${occasion.kind}`;
+
+function read(store: KeyValueStore | null, key: string): string | null {
+  try {
+    return store?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function write(store: KeyValueStore | null, key: string, value: string | null) {
+  try {
+    if (value === null) store?.removeItem(key);
+    else store?.setItem(key, value);
+  } catch {
+    return;
+  }
+}
+
+export function shouldPlayMoment(
+  store: KeyValueStore | null,
+  occasion: Occasion,
+  played: Set<string>,
+): boolean {
+  const key = momentKey(occasion);
+  return !played.has(key) && read(store, MOMENT_KEY) !== key;
+}
+
+export function markMomentPlayed(
+  store: KeyValueStore | null,
+  occasion: Occasion,
+  played: Set<string>,
+): void {
+  played.add(momentKey(occasion));
+  write(store, MOMENT_KEY, momentKey(occasion));
+}
+
+export const festiveOff = (store: KeyValueStore | null) =>
+  read(store, OFF_KEY) === "1";
+
+export const setFestiveOff = (store: KeyValueStore | null, off: boolean) =>
+  write(store, OFF_KEY, off ? "1" : null);
