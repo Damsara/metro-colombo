@@ -28,6 +28,8 @@ const GUST_WAVELENGTH_METERS = 900;
 const FRAME_MS = 33;
 const POLE_RADIUS = 0.035;
 const ARM_RISE = 0.18;
+// Ground stands sit this many model heights back from the stop, on the roadside.
+const GROUND_SETBACK = 0.45;
 
 type Stand = {
   group: THREE.Group;
@@ -203,7 +205,7 @@ export class StandModelLayer implements CustomLayerInterface {
     const wind = this.reducedMotion ? undefined : stand.wind;
     const scale = standScale(stand, map.getZoom());
     const spacing = scale * STAND_SPACING;
-    const reach = this.pole ? stand.pole!.arm * scale : 0;
+    const reach = (this.pole ? stand.pole!.arm : GROUND_SETBACK) * scale;
     const shown: THREE.Vector3[] = [];
     this.stands.forEach(
       ({ group, pivot, stop, toRoad, wind: local }, index) => {

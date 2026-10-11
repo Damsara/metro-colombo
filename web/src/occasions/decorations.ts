@@ -1,3 +1,5 @@
+import christmasTree from "../assets/occasions/christmas-tree.png";
+import christmasTrees from "../assets/occasions/christmas-trees.glb?url";
 import lanternBlue from "../assets/occasions/lantern-blue.png";
 import lanternPeach from "../assets/occasions/lantern-peach.png";
 import lanternRed from "../assets/occasions/lantern-red.png";
@@ -34,6 +36,22 @@ export const LANTERNS: StopDecoration = {
     title: "Vesak Lanterns",
     author: "sadeesha",
     href: "https://sketchfab.com/3d-models/vesak-lanterns-46bc0c19982940939bcd73710b55ee36",
+    license: "CC BY 4.0",
+  },
+};
+
+export const CHRISTMAS_TREES: StopDecoration = {
+  id: "christmas-tree",
+  images: [christmasTree],
+  stand: {
+    model: christmasTrees,
+    meters: 7,
+    pixels: { city: 26, street: 64 },
+  },
+  credit: {
+    title: "Christmas tree",
+    author: "Brian Seoane",
+    href: "https://sketchfab.com/3d-models/christmas-tree-7869dd72aa6f4db0a8416f2d630370ed",
     license: "CC BY 4.0",
   },
 };
