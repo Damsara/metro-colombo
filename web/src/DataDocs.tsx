@@ -35,8 +35,11 @@ function Query({ title, about, sql }: Example) {
 const BASICS: Example[] = [
   {
     title: "Where every bus is right now",
+    about:
+      "Every bus heard from in the last ten minutes, at its latest position.",
     sql: `SELECT registration, route_code, lat, lng, ts, load
 FROM fixes_today
+WHERE ts > (SELECT max(ts) FROM fixes_today) - INTERVAL 10 MINUTE
 QUALIFY row_number() OVER (PARTITION BY bus_id ORDER BY ts DESC) = 1;`,
   },
   {
@@ -48,8 +51,12 @@ LIMIT 10;`,
   },
   {
     title: "Buses that went quiet the longest",
+    about:
+      "Gaps in the daytime on finished days, leaving out the nights when buses are switched off.",
     sql: `SELECT registration, route_code, silent_from, silent_for
 FROM silences
+WHERE hour(silent_from) BETWEEN 5 AND 21
+  AND heard_again::DATE = silent_from::DATE
 ORDER BY silent_for DESC
 LIMIT 10;`,
   },
@@ -59,7 +66,7 @@ const UNDERRATED: Example[] = [
   {
     title: "Bus bunching",
     about:
-      "Two buses on the same route and direction within 300 m of each other: the reason you wait 20 minutes and then two arrive at once.",
+      "Two buses on the same route and direction within 300 m of each other: the reason you wait 20 minutes and then two arrive at once. Buses waiting together at the end of a route show up too.",
     sql: `WITH f AS (
   SELECT bus_id, registration, route_code, direction_id, lat, lng,
          time_bucket(INTERVAL 1 MINUTE, ts) AS minute
@@ -80,19 +87,23 @@ LIMIT 20;`,
   {
     title: "Real gaps between buses at your stop",
     about:
-      "When buses actually passed a stop and how long people waited between them. Change MCC5 to any stop_code from the stops table.",
+      "When buses on every route that serves a stop actually passed it, and how long people waited between them. Change MCC5 to any stop_code from the stops table.",
     sql: `WITH stop AS (
-  SELECT lat, lng, direction_id FROM stops WHERE stop_code = 'MCC5' LIMIT 1
+  SELECT direction_id, lat, lng FROM stops WHERE stop_code = 'MCC5'
+), near AS (
+  SELECT f.bus_id, f.registration, f.route_code, f.ts
+  FROM all_fixes f JOIN stop s USING (direction_id)
+  WHERE 111320 * sqrt(pow(f.lat - s.lat, 2)
+    + pow((f.lng - s.lng) * cos(radians(s.lat)), 2)) < 80
 ), passes AS (
-  SELECT f.registration, min(f.ts) AS passed_at
-  FROM all_fixes f, stop s
-  WHERE f.direction_id = s.direction_id
-    AND 111320 * sqrt(pow(f.lat - s.lat, 2)
-      + pow((f.lng - s.lng) * cos(radians(s.lat)), 2)) < 80
-  GROUP BY f.registration, time_bucket(INTERVAL 10 MINUTE, f.ts)
+  SELECT registration, route_code, ts AS passed_at
+  FROM near
+  QUALIFY coalesce(ts - lag(ts) OVER (PARTITION BY bus_id ORDER BY ts)
+    > INTERVAL 10 MINUTE, true)
 )
-SELECT passed_at, registration,
-       passed_at - lag(passed_at) OVER (ORDER BY passed_at) AS waited
+SELECT passed_at, registration, route_code,
+       passed_at - lag(passed_at)
+         OVER (PARTITION BY passed_at::DATE ORDER BY passed_at) AS waited
 FROM passes
 ORDER BY passed_at DESC;`,
   },
@@ -131,13 +142,22 @@ LIMIT 20;`,
   },
   {
     title: "When each route really starts and stops",
-    about: "The first and last bus seen on each route on the latest day.",
-    sql: `SELECT route_code,
+    about:
+      "The first and last time a bus was seen moving on each route, on the latest finished day. Buses parked overnight keep reporting, so standing still doesn't count.",
+    sql: `WITH steps AS (
+  SELECT route_code, bus_id, ts,
+         111320 * sqrt(pow(lat - lag(lat) OVER w, 2)
+           + pow((lng - lag(lng) OVER w) * cos(radians(lat)), 2)) AS metres
+  FROM fixes
+  WHERE ts::DATE = (SELECT max(ts)::DATE FROM fixes)
+  WINDOW w AS (PARTITION BY bus_id ORDER BY ts)
+)
+SELECT route_code,
        strftime(min(ts), '%H:%M') AS first_bus,
        strftime(max(ts), '%H:%M') AS last_bus,
        count(DISTINCT bus_id) AS buses
-FROM all_fixes
-WHERE ts::DATE = (SELECT max(ts)::DATE FROM all_fixes)
+FROM steps
+WHERE metres > 20
 GROUP BY ALL
 ORDER BY route_code;`,
   },
@@ -186,9 +206,18 @@ const TABLES: [string, string][] = [
   ["all_fixes", "Both together: the whole history up to a few minutes ago."],
   ["routes", "Route codes, names, colours and directions."],
   ["stops", "Every stop on every route and direction, in order."],
-  ["load_by_route_hour", "Average and peak load by route and hour of day."],
-  ["buses_per_hour", "How many buses each route ran in each hour."],
-  ["silences", "Gaps of more than two minutes in a bus's reports."],
+  [
+    "load_by_route_hour",
+    "Average and peak load by route and hour of day, from finished days.",
+  ],
+  [
+    "buses_per_hour",
+    "How many buses each route ran in each hour of finished days.",
+  ],
+  [
+    "silences",
+    "Gaps of more than two minutes in a bus's reports on finished days.",
+  ],
 ];
 
 const COLUMNS: [string, string][] = [
@@ -257,9 +286,8 @@ USE metro;
 SHOW TABLES;`}</pre>
           <p>
             Keep the trailing <code>/</code>. Attaching reads a small catalog of
-            views; queries then fetch only the parts of the Parquet files they
-            need, so a question about one day downloads kilobytes, not the
-            archive.
+            views; queries then fetch only the columns and parts of the Parquet
+            files they need, not the whole archive.
           </p>
         </Section>
 
@@ -306,7 +334,7 @@ df = con.sql("SELECT * FROM metro.fixes_today").df()`}</pre>
             Spark or R read directly:
           </p>
           <pre tabIndex={0}>{`import polars as pl
-pl.read_parquet("${DATA_HOST}/fixes/date=2026-10-13/fixes.parquet")`}</pre>
+pl.read_parquet("${DATA_HOST}/fixes/date=2026-10-12/fixes.parquet")`}</pre>
         </Section>
 
         <Section title="Tables">
