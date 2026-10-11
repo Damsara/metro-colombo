@@ -7,6 +7,12 @@ const OPTIONS: { value: Language; label: string }[] = [
   { value: "en", label: "English" },
   { value: "si", label: "සිංහල" },
   { value: "ta", label: "தமிழ்" },
+  { value: "hi", label: "हिन्दी" },
+  { value: "ru", label: "Русский" },
+  { value: "zh", label: "中文" },
+  { value: "de", label: "Deutsch" },
+  { value: "fr", label: "Français" },
+  { value: "ja", label: "日本語" },
 ];
 
 /**

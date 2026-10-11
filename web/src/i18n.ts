@@ -3,9 +3,15 @@ import { msg, plural, t } from "@lingui/core/macro";
 import { messages as en } from "./locales/en/messages.po";
 import { messages as si } from "./locales/si/messages.po";
 import { messages as ta } from "./locales/ta/messages.po";
+import { messages as hi } from "./locales/hi/messages.po";
+import { messages as ru } from "./locales/ru/messages.po";
+import { messages as zh } from "./locales/zh/messages.po";
+import { messages as de } from "./locales/de/messages.po";
+import { messages as fr } from "./locales/fr/messages.po";
+import { messages as ja } from "./locales/ja/messages.po";
 import { COLOMBO_OFFSET_MS, isLanguage, type Language } from "./types";
 
-i18n.load({ en, si, ta });
+i18n.load({ en, si, ta, hi, ru, zh, de, fr, ja });
 
 export { i18n };
 
@@ -135,7 +141,7 @@ export function preferredLanguage(
   languages: readonly string[],
 ): Language | undefined {
   for (const tag of languages) {
-    const base = tag.toLowerCase().split("-")[0];
+    const base = tag.toLowerCase().split(/[-_]/)[0];
     if (isLanguage(base)) return base;
   }
   return undefined;

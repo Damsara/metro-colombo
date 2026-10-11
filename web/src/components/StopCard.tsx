@@ -10,7 +10,13 @@ import {
   stopActions,
   type StopTarget,
 } from "../lib/stopCard";
-import { stopName, type CatalogStop, type Language, type Stop } from "../types";
+import {
+  nameLanguage,
+  stopName,
+  type CatalogStop,
+  type Language,
+  type Stop,
+} from "../types";
 import { RouteChip } from "./RouteChip";
 import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
@@ -132,7 +138,7 @@ export function StopCard({
         </h2>
         {secondary && (
           <p
-            lang={language === "en" ? "si" : "en"}
+            lang={nameLanguage(language) === "en" ? "si" : "en"}
             className="mt-0.5 text-base text-muted"
           >
             {secondary}
