@@ -6,6 +6,14 @@ export const ServerConfig = Config.all({
   webDist: Config.String("WEB_DIST").pipe(Config.withDefault("web/dist")),
 });
 
+export const OccasionsConfig = Config.all({
+  icsUrl: Config.String("OCCASIONS_ICS_URL").pipe(
+    Config.withDefault(
+      "https://ics.calendarlabs.com/517/c90b2261/Sri_Lanka_Holidays.ics",
+    ),
+  ),
+});
+
 export const UpstreamConfig = Config.all({
   eimskyBase: Config.String("EIMSKY_BASE").pipe(
     Config.withDefault("https://metrobusapiprod.eimsky.com"),
