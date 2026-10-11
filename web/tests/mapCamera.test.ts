@@ -113,7 +113,6 @@ test("leaving the band blends the hand-set tilt back over half a zoom level", ()
   assert.equal(tiltFor(state, 15, 10), 10);
   assert.equal(state.manualBand, null);
   assert.equal(tiltFor(state, 15.25, 10), 10 + (STREET_PITCH - 10) / 2);
-  // Zooming back doesn't undo the blend.
   assert.equal(tiltFor(state, 15.1, 99), 10 + (STREET_PITCH - 10) / 2);
   assert.equal(tiltFor(state, 15.5, 99), STREET_PITCH);
   assert.equal(state.blend, null);

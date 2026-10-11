@@ -102,7 +102,6 @@ function viewportPadding(insets: Insets): maplibregl.PaddingOptions {
   };
 }
 
-/** How far below the visible map's centre the screen's centre sits. */
 function followShift(insets: Insets): number {
   return insets ? (insets.bottom - insets.top) / 2 : 0;
 }
@@ -129,7 +128,6 @@ function validStop(stop: Stop): boolean {
   return coordinatesValid(stopPosition(stop));
 }
 
-// A missing direction on either side matches any direction.
 function directionsMatch(a?: string, b?: string): boolean {
   return !a || !b || a === b;
 }
@@ -171,7 +169,6 @@ function isMultiTouch(event: Event | undefined): boolean {
   );
 }
 
-// The closest stop under a tap, measured on screen.
 function nearestStop(
   map: LibreMap,
   point: maplibregl.Point,
@@ -302,11 +299,7 @@ function addTransitLayers(map: LibreMap): void {
     },
     firstLabel,
   );
-  // Stops follow transit-map convention: a white dot ringed in the route's
-  // colour, laid flat on the (tilted) map and growing with zoom so the
-  // network view stays readable. Journey ends and the selected stop are
-  // larger and drawn on top. The selected stop also gets an ink ring on a
-  // paper halo, so it reads on any basemap and not by colour alone.
+  // The selected stop's ink ring on a paper halo lets it read on any basemap and not by colour alone.
   const end: ExpressionSpecification = [
     "any",
     ["get", "board"],
@@ -555,7 +548,6 @@ function showBuildings(map: LibreMap, show: boolean): void {
   );
 }
 
-// Animates the pitch itself; the zoom-led tilt resumes once the move ends.
 function steerPitch(
   map: LibreMap,
   tilt: TiltState,
@@ -577,7 +569,6 @@ function mapModeLabels(mode: MapMode): { aria: string; title: string } {
   return { aria: label, title: label };
 }
 
-// Bus icon (lucide BusFront viewBox) used inside the native control button.
 const BUS_ICON_PATH =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6 2 7"/><path d="M10 6h4"/><path d="m22 7-2-1"/><rect width="16" height="16" x="4" y="3" rx="2"/><path d="M4 11h16"/><path d="M8 15h.01"/><path d="M16 15h.01"/><path d="M6 19v2"/><path d="M18 21v-2"/></svg>';
 
@@ -664,13 +655,11 @@ export default function MapView(props: Props) {
   const tilt = useRef<TiltState>(initialTilt(mapMode));
   const buildingsReady = useRef(false);
   const flatFov = useRef<number | null>(null);
-  // The mode the map is drawn in, which trails the chosen one until it loads.
   const shownMode = useRef<MapMode | null>(null);
   const busLayerRef = useRef<BusModelLayer | null>(null);
   const ready = useRef(false);
   const appliedScene = useRef<Scene | null>(null);
   const appliedFocus = useRef<string | null>(null);
-  // Whether the user has moved the map since it was last framed.
   const userMoved = useRef(false);
   const [status, setStatus] = useState<"loading" | "ready" | "unavailable">(
     "loading",
@@ -762,7 +751,6 @@ export default function MapView(props: Props) {
   const stopScene = useMemo(() => {
     const lookup = new Map<string, Stop>();
     const properties = new Map<string, MapProperties>();
-    // Stops on an opened route take its colour; elsewhere they are neutral.
     const routeColor = (code: string | undefined) =>
       routes.find((route) => route.code === code)?.color;
     const baseColor = routeColor(emphasizeRoutes[0]?.routeCode) ?? STOP_COLOR;
@@ -850,7 +838,6 @@ export default function MapView(props: Props) {
         .filter((stop): stop is Stop => Boolean(stop && validStop(stop)))
         .map(stopPosition);
     } else {
-      // An opened route fills the view; otherwise the whole network does.
       const shown = emphasizeRoutes.length
         ? routeData.features.filter((feature) => feature.properties.highlight)
         : routeData.features;
@@ -887,7 +874,6 @@ export default function MapView(props: Props) {
 
   const applyFocus = useCallback((map: LibreMap, next: typeof focus): void => {
     if (appliedFocus.current === next.key) return;
-    // The first view is shown at once; later changes glide to the new view.
     const firstView = appliedFocus.current === null;
     // Leaving follow mode keeps the camera where the user (or the bus) left it.
     const wasFollowing = appliedFocus.current === FOLLOW_FOCUS;
@@ -1075,7 +1061,6 @@ export default function MapView(props: Props) {
           markUnavailable();
         }
       });
-      // Returns false when the tapped bus has already left the feed.
       const tapBus = (id: string): boolean => {
         const { buses, selectedBus, onBusSelect, onFollowEvent } =
           latest.current.props;
@@ -1097,10 +1082,8 @@ export default function MapView(props: Props) {
           event.point,
           latest.current.scene.stopLookup,
         );
-        // A tap away from any stop or bus puts the stop's card away.
         latest.current.props.onStopSelect(nearest ?? null);
       });
-      // The stop under the mouse lifts a little, on pointers that can hover.
       let hoverKey: string | null = null;
       const setHover = (key: string | null) => {
         if (key === hoverKey) return;
@@ -1231,8 +1214,6 @@ export default function MapView(props: Props) {
     }
   }, [busSplit, attempt, status]);
 
-  // When the phone drawer settles at a new height, frame the view again above
-  // it, unless the user has moved the map since.
   const insetTop = insets?.top ?? 0;
   const insetBottom = insets?.bottom ?? 0;
   useEffect(() => {
@@ -1275,8 +1256,6 @@ export default function MapView(props: Props) {
     map.touchZoomRotate.disable();
     map.touchZoomRotate.enable(around);
     let frame = 0;
-    // Glide to the bus first, then track it frame by frame. A zoom or rotate
-    // in progress is left alone, then the camera glides back onto the bus.
     let phase: "start" | "gliding" | "tracking" = "start";
     let firstGlide = true;
     let lastCentred = "";
@@ -1291,7 +1270,6 @@ export default function MapView(props: Props) {
           map.once("moveend", settle);
           map.easeTo({
             center: position,
-            // Only the first glide zooms in; later ones keep the user's zoom.
             zoom: firstGlide
               ? Math.max(map.getZoom(), FOLLOW_MIN_ZOOM)
               : map.getZoom(),
@@ -1344,7 +1322,6 @@ export default function MapView(props: Props) {
     ] as const) {
       if (!stop || !validStop(stop)) continue;
       const element = document.createElement("div");
-      // A pin whose point sits on the stop.
       element.className = `relative grid size-8 place-items-center rounded-full border-2 border-white text-sm font-bold text-white shadow-float after:absolute after:top-full after:left-1/2 after:-mt-px after:-translate-x-1/2 after:border-x-[6px] after:border-t-[9px] after:border-x-transparent ${
         kind === "from"
           ? "bg-brand after:border-t-brand"
