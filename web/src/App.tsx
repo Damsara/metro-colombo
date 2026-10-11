@@ -422,6 +422,21 @@ function Home() {
     setTab(next);
     setSelectedStop(null);
   }
+  const openServedRoute = (code: string, towards: readonly string[]) => {
+    const same = (a: string, b: string) =>
+      a.trim().toLowerCase() === b.trim().toLowerCase();
+    const route = routes.find((item) => item.code === code);
+    const direction =
+      route?.directions.find((item) =>
+        towards.some((place) => same(place, item.end_location)),
+      ) ??
+      route?.directions.find(
+        (item) =>
+          !selectedStop || !same(item.end_location, selectedStop.stop_name_en),
+      );
+    changeTab("routes");
+    showRouteOf(code, direction?.id);
+  };
   const openRoute = (code: string) => {
     browser.open(code);
     releaseBus();
@@ -490,6 +505,7 @@ function Home() {
       focusHeading={stopFromKeyboard}
       onClose={closeStop}
       onChoose={(target, search) => chooseStop(selectedStop, target, search)}
+      onOpenRoute={openServedRoute}
     />
   );
   // On phones a selected stop's card stands in for the drawer's content,

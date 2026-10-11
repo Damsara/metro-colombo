@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from "react";
-import { ArrowRight, ExternalLink, X } from "lucide-react";
+import { ArrowRight, ChevronRight, ExternalLink, X } from "lucide-react";
 import { useLingui } from "@lingui/react/macro";
 import { towards } from "../i18n";
 import { usePlaceName } from "../lib/placeNames";
@@ -41,6 +41,7 @@ export function StopCard({
   focusHeading = false,
   onClose,
   onChoose,
+  onOpenRoute,
 }: {
   stop: Stop;
   /** The stop's catalog entry, which knows the routes calling there. */
@@ -56,6 +57,7 @@ export function StopCard({
   onClose: () => void;
   /** `search` is set when the choice completes the trip. */
   onChoose: (target: StopTarget, search: boolean) => void;
+  onOpenRoute: (route: string, towards: readonly string[]) => void;
 }) {
   const { t, i18n } = useLingui();
   const place = usePlaceName();
@@ -195,20 +197,25 @@ export function StopCard({
               const shown = places.map(place);
               const spokenPlaces = shown.join(", ");
               return (
-                <li key={route} className="flex min-h-7 items-center gap-2.5">
-                  <span aria-hidden="true" className="contents">
-                    <RouteChip code={route} color={routeColors.get(route)} />
-                    {shown.length > 0 && (
-                      <span className="min-w-0 text-sm leading-snug">
-                        {towards(i18n, shown.join(" / "))}
+                <li key={route}>
+                  <button
+                    type="button"
+                    className="-mx-2 flex min-h-11 w-[calc(100%+1rem)] items-center gap-2.5 rounded-md px-2 text-left hover-fine:bg-tint-50"
+                    onClick={() => onOpenRoute(route, places)}
+                  >
+                    <span aria-hidden="true" className="contents">
+                      <RouteChip code={route} color={routeColors.get(route)} />
+                      <span className="min-w-0 flex-1 text-sm leading-snug">
+                        {shown.length > 0 && towards(i18n, shown.join(" / "))}
                       </span>
-                    )}
-                  </span>
-                  <span className="sr-only">
-                    {shown.length
-                      ? t`Route ${route} towards ${spokenPlaces}`
-                      : t`Route ${route}`}
-                  </span>
+                      <ChevronRight size={16} className="shrink-0 text-faint" />
+                    </span>
+                    <span className="sr-only">
+                      {shown.length
+                        ? t`Route ${route} towards ${spokenPlaces}`
+                        : t`Route ${route}`}
+                    </span>
+                  </button>
                 </li>
               );
             })}
