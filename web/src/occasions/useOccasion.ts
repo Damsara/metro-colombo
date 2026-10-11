@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useOccasions } from "../api";
 import {
   colomboDate,
@@ -32,17 +32,13 @@ export function useOccasion() {
     !!theme?.moment &&
     !!occasion &&
     shouldPlayMoment(browserStore(), occasion, playedThisLoad);
-  return {
-    occasion,
-    theme,
-    playMoment: canPlay,
-    momentDone: () => {
-      if (occasion) markMomentPlayed(browserStore(), occasion, playedThisLoad);
-      setPlayMoment(false);
-    },
-    turnOff: () => {
-      setFestiveOff(browserStore(), true);
-      setOff(true);
-    },
-  };
+  const momentDone = useCallback(() => {
+    if (occasion) markMomentPlayed(browserStore(), occasion, playedThisLoad);
+    setPlayMoment(false);
+  }, [occasion]);
+  const turnOff = useCallback(() => {
+    setFestiveOff(browserStore(), true);
+    setOff(true);
+  }, []);
+  return { occasion, theme, playMoment: canPlay, momentDone, turnOff };
 }
