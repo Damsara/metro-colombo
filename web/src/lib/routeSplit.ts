@@ -27,7 +27,6 @@ const dedupe = (line: Position[]) =>
 const moves = (line: Position[]) =>
   line.some((point) => point[0] !== line[0][0] || point[1] !== line[0][1]);
 
-/** Splits a direction's line at the spot nearest the bus; null if it is too far off. */
 export function splitRoute(
   route: MapRoute,
   bus: { lat: number; lng: number },

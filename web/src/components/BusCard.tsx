@@ -25,17 +25,12 @@ import { RouteChip } from "./RouteChip";
 import { Button } from "./ui/Button";
 import { IconButton } from "./ui/IconButton";
 
-// Top centre of the map, clear of the control column on the right.
 const FLOATING =
   "absolute top-3.5 left-1/2 z-10 flex max-h-[calc(100%-28px)] w-[min(440px,calc(100%-152px))] -translate-x-1/2 flex-col rounded-2xl bg-card text-ink shadow-float";
 const ROW =
   "relative flex min-h-9 items-center gap-3 not-last:after:absolute not-last:after:top-6.5 not-last:after:-bottom-2.5 not-last:after:left-2.5 not-last:after:border-l-2 not-last:after:border-(--line)";
 const DOT = "grid size-5 shrink-0 place-items-center";
 
-/**
- * A live bus picked on the map: who it is, where it's going, how full it is
- * and the stops ahead of it, with the rider's own stops marked.
- */
 export function BusCard({
   bus,
   state,
@@ -52,11 +47,9 @@ export function BusCard({
   bus: LiveBus;
   state: FollowState;
   result: BusJourneyResult | null;
-  /** The route's colour, from `routeColor()`. */
   color: string;
   language: Language;
   expanded: boolean;
-  /** In the phone's drawer rather than floating over the map. */
   inline?: boolean;
   onFollow: () => void;
   onRelease: () => void;
@@ -164,8 +157,6 @@ export function BusCard({
       )}
 
       {journey && !expanded && (
-        // A tap anywhere on the strip opens the stops; the toggle below
-        // does the same for the keyboard.
         <div
           className={inline ? "mt-3" : "px-3.5 pt-1"}
           onClick={() => onExpand(true)}
@@ -230,16 +221,11 @@ export function BusCard({
   );
 }
 
-/** What the rider's own stops are called, so they never rely on colour. */
 function useMarkLabels(): Record<NonNullable<JourneyStop["mark"]>, string> {
   const { t } = useLingui();
   return { board: t`Your stop`, alight: t`Get off here` };
 }
 
-/**
- * The bus's run at a glance: the last stop passed, the bus, the next few
- * stops, the rider's stops and the terminus, left to right.
- */
 function JourneyStrip({
   journey,
   language,
@@ -381,10 +367,6 @@ type TimelineRow =
   | { kind: "bus" }
   | { kind: "stop"; stop: JourneyStop; terminus: boolean };
 
-/**
- * Every stop left, from the one the bus last passed to the terminus, with
- * the bus between stops or at one.
- */
 function JourneyTimeline({
   journey,
   language,

@@ -157,7 +157,6 @@ function Home() {
   // the route the user opened.
   const firstRide = selectedJourney?.legs.find((leg) => leg.kind === "ride");
   const firstRideTrip = firstRide?.kind === "ride" ? firstRide.ride : undefined;
-  // The rider's stops show on the bus card only when that bus runs their ride.
   const markRide = tracking.active ? tracking.ride : firstRideTrip;
   const onRide =
     !!cardBus && !!markRide && isOnRide(cardBus, markRide, Date.now());
@@ -201,7 +200,6 @@ function Home() {
     (bus: LiveBus | null) => {
       selectBus(bus);
       if (bus) setFrameRide(null);
-      // On phones the bus's card takes the drawer, so a stop's card gives way.
       if (bus && phone) {
         setSelectedStop(null);
         snapBeforeStop.current = null;
@@ -289,13 +287,10 @@ function Home() {
     trackingPlan,
   ]);
 
-  // On phones the bus card is a mode of the drawer, like the stop card.
-  // "See all stops" sets it aside for the route view underneath.
   const [cardAsideFor, setCardAsideFor] = useState<string | null>(null);
   const busInDrawer = phone && !!cardBus && cardAsideFor !== viewBus;
   const snapNow = useRef(snap);
   snapNow.current = snap;
-  // Letting go of the bus puts the drawer back where it was before.
   const snapBeforeBus = useRef<Snap | null>(null);
   const wasBusInDrawer = useRef(false);
   useEffect(() => {
@@ -308,7 +303,6 @@ function Home() {
     wasBusInDrawer.current = busInDrawer;
   }, [busInDrawer, viewBus]);
   const [cardOpenFor, setCardOpenFor] = useState<string | null>(null);
-  // The same bus picked again later starts with a fresh card.
   useEffect(() => {
     if (viewBus) return;
     setCardAsideFor(null);
