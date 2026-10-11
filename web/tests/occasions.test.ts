@@ -3,6 +3,7 @@ import { test } from "vitest";
 import {
   colomboDate,
   festiveOff,
+  festiveStops,
   markMomentPlayed,
   parseOccasionKind,
   setFestiveOff,
@@ -93,4 +94,32 @@ test("the off switch is remembered and survives broken storage", () => {
   assert.equal(festiveOff(store), false);
   assert.equal(festiveOff(throwingStore), false);
   assert.doesNotThrow(() => setFestiveOff(throwingStore, true));
+});
+
+const s = (id: string) => ({
+  id,
+  stop_code: id,
+  stop_name_en: id,
+  stop_name_si: "",
+  stop_name_tm: "",
+  latitude: 6.9,
+  longitude: 79.9,
+});
+
+test("marks journey stops first, else the open route's, never the whole network", () => {
+  assert.deepEqual(
+    festiveStops([s("a"), s("a"), s("b")], [s("c")]).map((x) => x.id),
+    ["a", "b"],
+  );
+  assert.deepEqual(
+    festiveStops([], [s("c")]).map((x) => x.id),
+    ["c"],
+  );
+  assert.equal(
+    festiveStops(
+      [],
+      Array.from({ length: 200 }, (_, i) => s(`${i}`)),
+    ).length,
+    80,
+  );
 });

@@ -44,6 +44,7 @@ import { Tabs } from "./components/ui/Tabs";
 import { intentSnap, snapHeights, type Snap } from "./lib/drawerSnap";
 import type { FollowState } from "./lib/follow";
 import { useLanguage } from "./lib/language";
+import { festiveStops } from "./lib/occasions";
 import { findStop, type RecentStop } from "./lib/recentTrips";
 import { routeColor } from "./lib/routeColor";
 import { sameStop } from "./lib/stopCard";
@@ -176,6 +177,25 @@ function Home() {
   const lineKey = `${activeRoute?.code}|${direction}`;
   const [closedLineNotice, setClosedLineNotice] = useState<string | null>(null);
   const lineNoticeShown = geometry.isError && closedLineNotice !== lineKey;
+  const [richDevice, setRichDevice] = useState(false);
+  const openRouteStops =
+    tab === "routes" && browser.routeCode ? routeStops.data?.stops : undefined;
+  const festiveMap = useMemo(() => {
+    if (!festive.theme) return null;
+    const journeyStops =
+      tab === "plan" && selectedJourney
+        ? selectedJourney.legs.flatMap((leg) =>
+            leg.kind === "ride"
+              ? [leg.ride.board, ...(leg.ride.stops ?? []), leg.ride.alight]
+              : [],
+          )
+        : [];
+    return {
+      stopMark: festive.theme.stopMark,
+      busGlow: festive.theme.busGlow,
+      stops: festiveStops(journeyStops, openRouteStops ?? []),
+    };
+  }, [festive.theme, tab, selectedJourney, openRouteStops]);
   const { mapRoutes: networkMapRoutes } = useAllRouteGeometries(routes);
   const mapLayers = useMapLayers({
     tab,
@@ -906,6 +926,8 @@ function Home() {
                 frameRide={tab === "plan" ? frameRide : null}
                 busOverlay={phone ? null : busCard}
                 busLine={busLine}
+                festive={festiveMap}
+                onCapabilities={setRichDevice}
                 language={language}
                 onStopSelect={(stop) => (stop ? openStop(stop) : closeStop())}
                 onBusSelect={handleBusSelect}
@@ -930,7 +952,7 @@ function Home() {
             {festive.theme && (
               <OccasionLayers
                 theme={festive.theme}
-                playMoment={festive.playMoment}
+                playMoment={festive.playMoment && richDevice}
                 onMomentDone={festive.momentDone}
               />
             )}

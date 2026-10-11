@@ -233,6 +233,13 @@ export class BusModelLayer implements CustomLayerInterface {
     this.map?.triggerRepaint();
   }
 
+  setHaloColor(hex: string | null): void {
+    this.haloMaterial.color.setHex(
+      hex ? Number.parseInt(hex.slice(1), 16) : BUS_RED,
+    );
+    this.map?.triggerRepaint();
+  }
+
   positionOf(key: string): [number, number] | undefined {
     return this.positions.get(key);
   }

@@ -24,7 +24,10 @@ export function useOccasion() {
     () => todaysOccasion(data ?? [], colomboDate(new Date()), preview),
     [data, preview],
   );
-  const theme = occasion && !off ? themeFor(occasion.kind) : null;
+  const theme = useMemo(
+    () => (occasion && !off ? themeFor(occasion.kind) : null),
+    [occasion, off],
+  );
   const [playMoment, setPlayMoment] = useState(true);
   const canPlay =
     playMoment &&

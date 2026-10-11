@@ -79,3 +79,16 @@ export const festiveOff = (store: KeyValueStore | null) =>
 
 export const setFestiveOff = (store: KeyValueStore | null, off: boolean) =>
   write(store, OFF_KEY, off ? "1" : null);
+
+const MAX_MARKED_STOPS = 80;
+
+export function festiveStops<T extends { id: string }>(
+  journeyStops: readonly T[],
+  routeStops: readonly T[],
+): T[] {
+  const source = journeyStops.length ? journeyStops : routeStops;
+  const seen = new Set<string>();
+  return source
+    .filter((stop) => !seen.has(stop.id) && seen.add(stop.id))
+    .slice(0, MAX_MARKED_STOPS);
+}
