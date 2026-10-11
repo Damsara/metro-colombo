@@ -15,6 +15,7 @@ import { Auth } from "./auth.js";
 import { ServerConfig } from "./config.js";
 import { UpstreamHttp } from "./http.js";
 import { LiveFleet } from "./live-fleet.js";
+import { Occasions } from "./occasions.js";
 import { directionMatches, isIsoDate, isStopUuid } from "./params.js";
 import type * as S from "./schemas.js";
 import { UpstreamApi, type UpstreamError } from "./upstream.js";
@@ -223,6 +224,14 @@ const placesHandler = respond(
   CACHE.reference,
 );
 
+const occasionsHandler = respond(
+  Effect.gen(function* () {
+    const today = yield* todayInColombo;
+    return { occasions: yield* (yield* Occasions).upcoming(today) };
+  }),
+  CACHE.reference,
+);
+
 const liveHandler = Effect.gen(function* () {
   return noStore(json(yield* (yield* LiveFleet).snapshot));
 });
@@ -241,6 +250,7 @@ const ApiRoutes = HttpRouter.addAll(
     HttpRouter.route("GET", "/journey", journeyHandler),
     HttpRouter.route("GET", "/live", untraced(liveHandler)),
     HttpRouter.route("GET", "/places", placesHandler),
+    HttpRouter.route("GET", "/occasions", occasionsHandler),
     HttpRouter.route(
       "*",
       "/*",
@@ -283,6 +293,7 @@ const WarmCaches = Layer.effectDiscard(
     );
     yield* Effect.ignore(api.stopIdsByCode);
     yield* Effect.ignore(api.places);
+    yield* Effect.ignore((yield* Occasions).upcoming("2000-01-01"));
   }).pipe(
     Effect.tapError((error) =>
       Effect.logWarning("cache warm-up failed", error),
@@ -294,6 +305,7 @@ const WarmCaches = Layer.effectDiscard(
 );
 
 const App = Layer.merge(LiveFleet.layer, WarmCaches).pipe(
+  Layer.provideMerge(Occasions.layer),
   Layer.provideMerge(UpstreamApi.layer),
   Layer.provideMerge(Auth.layer),
   Layer.provideMerge(UpstreamHttp),
