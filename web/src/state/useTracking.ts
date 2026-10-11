@@ -39,6 +39,11 @@ interface Target {
   bus: LiveBus;
 }
 
+export interface Reassignment {
+  from: string;
+  to: string;
+}
+
 /** Phases worth telling a screen reader about, once each. */
 export type Announcement = "headOut" | "nextStop" | "arrived" | "lost";
 
@@ -122,6 +127,8 @@ export function useTracking({
     setNow(Date.now());
   }, [liveBus, receivedAt, feedTimestamp]);
   const missing = active && liveLoaded && isLost(lastSeen, now);
+  const reassigned: Reassignment | null = null;
+  const acknowledgeReassigned = useCallback(() => {}, []);
 
   const stops = useRouteStops(
     active ? ride?.route.code : undefined,
@@ -184,6 +191,8 @@ export function useTracking({
     boardLeft,
     alightLeft,
     now,
+    reassigned,
+    acknowledgeReassigned,
   };
 }
 
