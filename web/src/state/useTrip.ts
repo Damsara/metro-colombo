@@ -1,7 +1,14 @@
 import { useLingui } from "@lingui/react/macro";
 import { daysAhead, track } from "../lib/analytics";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { distanceMeters, useJourney, type JourneyRequest } from "../api";
+import { distanceMeters, useJourney } from "../api";
+import {
+  decodeTripRequest,
+  encodeTripRequest,
+  decodeTrackedRide,
+  matchingTrackedRide,
+} from "../lib/tracking";
+import { useSearchParam } from "../useSearchParam";
 import { distanceLabel } from "../i18n";
 import { useLanguage } from "../lib/language";
 import {
@@ -53,7 +60,12 @@ export function useTrip(stops: CatalogStop[]) {
   const [from, setFrom] = useState<CatalogStop | null>(null);
   const [to, setTo] = useState<CatalogStop | null>(null);
   const [date, setDate] = useState(colomboDate);
-  const [request, setRequest] = useState<JourneyRequest | null>(null);
+  const [searchRequest, setSearchRequest] = useSearchParam("journey");
+  const [searchRide] = useSearchParam("ride");
+  const request = useMemo(
+    () => decodeTripRequest(searchRequest),
+    [searchRequest],
+  );
   const [selectedJourney, setSelectedJourney] = useState<JourneyOption | null>(
     null,
   );
@@ -64,6 +76,19 @@ export function useTrip(stops: CatalogStop[]) {
   const [here, setHere] = useState<Position | null>(null);
   const [recentTrips, setRecentTrips] = useState(() => loadRecentTrips());
   const journey = useJourney(request);
+  useEffect(() => {
+    if (!request) return;
+    setFrom(stops.find((stop) => stop.id === request.from) ?? null);
+    setTo(stops.find((stop) => stop.id === request.to) ?? null);
+    setDate(request.date);
+  }, [request, stops]);
+  useEffect(() => {
+    const saved = decodeTrackedRide(searchRide);
+    if (saved && journey.data)
+      setSelectedJourney(
+        matchingTrackedRide(journey.data, saved)?.option ?? null,
+      );
+  }, [searchRide, journey.data]);
   // One results event per search, not per refetch.
   const reported = useRef<string | null>(null);
   useEffect(() => {
@@ -78,20 +103,18 @@ export function useTrip(stops: CatalogStop[]) {
     });
   }, [journey.data, request]);
   // Read when a location lookup finishes, after the closure that started it.
-  const latest = useRef({ from, stops });
+  const latest = useRef({ from, stops, request });
   useEffect(() => {
-    latest.current = { from, stops };
+    latest.current = { from, stops, request };
   });
 
-  // The results page needs a search; a reload or a cleared search returns
-  // to the form.
   const showResults = tripOpen && request !== null;
   useEffect(() => {
     if (tripOpen && !request) setTripOpen(false);
   }, [tripOpen, request, setTripOpen]);
 
   const clearJourney = () => {
-    setRequest(null);
+    void setSearchRequest(null);
     setSelectedJourney(null);
   };
   const changeFrom = (stop: CatalogStop | null) => {
@@ -115,7 +138,7 @@ export function useTrip(stops: CatalogStop[]) {
   };
 
   const invalidSameStop = !!from && from.id === to?.id;
-  const search = (
+  const search = async (
     start: CatalogStop | null,
     end: CatalogStop | null,
     source: "form" | "recent" | "return" | "stop" = "form",
@@ -128,8 +151,10 @@ export function useTrip(stops: CatalogStop[]) {
     setFrom(start);
     setTo(end);
     setDate(day);
-    setRequest({ from: start.id, to: end.id, date: day });
     setSelectedJourney(null);
+    await setSearchRequest(
+      encodeTripRequest({ from: start.id, to: end.id, date: day }),
+    );
     setTripOpen(true);
     track("search_trip", {
       from_stop: start.stop_code,
@@ -163,7 +188,7 @@ export function useTrip(stops: CatalogStop[]) {
     const next = nextDay(request.date);
     track("search_next_day", { days_ahead: daysAhead(next, colomboDate()) });
     setDate(next);
-    setRequest({ ...request, date: next });
+    void setSearchRequest(encodeTripRequest({ ...request, date: next }));
     setSelectedJourney(null);
   };
 
@@ -221,7 +246,7 @@ export function useTrip(stops: CatalogStop[]) {
             longitude: position.coords.longitude,
           };
           setHere(point);
-          if (latest.current.from) return;
+          if (latest.current.from || latest.current.request) return;
           const nearest = nearestTo(point, latest.current.stops);
           if (!nearest) return;
           setFrom(nearest.stop);

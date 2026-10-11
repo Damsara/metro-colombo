@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 import {
   advancePhase,
+  busReassignment,
   busPosition,
   isLost,
   lastSeenAt,
@@ -10,6 +11,8 @@ import {
   nextLastSeen,
   progressRows,
   refreshedRide,
+  resumeTracking,
+  savedRide,
   rideIndexes,
   stopsUntil,
   trackedFix,
@@ -80,7 +83,8 @@ test("phases never step back", () => {
 });
 
 test("a bus is lost after a minute out of the feed", () => {
-  assert.equal(isLost(0, LOST_AFTER_MS), false);
+  assert.equal(isLost(0, LOST_AFTER_MS - 1), false);
+  assert.equal(isLost(0, LOST_AFTER_MS), true);
   assert.equal(isLost(0, LOST_AFTER_MS + 1), true);
 });
 
@@ -277,5 +281,78 @@ test("without a slot, the tracked bus's ride wins, then the closest departure", 
   assert.equal(
     refreshedRide(planOf(later, swapped), original, tracked),
     swapped,
+  );
+});
+
+test("a bus change is measured from the initial or last acknowledged plate", () => {
+  assert.equal(busReassignment("WP-NE-6544", "wp ne 6544"), null);
+  assert.equal(busReassignment("WP-NE-6544", undefined), null);
+  assert.equal(busReassignment(undefined, "WP-NE-1111"), null);
+  const change = busReassignment("WP-NE-6544", "WP-NE-1111");
+  assert.deepEqual(change, { from: "WP-NE-6544", to: "WP-NE-1111" });
+  const acknowledged = change!.to;
+  assert.equal(busReassignment(acknowledged, "WP-NE-1111"), null);
+  assert.deepEqual(busReassignment(acknowledged, "WP-NE-2222"), {
+    from: "WP-NE-1111",
+    to: "WP-NE-2222",
+  });
+  assert.equal(busReassignment("WP-NE-6544", "WP-NE-6544"), null);
+});
+
+test("restoring a ride follows its new assignment even while the old bus is live", () => {
+  const original = ride();
+  const replacement = {
+    ...tracked,
+    id: "b2",
+    registration_number: "WP-NE-1111",
+  };
+  const fresh = ride({
+    bus: replacement,
+    board: { ...original.board, estimated_time: "2026-10-11T08:04:00Z" },
+  });
+  const plan = planOf(fresh);
+  const restored = resumeTracking(
+    plan,
+    savedRide(original, tracked.registration_number!),
+    [tracked, replacement],
+  );
+  assert.equal(restored?.ride, fresh);
+  assert.equal(restored?.option, plan.options[0]);
+  assert.equal(restored?.bus, replacement);
+});
+
+test("restoring falls back to results if the ride or its live bus no longer matches", () => {
+  const saved = savedRide(ride(), tracked.registration_number!);
+  for (const other of [
+    ride({ slot_id: "s2" }),
+    ride({ direction_id: "return" }),
+    ride({ route: { code: "CM02", name: "" } }),
+    ride({ board: line[0] }),
+    ride({ alight: line[5] }),
+  ])
+    assert.equal(resumeTracking(planOf(other), saved, [tracked]), null);
+  assert.equal(resumeTracking(planOf(), saved, [tracked]), null);
+  assert.equal(resumeTracking(planOf(ride()), saved, []), null);
+  assert.equal(
+    resumeTracking(
+      planOf(ride({ bus: { registration_number: "NEW" } })),
+      saved,
+      [tracked],
+    ),
+    null,
+  );
+});
+
+test("restoration without a slot requires the same scheduled departure", () => {
+  const original = ride({ slot_id: undefined });
+  const saved = savedRide(original, tracked.registration_number!);
+  const later = ride({
+    slot_id: undefined,
+    board: { ...original.board, scheduled_time: "2026-10-11T08:20:00Z" },
+  });
+  assert.equal(resumeTracking(planOf(later), saved, [tracked]), null);
+  assert.equal(
+    resumeTracking(planOf(later, original), saved, [tracked])?.ride,
+    original,
   );
 });
