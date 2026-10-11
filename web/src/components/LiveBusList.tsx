@@ -108,7 +108,7 @@ export default function LiveBusList({
 
       {selected && (
         <p className="mt-2.5 text-xs leading-normal text-muted">
-          {t`${selectedLabel} is selected for tracking. Tap again to release the lock.`}
+          {t`${selectedLabel} is selected. Tap it again to stop following.`}
         </p>
       )}
     </section>

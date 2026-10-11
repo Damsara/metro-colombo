@@ -1,23 +1,18 @@
 import { plural } from "@lingui/core/macro";
 import { Plural, useLingui } from "@lingui/react/macro";
-import {
-  ArrowLeft,
-  BusFront,
-  CircleCheck,
-  LocateFixed,
-  MapPinOff,
-} from "lucide-react";
+import { BusFront, CircleCheck, MapPinOff } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { minutesLabel, timeLabel, towards } from "../i18n";
+import { liveSignal, type FollowState } from "../lib/follow";
+import { followStatus } from "../lib/followLabels";
 import { usePlaceName } from "../lib/placeNames";
 import { liveMinutes, progressRows } from "../lib/tracking";
-import type { Tracking } from "../state/useTracking";
+import type { Reassignment, Tracking } from "../state/useTracking";
 import { stopName, type Language } from "../types";
 import { OccupancyMeter } from "./OccupancyBadge";
 import { RouteChip } from "./RouteChip";
 import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
-import { IconButton } from "./ui/IconButton";
 
 const ROW =
   "relative flex min-h-9 items-center gap-3 not-last:after:absolute not-last:after:top-6.5 not-last:after:-bottom-2.5 not-last:after:left-2.5 not-last:after:border-l-2 not-last:after:border-line-strong";
@@ -107,6 +102,33 @@ function ProgressLine({
   );
 }
 
+function BusChangeNotice({
+  reassigned,
+  onAcknowledge,
+}: {
+  reassigned: Reassignment | null;
+  onAcknowledge: () => void;
+}) {
+  const { t } = useLingui();
+  const plate = reassigned?.to;
+  return (
+    <div aria-live="polite">
+      {reassigned && (
+        <div
+          className={`mt-3 flex items-center gap-3 px-4 py-2.5 text-sm ${cardClass()}`}
+        >
+          <p className="min-w-0 flex-1 font-semibold">
+            {t`Your bus changed to ${plate}`}
+          </p>
+          <Button variant="secondary" size="xs" onClick={onAcknowledge}>
+            {t`OK`}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * "Your bus is coming": where the tracked bus is against your boarding stop,
  * then against the stop you get off at, until you arrive.
@@ -115,15 +137,15 @@ export function TrackingPanel({
   tracking,
   language,
   routeColors,
-  following,
+  followState,
   onFollow,
   onStop,
 }: {
   tracking: Tracking;
   language: Language;
   routeColors: ReadonlyMap<string, string>;
-  /** Whether the map is following the tracked bus. */
-  following: boolean;
+  /** How the map is following the tracked bus. */
+  followState: FollowState;
   onFollow: () => void;
   onStop: () => void;
 }) {
@@ -209,16 +231,9 @@ export function TrackingPanel({
       className="motion-safe:animate-page-forward"
     >
       <div className="flex items-center gap-3">
-        <IconButton
-          variant="tinted"
-          label={t`Back to results`}
-          onClick={onStop}
-        >
-          <ArrowLeft size={19} aria-hidden="true" />
-        </IconButton>
         <div className="min-w-0 flex-1">
           <p className="flex min-w-0 items-center gap-1.5 text-md">
-            {liveBus && (
+            {liveSignal(followState) && (
               <span
                 className="size-2.5 shrink-0 animate-follow-pulse rounded-full bg-bus"
                 aria-hidden="true"
@@ -234,14 +249,25 @@ export function TrackingPanel({
           <p className="truncate text-xs text-muted">
             {towards(i18n, place(ride.end_location))}
           </p>
+          <p className="truncate text-xs font-semibold" aria-live="polite">
+            {phase === "arrived" || (lost && followState === "lost")
+              ? ""
+              : followStatus(i18n, followState)}
+          </p>
         </div>
-        {!following && liveBus && phase !== "arrived" && (
-          <Button variant="bus" size="xs" pill onClick={onFollow}>
-            <LocateFixed size={15} aria-hidden="true" />
-            {t`Follow`}
-          </Button>
-        )}
+        {followState !== "following" &&
+          followState !== "lost" &&
+          phase !== "arrived" && (
+            <Button variant="bus" size="xs" pill onClick={onFollow}>
+              {t`Follow`}
+            </Button>
+          )}
       </div>
+
+      <BusChangeNotice
+        reassigned={tracking.reassigned}
+        onAcknowledge={tracking.acknowledgeReassigned}
+      />
 
       <div
         className={`mt-3 rounded-lg px-4 py-3.5 ${
@@ -318,7 +344,7 @@ export function TrackingPanel({
           </Button>
         ) : (
           <Button variant="secondary" size="sm" block onClick={onStop}>
-            {t`Stop tracking`}
+            {t`End trip`}
           </Button>
         )}
       </div>

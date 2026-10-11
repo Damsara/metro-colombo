@@ -1,6 +1,8 @@
-import { ArrowRight, BusFront, LocateFixed, X } from "lucide-react";
+import { ArrowRight, BusFront, X } from "lucide-react";
 import { useLingui } from "@lingui/react/macro";
 import { towards } from "../i18n";
+import { liveSignal, type FollowState } from "../lib/follow";
+import { followStatus } from "../lib/followLabels";
 import { usePlaceName } from "../lib/placeNames";
 import { useTransitData } from "../state/TransitData";
 import { busDirection, occupancy, type LiveBus } from "../types";
@@ -12,12 +14,12 @@ import { IconButton } from "./ui/IconButton";
 /** The bus being tracked: who it is, where it's going and how full it is. */
 export function FollowBusPill({
   bus,
-  following,
+  state,
   onFollow,
   onRelease,
 }: {
   bus: LiveBus;
-  following: boolean;
+  state: FollowState;
   onFollow: () => void;
   onRelease: () => void;
 }) {
@@ -34,7 +36,7 @@ export function FollowBusPill({
       role="group"
       aria-label={t`Tracked bus`}
     >
-      {following ? (
+      {liveSignal(state) ? (
         <span
           className="size-3 shrink-0 animate-follow-pulse rounded-full bg-brand"
           aria-hidden="true"
@@ -45,7 +47,7 @@ export function FollowBusPill({
       <div className="min-w-0 flex-1">
         <p className="flex min-w-0 items-center gap-1.5 text-sm">
           <span className="min-w-0 truncate text-muted" aria-live="polite">
-            {following ? t`Following` : t`Paused`}
+            {followStatus(i18n, state)}
           </span>
           <strong className="shrink-0 font-semibold">
             {bus.registration_number || "—"}
@@ -76,16 +78,15 @@ export function FollowBusPill({
           </p>
         )}
       </div>
-      {!following && (
+      {state !== "following" && state !== "lost" && (
         <Button variant="bus" size="xs" pill onClick={onFollow}>
-          <LocateFixed size={15} aria-hidden="true" />
-          <span className="max-md:sr-only">{t`Follow`}</span>
+          {t`Follow`}
         </Button>
       )}
       <IconButton
         variant="soft"
         size="sm"
-        label={t`Stop tracking this bus`}
+        label={t`Stop following`}
         onClick={onRelease}
       >
         <X size={16} aria-hidden="true" />

@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TrackingPanel } from "../src/components/TrackingPanel";
+import type { FollowState } from "../src/lib/follow";
 import { LanguageProvider } from "../src/lib/language";
 import type { Tracking } from "../src/state/useTracking";
 import type { JourneyOption, LiveBus, Stop } from "../src/types";
@@ -49,7 +50,10 @@ const bus: LiveBus = {
   total_capacity: 60,
 };
 
-function render(overrides: Partial<Tracking>): string {
+function render(
+  overrides: Partial<Tracking> | Record<string, unknown>,
+  followState: FollowState = "following",
+): string {
   const tracking = {
     active: true,
     ride,
@@ -75,7 +79,7 @@ function render(overrides: Partial<Tracking>): string {
           tracking,
           language: "en",
           routeColors: new Map(),
-          following: true,
+          followState,
           onFollow: () => {},
           onStop: () => {},
         }),
@@ -92,7 +96,8 @@ test("before boarding it counts the stops to yours, bus to stop", () => {
   assert.match(html, /Bus is here/);
   assert.match(html, /Your stop/);
   assert.match(html, /Plenty of room/);
-  assert.match(html, /Stop tracking/);
+  assert.match(html, /End trip/);
+  assert.doesNotMatch(html, /Stop tracking|Back to results/);
 });
 
 test("close by, it says to head out", () => {
@@ -122,7 +127,7 @@ test("arriving offers Done, and a lost bus falls back to the timetable", () => {
   );
   assert.match(arrived, /You’ve arrived/);
   assert.match(arrived, /Done/);
-  assert.doesNotMatch(arrived, /Stop tracking/);
+  assert.doesNotMatch(arrived, /End trip/);
   const lost = text(render({ lost: true, liveBus: undefined }));
   assert.match(lost, /Live position lost; showing schedule/);
   assert.match(lost, /Scheduled departure/);
@@ -136,5 +141,36 @@ test("milestones are announced once, through one polite region", () => {
   assert.match(
     nudge,
     /<p class="sr-only" aria-live="polite">Head to the stop now<\/p>/,
+  );
+});
+
+test("the header says how the map follows the bus, with Follow when it isn't", () => {
+  const following = text(render({}));
+  assert.match(following, /Following/);
+  assert.doesNotMatch(following, />\s*Follow\s*</);
+  const looking = render({}, "lookingAround");
+  assert.match(looking, /<p[^>]*aria-live="polite"[^>]*>Looking around<\/p>/);
+  assert.match(looking, /<button[^>]*>Follow<\/button>/);
+  const waiting = render({ liveBus: undefined }, "waiting");
+  assert.match(waiting, /Waiting for signal…/);
+  assert.match(waiting, /<button[^>]*>Follow<\/button>/);
+  assert.doesNotMatch(waiting, /animate-follow-pulse/);
+});
+
+test("a lost bus says so once and offers no Follow", () => {
+  const html = render({ lost: true, liveBus: undefined }, "lost");
+  assert.equal(html.match(/Live position lost; showing schedule/g)?.length, 1);
+  assert.doesNotMatch(html, /<button[^>]*>Follow<\/button>/);
+});
+
+test("a changed bus is announced with an OK to dismiss it", () => {
+  const quiet = render({});
+  assert.doesNotMatch(quiet, /Your bus changed/);
+  const changed = render({
+    reassigned: { from: "WP-NE-6544", to: "WP-NB-1234" },
+  });
+  assert.match(
+    changed,
+    /<div aria-live="polite">.*Your bus changed to WP-NB-1234.*>OK<\/button>/,
   );
 });

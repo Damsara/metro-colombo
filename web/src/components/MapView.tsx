@@ -19,6 +19,11 @@ import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { i18n } from "../i18n";
 import { MAP_STATUS } from "../classNames";
+import {
+  dragDistance,
+  type FollowEvent,
+  type FollowState,
+} from "../lib/follow";
 import { routeColor as colorForRoute } from "../lib/routeColor";
 import { palette } from "../theme";
 import { BusModelLayer } from "./BusModelLayer";
@@ -29,6 +34,7 @@ import {
   busKey,
   stopName,
   type MapViewProps,
+  type Ride,
   type RouteRef,
   type Stop,
 } from "../types";
@@ -57,7 +63,14 @@ type Scene = {
 const NO_ROUTES: RouteRef[] = [];
 type Warning = "tiles" | "map" | "location" | "permission" | null;
 
-type Insets = MapViewProps["insets"];
+type Props = Omit<MapViewProps, "onFollowChange"> & {
+  followState: FollowState | null;
+  onFollowEvent: (event: FollowEvent) => void;
+  /** A ride to frame from boarding to getting off, e.g. once its trip ends. */
+  frameRide?: Ride | null;
+};
+
+type Insets = Props["insets"];
 
 // Keeps fitted content clear of the caption, legend and control column, or
 // on phones of the header, the drawer and the control column.
@@ -118,6 +131,18 @@ function lineCoordinates(geometry: Line): Position[] {
   return geometry.type === "LineString"
     ? geometry.coordinates
     : geometry.coordinates.flat();
+}
+
+function pointerPoint(
+  event: Event | undefined,
+): { x: number; y: number } | null {
+  if (event instanceof MouseEvent)
+    return { x: event.clientX, y: event.clientY };
+  if (typeof TouchEvent !== "undefined" && event instanceof TouchEvent) {
+    const touch = event.touches[0] ?? event.changedTouches[0];
+    return touch ? { x: touch.clientX, y: touch.clientY } : null;
+  }
+  return null;
 }
 
 function isMultiTouch(event: Event | undefined): boolean {
@@ -449,7 +474,7 @@ class LiveBusesControl implements maplibregl.IControl {
   }
 }
 
-export default function MapView(props: MapViewProps) {
+export default function MapView(props: Props) {
   const {
     routes,
     routeCatalog,
@@ -461,9 +486,11 @@ export default function MapView(props: MapViewProps) {
     selectedJourney,
     selectedBus,
     followBus,
+    followState,
+    frameRide = null,
     language,
     onBusSelect,
-    onFollowChange,
+    onFollowEvent,
     showLive,
     insets,
     routeLock = null,
@@ -486,6 +513,7 @@ export default function MapView(props: MapViewProps) {
   );
   const [warning, setWarning] = useState<Warning>(null);
   const [attempt, setAttempt] = useState(0);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   const selectedBusRoute = selectedBus?.route_code ?? "";
   const routeData = useMemo<Lines>(
@@ -593,6 +621,15 @@ export default function MapView(props: MapViewProps) {
     if (selectedStop && validStop(selectedStop)) {
       kind = "stop";
       coordinates = [stopPosition(selectedStop)];
+    } else if (frameRide) {
+      kind = "ride";
+      coordinates = [
+        frameRide.board,
+        ...(frameRide.stops ?? []),
+        frameRide.alight,
+      ]
+        .filter(validStop)
+        .map(stopPosition);
     } else if (selectedJourney) {
       kind = "journey";
       coordinates = journeyStops(selectedJourney)
@@ -619,6 +656,7 @@ export default function MapView(props: MapViewProps) {
     };
   }, [
     selectedStop,
+    frameRide,
     selectedJourney,
     from,
     to,
@@ -642,10 +680,12 @@ export default function MapView(props: MapViewProps) {
     if (appliedFocus.current === next.key) return;
     // The first view is shown at once; later changes glide to the new view.
     const firstView = appliedFocus.current === null;
-    // Leaving follow mode keeps the camera where the user (or the bus) left it.
+    // Leaving follow mode keeps the camera where the user (or the bus) left
+    // it, unless it's to frame the ride that was being followed.
     const wasFollowing = appliedFocus.current === FOLLOW_FOCUS;
     appliedFocus.current = next.key;
-    if (wasFollowing || next.coordinates.length === 0) return;
+    if (wasFollowing && !next.key.startsWith("ride:")) return;
+    if (next.coordinates.length === 0) return;
     const bounds = new maplibregl.LngLatBounds();
     next.coordinates.forEach((position) =>
       bounds.extend([position[0], position[1]]),
@@ -767,17 +807,14 @@ export default function MapView(props: MapViewProps) {
       });
       // Returns false when the tapped bus has already left the feed.
       const tapBus = (id: string): boolean => {
-        const { buses, selectedBus, followBus, onBusSelect, onFollowChange } =
+        const { buses, selectedBus, onBusSelect, onFollowEvent } =
           latest.current.props;
         const bus = buses.find((candidate) => busKey(candidate) === id);
         if (!bus) return false;
         const alreadySelected =
           Boolean(selectedBus) && busKey(selectedBus!) === id;
-        // Tap a bus to follow it; tap it again to resume following
-        // after looking around, or to release it while following.
-        if (!alreadySelected) onBusSelect(bus);
-        else if (!followBus) onFollowChange(true);
-        else onBusSelect(null);
+        if (alreadySelected) onFollowEvent({ type: "tapSelected" });
+        else onBusSelect(bus);
         return true;
       };
       activeMap.on("click", (event) => {
@@ -826,19 +863,32 @@ export default function MapView(props: MapViewProps) {
       activeMap.on("mouseout", () => {
         if (ready.current) setHover(null);
       });
-      // Panning away from the bus (drag or arrow keys) pauses following;
-      // zooming and rotating keep it. A two-finger pinch also reports a
-      // small drag, so only one-finger touch drags count.
+      // Panning away from the bus (a real drag or arrow keys) stops
+      // following; zooming and rotating keep it. A two-finger pinch also
+      // reports a small drag, so only one-finger touch drags count.
+      let dragStart: { x: number; y: number } | null = null;
       activeMap.on("dragstart", (event) => {
-        if (isMultiTouch(event.originalEvent)) return;
-        latest.current.props.onFollowChange(false);
+        dragStart = isMultiTouch(event.originalEvent)
+          ? null
+          : pointerPoint(event.originalEvent);
+      });
+      activeMap.on("drag", (event) => {
+        const point = pointerPoint(event.originalEvent);
+        if (!dragStart || !point || isMultiTouch(event.originalEvent)) return;
+        latest.current.props.onFollowEvent({
+          type: "drag",
+          distance: dragDistance(dragStart, point),
+        });
+      });
+      activeMap.on("dragend", () => {
+        dragStart = null;
       });
       activeMap.on("movestart", (event) => {
         if (
           event.originalEvent instanceof KeyboardEvent &&
           event.originalEvent.key.startsWith("Arrow")
         )
-          latest.current.props.onFollowChange(false);
+          latest.current.props.onFollowEvent({ type: "pan" });
       });
       if (typeof ResizeObserver !== "undefined") {
         observer = new ResizeObserver(resize);
@@ -906,8 +956,10 @@ export default function MapView(props: MapViewProps) {
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () =>
+    const update = () => {
       busLayerRef.current?.setReducedMotion(preference.matches);
+      setReducedMotion(preference.matches);
+    };
     update();
     preference.addEventListener("change", update);
     return () => preference.removeEventListener("change", update);
@@ -928,6 +980,8 @@ export default function MapView(props: MapViewProps) {
     // in progress is left alone, then the camera glides back onto the bus.
     let phase: "start" | "gliding" | "tracking" = "start";
     let firstGlide = true;
+    // With reduced motion the camera moves once per new position, not every frame.
+    let lastCentred = "";
     const settle = () => {
       phase = "tracking";
     };
@@ -952,12 +1006,16 @@ export default function MapView(props: MapViewProps) {
           phase = "start";
         } else if (phase === "tracking") {
           const shift = followShift(latest.current.props.insets);
-          const center = shift
-            ? map.unproject(
-                map.project(position).add(new maplibregl.Point(0, shift)),
-              )
-            : position;
-          map.jumpTo({ center });
+          const centred = `${position[0]},${position[1]},${shift}`;
+          if (!reducedMotion || centred !== lastCentred) {
+            lastCentred = centred;
+            const center = shift
+              ? map.unproject(
+                  map.project(position).add(new maplibregl.Point(0, shift)),
+                )
+              : position;
+            map.jumpTo({ center });
+          }
         }
       }
       frame = requestAnimationFrame(tick);
@@ -971,7 +1029,7 @@ export default function MapView(props: MapViewProps) {
       map.touchZoomRotate.disable();
       map.touchZoomRotate.enable();
     };
-  }, [following, selectedBusKey, status]);
+  }, [following, selectedBusKey, status, reducedMotion]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1034,8 +1092,8 @@ export default function MapView(props: MapViewProps) {
         {status === "ready" && selectedBus && showBusPill && (
           <FollowBusPill
             bus={selectedBus}
-            following={followBus}
-            onFollow={() => onFollowChange(true)}
+            state={followState ?? "following"}
+            onFollow={() => onFollowEvent({ type: "follow" })}
             onRelease={() => onBusSelect(null)}
           />
         )}
