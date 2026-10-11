@@ -131,7 +131,11 @@ msgstr "<0>在此下车:</0>{alightName}"
 msgid "<0>Get on at</0> {boardName}"
 msgstr "<0>在此上车:</0>{boardName}"
 
-#: src/components/MapView.tsx:1433
+#: src/occasions/themes/greetings.ts:8
+msgid "A peaceful Poya day"
+msgstr "祝波亚日安宁"
+
+#: src/components/MapView.tsx:1503
 msgid "A: Start · B: Destination"
 msgstr "A:起点 · B:目的地"
 
@@ -185,6 +189,14 @@ msgstr "返回地图"
 msgid "Back to the trip form"
 msgstr "返回行程表单"
 
+#: src/occasions/themes/greetings.ts:16
+msgid "Blessed Maha Shivaratri"
+msgstr "大湿婆节吉祥"
+
+#: src/occasions/themes/greetings.ts:15
+msgid "Blessed Milad-un-Nabi"
+msgstr "圣纪节吉祥"
+
 #: src/components/BusCard.tsx:310
 #: src/components/BusCard.tsx:397
 #: src/components/LiveBusList.tsx:50
@@ -202,15 +214,15 @@ msgstr "公交车已到"
 msgid "Bus live"
 msgstr "公交车实时"
 
-#: src/App.tsx:879
+#: src/App.tsx:904
 msgid "Bus route map"
 msgstr "公交线路地图"
 
-#: src/App.tsx:469
+#: src/App.tsx:494
 msgid "Bus routes"
 msgstr "公交线路"
 
-#: src/App.tsx:548
+#: src/App.tsx:573
 msgctxt "tab"
 msgid "Bus routes"
 msgstr "公交线路"
@@ -251,7 +263,7 @@ msgstr "选择你要下车的地方。"
 msgid "Choose your starting stop and destination to find a journey."
 msgstr "选择起点站和目的地,查找行程。"
 
-#: src/App.tsx:642
+#: src/App.tsx:667
 msgctxt "recent trips"
 msgid "Clear"
 msgstr "清除"
@@ -261,7 +273,7 @@ msgstr "清除"
 msgid "Clear {label}"
 msgstr "清除{label}"
 
-#: src/App.tsx:955
+#: src/App.tsx:1014
 #: src/components/StopPicker.tsx:435
 msgid "Close"
 msgstr "关闭"
@@ -274,7 +286,7 @@ msgstr "关闭站点详情"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "最近的站点:{nearestName} · 直线距离 {nearestDistance}。请确认步行路线。"
 
-#: src/App.tsx:933
+#: src/App.tsx:978
 msgid "Colombo & beyond"
 msgstr "科伦坡及周边"
 
@@ -291,7 +303,7 @@ msgctxt "month"
 msgid "Dec"
 msgstr "12月"
 
-#: src/components/MapView.tsx:1333
+#: src/components/MapView.tsx:1403
 msgid "Destination: {stopLabel}"
 msgstr "目的地:{stopLabel}"
 
@@ -316,12 +328,17 @@ msgstr "无法获取时长"
 msgid "Edit"
 msgstr "修改"
 
+#: src/occasions/themes/greetings.ts:13
+#: src/occasions/themes/greetings.ts:14
+msgid "Eid Mubarak"
+msgstr "节日吉庆（Eid Mubarak）"
+
 #: src/components/TrackingPanel.tsx:260
 #: src/components/TrackingPanel.tsx:347
 msgid "End trip"
 msgstr "结束行程"
 
-#: src/App.tsx:536
+#: src/App.tsx:561
 msgid "Explore Metro"
 msgstr "探索 Metro"
 
@@ -346,11 +363,11 @@ msgstr "2月"
 msgid "Filling up"
 msgstr "渐满"
 
-#: src/App.tsx:675
+#: src/App.tsx:700
 msgid "Find buses for the way back, from {end} to {start}"
 msgstr "查找返程公交车:{end} 至 {start}"
 
-#: src/App.tsx:661
+#: src/App.tsx:686
 msgid "Find buses from {start} to {end}"
 msgstr "查找公交车:{start} 至 {end}"
 
@@ -358,11 +375,11 @@ msgstr "查找公交车:{start} 至 {end}"
 msgid "Find my bus"
 msgstr "查找公交车"
 
-#: src/components/MapView.tsx:414
+#: src/components/MapView.tsx:436
 msgid "Find my location"
 msgstr "定位我的位置"
 
-#: src/App.tsx:935
+#: src/App.tsx:983
 msgid "Find your way around."
 msgstr "轻松找到出行路线。"
 
@@ -435,6 +452,46 @@ msgstr "在这里下车"
 msgid "Go here"
 msgstr "去这里"
 
+#: src/occasions/themes/greetings.ts:17
+msgid "Good Friday"
+msgstr "耶稣受难日"
+
+#: src/occasions/themes/greetings.ts:10
+msgid "Happy Deepavali"
+msgstr "排灯节快乐"
+
+#: src/occasions/themes/greetings.ts:21
+msgid "Happy May Day"
+msgstr "劳动节快乐"
+
+#: src/occasions/themes/greetings.ts:18
+msgid "Happy National Day"
+msgstr "国庆日快乐"
+
+#: src/occasions/themes/greetings.ts:19
+msgid "Happy New Year"
+msgstr "新年快乐"
+
+#: src/occasions/themes/greetings.ts:20
+msgid "Happy New Year's Eve"
+msgstr "除夕快乐"
+
+#: src/occasions/themes/greetings.ts:7
+msgid "Happy Poson"
+msgstr "波松节快乐"
+
+#: src/occasions/themes/greetings.ts:9
+msgid "Happy Sinhala and Tamil New Year"
+msgstr "僧伽罗和泰米尔新年快乐"
+
+#: src/occasions/themes/greetings.ts:12
+msgid "Happy Thai Pongal"
+msgstr "丰收节（Thai Pongal）快乐"
+
+#: src/occasions/themes/greetings.ts:6
+msgid "Happy Vesak"
+msgstr "卫塞节快乐"
+
 #: src/components/TrackingPanel.tsx:184
 #: src/components/TrackingPanel.tsx:210
 msgid "Head to the stop now"
@@ -452,7 +509,7 @@ msgstr "这里 → {end}"
 msgid "Hide"
 msgstr "隐藏"
 
-#: src/components/MapView.tsx:576
+#: src/components/MapView.tsx:598
 msgid "Hide live buses"
 msgstr "隐藏实时公交车"
 
@@ -478,7 +535,7 @@ msgstr "1月"
 msgid "Journey steps"
 msgstr "行程步骤"
 
-#: src/components/MapView.tsx:1424
+#: src/components/MapView.tsx:1494
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "行程站点;圆环标出上车和下车位置"
 
@@ -501,7 +558,7 @@ msgstr "保持当前选择"
 msgid "Language"
 msgstr "语言"
 
-#: src/App.tsx:944
+#: src/App.tsx:1003
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro 目前没有提供这条线路的路线图。"
 
@@ -529,7 +586,7 @@ msgstr "实时公交车"
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "暂时无法获取公交车实时位置,时刻表仍可使用。"
 
-#: src/components/MapView.tsx:1430
+#: src/components/MapView.tsx:1500
 msgid "Live bus; tap to select and follow"
 msgstr "实时公交车;点按即可选择并跟随"
 
@@ -555,16 +612,16 @@ msgstr "此方向有实时车辆"
 msgid "Live position lost; showing schedule"
 msgstr "已丢失实时位置;显示时刻表"
 
-#: src/App.tsx:770
+#: src/App.tsx:795
 msgid "Load missing stops"
 msgstr "加载缺失的站点"
 
-#: src/App.tsx:717
+#: src/App.tsx:742
 msgid "Loading bus routes…"
 msgstr "正在加载公交线路…"
 
-#: src/App.tsx:884
-#: src/components/MapView.tsx:1370
+#: src/App.tsx:909
+#: src/components/MapView.tsx:1440
 msgid "Loading map…"
 msgstr "正在加载地图…"
 
@@ -576,11 +633,11 @@ msgstr "正在加载站点…"
 msgid "Loading the stops…"
 msgstr "正在加载站点…"
 
-#: src/components/MapView.tsx:1350
+#: src/components/MapView.tsx:1420
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "未获得位置权限。你仍可自行选择站点。"
 
-#: src/components/MapView.tsx:415
+#: src/components/MapView.tsx:437
 msgid "Location unavailable"
 msgstr "无法获取位置"
 
@@ -592,19 +649,19 @@ msgstr "无法获取位置。你仍可输入起点站。"
 msgid "Looking around"
 msgstr "正在浏览周围"
 
-#: src/components/MapView.tsx:416
+#: src/components/MapView.tsx:438
 msgid "Map credits"
 msgstr "地图版权信息"
 
-#: src/components/MapView.tsx:1416
+#: src/components/MapView.tsx:1486
 msgid "Map key"
 msgstr "地图图例"
 
-#: src/components/MapView.tsx:1354
+#: src/components/MapView.tsx:1424
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "无法从外部地图服务加载地图图块。请检查网络连接。你仍可规划行程。"
 
-#: src/components/MapView.tsx:1380
+#: src/components/MapView.tsx:1450
 msgid "Map unavailable"
 msgstr "地图不可用"
 
@@ -618,7 +675,11 @@ msgctxt "month"
 msgid "May"
 msgstr "5月"
 
-#: src/App.tsx:839
+#: src/occasions/themes/greetings.ts:11
+msgid "Merry Christmas"
+msgstr "圣诞快乐"
+
+#: src/App.tsx:864
 msgid "Metro home"
 msgstr "Metro 首页"
 
@@ -631,7 +692,7 @@ msgstr "周一"
 msgid "near {nearName}"
 msgstr "靠近 {nearName}"
 
-#: src/App.tsx:326
+#: src/App.tsx:351
 msgid "Near you"
 msgstr "你附近"
 
@@ -688,7 +749,7 @@ msgstr "不用了"
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "目前没有开往这个方向的车 · 另一方向有 {elsewhere} 辆"
 
-#: src/App.tsx:781
+#: src/App.tsx:806
 msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
 msgstr "与 <0>Lanka Metro Transit</0> 及官方 <1>LMT GO 应用</1>无关联。"
 
@@ -722,7 +783,7 @@ msgstr "已在地图上"
 msgid "On your way to {alight}"
 msgstr "正前往 {alight}"
 
-#: src/App.tsx:714
+#: src/App.tsx:739
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "打开一条线路,查看它的站点和公交车当前位置。"
 
@@ -750,11 +811,11 @@ msgstr "面板:已最小化"
 msgid "Pick a date"
 msgstr "选择日期"
 
-#: src/App.tsx:543
+#: src/App.tsx:568
 msgid "Plan a trip"
 msgstr "规划行程"
 
-#: src/App.tsx:469
+#: src/App.tsx:494
 msgid "Plan your bus trip"
 msgstr "规划你的公交行程"
 
@@ -770,15 +831,15 @@ msgstr "空位充足"
 msgid "PM"
 msgstr "下午"
 
-#: src/components/MapView.tsx:413
+#: src/components/MapView.tsx:435
 msgid "Point north"
 msgstr "指向北方"
 
-#: src/App.tsx:327
+#: src/App.tsx:352
 msgid "Popular"
 msgstr "热门"
 
-#: src/App.tsx:690
+#: src/App.tsx:715
 msgid "Popular starting stops"
 msgstr "热门起点站"
 
@@ -790,11 +851,15 @@ msgstr "点按“查找公交车”,再选择一个班次,即可查看上车指�
 msgid "Privacy choices"
 msgstr "隐私选项"
 
-#: src/App.tsx:325
+#: src/occasions/themes/greetings.ts:25
+msgid "Public holiday: buses may run a holiday timetable."
+msgstr "公共假日：公交车可能按假日时刻表运行。"
+
+#: src/App.tsx:350
 msgid "Recent"
 msgstr "最近"
 
-#: src/App.tsx:639
+#: src/App.tsx:664
 msgid "Recent trips"
 msgstr "最近行程"
 
@@ -814,7 +879,7 @@ msgstr "线路和站点编号,以及你提前搜索的天数。"
 msgid "Routes"
 msgstr "线路"
 
-#: src/components/MapView.tsx:1359
+#: src/components/MapView.tsx:1429
 msgid "Routes and stops map"
 msgstr "线路和站点地图"
 
@@ -854,7 +919,7 @@ msgstr "9月"
 msgid "Served by"
 msgstr "途经线路"
 
-#: src/App.tsx:809
+#: src/App.tsx:834
 msgid "Service status"
 msgstr "服务状态"
 
@@ -862,15 +927,15 @@ msgstr "服务状态"
 msgid "Show"
 msgstr "显示"
 
-#: src/components/MapView.tsx:568
+#: src/components/MapView.tsx:590
 msgid "Show 3D map"
 msgstr "显示 3D 地图"
 
-#: src/components/MapView.tsx:568
+#: src/components/MapView.tsx:590
 msgid "Show flat map"
 msgstr "显示平面地图"
 
-#: src/components/MapView.tsx:576
+#: src/components/MapView.tsx:598
 msgid "Show live buses"
 msgstr "显示实时公交车"
 
@@ -894,11 +959,11 @@ msgstr "显示第二天"
 msgid "Show tomorrow’s buses"
 msgstr "显示明天的公交车"
 
-#: src/components/MapView.tsx:1355
+#: src/components/MapView.tsx:1425
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "部分地图内容无法加载。地图或网络连接可能不可用。你仍可规划行程。"
 
-#: src/App.tsx:774
+#: src/App.tsx:799
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
 msgstr "部分站点无法加载,搜索结果可能不完整。"
 
@@ -906,11 +971,11 @@ msgstr "部分站点无法加载,搜索结果可能不完整。"
 msgid "Start here"
 msgstr "从这里出发"
 
-#: src/components/MapView.tsx:1333
+#: src/components/MapView.tsx:1403
 msgid "Start: {stopLabel}"
 msgstr "起点:{stopLabel}"
 
-#: src/components/MapView.tsx:1419
+#: src/components/MapView.tsx:1489
 msgid "Stop"
 msgstr "站点"
 
@@ -944,7 +1009,7 @@ msgstr "点按站点规划行程 · 点按公交车进行跟随"
 msgid "Tap a stop to plan a trip"
 msgstr "点按站点即可规划行程"
 
-#: src/components/MapView.tsx:1383
+#: src/components/MapView.tsx:1453
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "地图需要网络连接和浏览器的 WebGL 支持。你仍可选择站点并规划行程。"
 
@@ -994,7 +1059,7 @@ msgstr "追踪我的行程"
 msgid "Tracked bus"
 msgstr "已跟随的公交车"
 
-#: src/components/MapView.tsx:446
+#: src/components/MapView.tsx:468
 msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
 msgstr "公交地图。用方向键移动,用加号或减号缩放。"
 
@@ -1012,15 +1077,15 @@ msgstr "从 {start} 到这个站点的行程"
 msgid "Trip from this stop to {end}"
 msgstr "从这个站点到 {end} 的行程"
 
-#: src/App.tsx:756
-#: src/App.tsx:950
+#: src/App.tsx:781
+#: src/App.tsx:1009
 #: src/components/JourneyResults.tsx:774
 #: src/components/RoutesPanel.tsx:238
 msgid "Try again"
 msgstr "重试"
 
-#: src/components/MapView.tsx:1391
-#: src/components/MapView.tsx:1408
+#: src/components/MapView.tsx:1461
+#: src/components/MapView.tsx:1478
 msgid "Try map again"
 msgstr "重新加载地图"
 
@@ -1032,6 +1097,11 @@ msgstr "试试第二天或其他站点。"
 msgctxt "weekday"
 msgid "Tue"
 msgstr "周二"
+
+#: src/occasions/OccasionGreeting.tsx:38
+#: src/occasions/OccasionGreeting.tsx:39
+msgid "Turn off festive touches"
+msgstr "关闭节日装饰"
 
 #: src/components/TripForm.tsx:175
 msgid "Type a stop or a place"
@@ -1057,7 +1127,7 @@ msgstr "等待信号…"
 msgid "Walk"
 msgstr "步行"
 
-#: src/App.tsx:760
+#: src/App.tsx:785
 msgid "We can’t connect to Metro right now."
 msgstr "目前无法连接到 Metro。"
 
@@ -1074,12 +1144,12 @@ msgstr "周三"
 msgid "What we collect"
 msgstr "我们收集什么"
 
-#: src/App.tsx:521
+#: src/App.tsx:546
 #: src/components/TripForm.tsx:174
 msgid "Where to?"
 msgstr "去哪里?"
 
-#: src/App.tsx:602
+#: src/App.tsx:627
 #: src/components/JourneyResults.tsx:787
 msgid "Where would you like to go?"
 msgstr "你想去哪里?"
@@ -1118,7 +1188,7 @@ msgstr "你的公交车已换成 {plate}"
 msgid "Your destination"
 msgstr "你的目的地"
 
-#: src/components/MapView.tsx:1352
+#: src/components/MapView.tsx:1422
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "无法获取你的位置。请自行选择站点。"
 
@@ -1131,10 +1201,10 @@ msgstr "你的起点"
 msgid "Your stop"
 msgstr "你的站点"
 
-#: src/components/MapView.tsx:411
+#: src/components/MapView.tsx:433
 msgid "Zoom in"
 msgstr "放大"
 
-#: src/components/MapView.tsx:412
+#: src/components/MapView.tsx:434
 msgid "Zoom out"
 msgstr "缩小"
