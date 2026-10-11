@@ -40,9 +40,10 @@ import { routeColor as colorForRoute } from "../lib/routeColor";
 import { splitRoute } from "../lib/routeSplit";
 import type { BusLine } from "../state/useBusJourney";
 import { palette } from "../theme";
-import { decorationSvg } from "../occasions/decorations";
+import { decorationImages } from "../occasions/decorations";
 import type { DecorationId } from "../occasions/types";
 import { BusModelLayer } from "./BusModelLayer";
+import { LanternModelLayer } from "./LanternModelLayer";
 import { MapModeControl } from "./MapModeControl";
 import { Button } from "./ui/Button";
 import { Notice } from "./ui/Notice";
@@ -62,6 +63,9 @@ const SPLIT = "metro-route-split";
 const STOPS = "metro-stops";
 const STOP_HIT = "metro-stop-hit";
 const FESTIVE = "metro-festive";
+const FESTIVE_CREDIT = "metro-festive-credit";
+const LANTERN_CREDIT =
+  'Lanterns: <a href="https://sketchfab.com/3d-models/vesak-lanterns-46bc0c19982940939bcd73710b55ee36" target="_blank" rel="noopener">“Vesak Lanterns” by sadeesha</a>, CC BY 4.0';
 const ROUTE_LINES = "metro-route-lines";
 const BUILDINGS = "metro-buildings-3d";
 const BASEMAP_BUILDINGS = "building";
@@ -680,6 +684,7 @@ export default function MapView(props: Props) {
   const flatFov = useRef<number | null>(null);
   const shownMode = useRef<MapMode | null>(null);
   const busLayerRef = useRef<BusModelLayer | null>(null);
+  const lanternLayerRef = useRef<LanternModelLayer | null>(null);
   const ready = useRef(false);
   const appliedScene = useRef<Scene | null>(null);
   const appliedFocus = useRef<string | null>(null);
@@ -1077,6 +1082,9 @@ export default function MapView(props: Props) {
           busLayerRef.current = vehicles;
           vehicles.setHaloColor(latest.current.props.festive?.busGlow ?? null);
           activeMap.addLayer(vehicles);
+          const lanterns = new LanternModelLayer();
+          lanternLayerRef.current = lanterns;
+          activeMap.addLayer(lanterns, "metro-stop-halo");
           ready.current = true;
           syncBuses();
           setScene(activeMap, latest.current.scene, null);
@@ -1272,41 +1280,76 @@ export default function MapView(props: Props) {
       ? (map?.getSource(FESTIVE) as GeoJSONSource | undefined)
       : undefined;
     if (!map || !source) return;
+    const lanterns = stopMark === "lantern";
+    const modelled = lanterns && mapMode === "3d";
+    const stops = stopMark ? (markedStops ?? []) : [];
+    lanternLayerRef.current?.setStops(
+      modelled ? stops.map((stop) => [stop.longitude, stop.latitude]) : [],
+    );
+    if (lanterns && !map.getSource(FESTIVE_CREDIT)) {
+      map.addSource(FESTIVE_CREDIT, {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+        attribution: LANTERN_CREDIT,
+      });
+      map.addLayer({
+        id: FESTIVE_CREDIT,
+        type: "circle",
+        source: FESTIVE_CREDIT,
+      });
+    } else if (!lanterns && map.getSource(FESTIVE_CREDIT)) {
+      map.removeLayer(FESTIVE_CREDIT);
+      map.removeSource(FESTIVE_CREDIT);
+    }
+    const images = stopMark ? decorationImages(stopMark) : [];
     const marks: Points = {
       type: "FeatureCollection",
-      features: stopMark
-        ? (markedStops ?? []).map((stop) => ({
+      features: modelled
+        ? []
+        : stops.map((stop, index) => ({
             type: "Feature",
             geometry: {
               type: "Point",
               coordinates: [stop.longitude, stop.latitude],
             },
-            properties: { mark: stopMark },
-          }))
-        : [],
+            properties: { mark: `${stopMark}-${index % images.length}` },
+          })),
     };
-    if (!stopMark || map.hasImage(stopMark)) {
+    const missing = images
+      .map((url, index) => ({ url, id: `${stopMark}-${index}` }))
+      .filter(({ id }) => !map.hasImage(id));
+    if (!missing.length) {
       source.setData(marks);
       return;
     }
     let cancelled = false;
-    const image = new Image();
-    image.onload = () => {
-      if (cancelled) return;
-      if (!map.hasImage(stopMark))
-        map.addImage(stopMark, image, { pixelRatio: 2 });
-      source.setData(marks);
-    };
-    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(decorationSvg(stopMark))}`;
+    void Promise.all(
+      missing.map(
+        ({ url, id }) =>
+          new Promise<void>((resolve) => {
+            const image = new Image();
+            image.onload = () => {
+              if (!cancelled && !map.hasImage(id))
+                map.addImage(id, image, { pixelRatio: 2 });
+              resolve();
+            };
+            image.onerror = () => resolve();
+            image.src = url;
+          }),
+      ),
+    ).then(() => {
+      if (!cancelled) source.setData(marks);
+    });
     return () => {
       cancelled = true;
     };
-  }, [stopMark, markedStops, attempt, status]);
+  }, [stopMark, markedStops, mapMode, attempt, status]);
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => {
       busLayerRef.current?.setReducedMotion(preference.matches);
+      lanternLayerRef.current?.setReducedMotion(preference.matches);
       setReducedMotion(preference.matches);
       tilt.current.reducedMotion = preference.matches;
     };

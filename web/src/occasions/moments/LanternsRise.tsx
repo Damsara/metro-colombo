@@ -14,16 +14,15 @@ export function LanternsRise() {
     [],
   );
   if (reduced) return null;
-  const src = decorationUrl("lantern");
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {lanterns.map((lantern, index) => (
         <img
           key={index}
-          src={src}
+          src={decorationUrl("lantern", index)}
           alt=""
-          width={36}
-          height={44}
+          width={30}
+          height={60}
           className="occasion-rise absolute bottom-0 opacity-0"
           style={{
             left: `${lantern.left}%`,

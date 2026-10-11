@@ -1,10 +1,11 @@
-import { decorationSvg } from "../decorations";
+import { decorationImages } from "../decorations";
 import type { DecorationId } from "../types";
 
 export const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
-export function decorationUrl(id: DecorationId): string {
-  return `data:image/svg+xml,${encodeURIComponent(decorationSvg(id))}`;
+export function decorationUrl(id: DecorationId, index = 0): string {
+  const images = decorationImages(id);
+  return images[index % images.length];
 }
 
 export function between(min: number, max: number): number {
