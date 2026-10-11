@@ -254,3 +254,74 @@
 .maplibregl-ctrl-group .map-live-toggle-ctrl[aria-pressed="true"] {
   color: var(--color-brand);
 }
+@keyframes occasion-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 60px) scale(var(--scale, 1));
+  }
+  12% {
+    opacity: 0.95;
+  }
+  70% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(14px, -470px) scale(var(--scale, 1));
+  }
+}
+@keyframes occasion-glow {
+  0% {
+    opacity: 0;
+    filter: saturate(0.6);
+  }
+  25%,
+  55% {
+    opacity: 1;
+    filter: saturate(1.2) drop-shadow(0 0 8px #f6c440);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes occasion-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(0.97, 1.04);
+  }
+}
+@keyframes occasion-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  20%,
+  60% {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+  40% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+  80% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+}
+.occasion-rise {
+  animation: occasion-rise 3.3s ease-out both;
+}
+.occasion-glow {
+  animation: occasion-glow 5.5s ease-in-out both;
+}
+.occasion-flicker {
+  animation: occasion-flicker 0.5s ease-in-out 6;
+}
+.occasion-twinkle {
+  animation: occasion-twinkle 4s ease-in-out both;
+}
