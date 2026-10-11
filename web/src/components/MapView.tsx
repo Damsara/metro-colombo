@@ -40,6 +40,7 @@ import { routeColor as colorForRoute } from "../lib/routeColor";
 import { splitRoute } from "../lib/routeSplit";
 import type { BusLine } from "../state/useBusJourney";
 import { palette } from "../theme";
+import { parseCrowdingPreview } from "../lib/busBounce";
 import { BusModelLayer } from "./BusModelLayer";
 import {
   addFestiveLayers,
@@ -1062,7 +1063,11 @@ export default function MapView(props: Props) {
             buildingsReady.current = false;
           }
           latest.current.props.onCapabilities?.(rich);
-          const vehicles = new BusModelLayer();
+          const vehicles = new BusModelLayer(
+            parseCrowdingPreview(
+              new URLSearchParams(window.location.search).get("crowding"),
+            ),
+          );
           busLayerRef.current = vehicles;
           vehicles.setHaloColor(latest.current.props.festive?.busGlow ?? null);
           activeMap.addLayer(vehicles);

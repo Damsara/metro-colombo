@@ -67,3 +67,28 @@ export function bounceOffset(key: string): number {
   }
   return (hash >>> 0) / 2 ** 32;
 }
+
+export type CrowdingPreview = Crowding | "mixed";
+
+const PREVIEWS: readonly CrowdingPreview[] = [
+  "roomy",
+  "filling",
+  "crowded",
+  "mixed",
+];
+
+export function parseCrowdingPreview(value: unknown): CrowdingPreview | null {
+  return PREVIEWS.find((preview) => preview === value) ?? null;
+}
+
+// Only the animation is previewed; occupancy shown in words stays real.
+export function previewCrowding(
+  preview: CrowdingPreview | null,
+  key: string,
+  real: Crowding | null,
+): Crowding | null {
+  if (preview === null) return real;
+  if (preview !== "mixed") return preview;
+  const levels: readonly Crowding[] = ["roomy", "filling", "crowded"];
+  return levels[Math.floor(bounceOffset(`${key}:mixed`) * levels.length)];
+}

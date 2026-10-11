@@ -11,7 +11,12 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import busModelUrl from "../assets/bus.glb?url";
 import { BusMotion } from "../busMotion";
 import { palette } from "../theme";
-import { bounceOffset, busBounce } from "../lib/busBounce";
+import {
+  bounceOffset,
+  busBounce,
+  previewCrowding,
+  type CrowdingPreview,
+} from "../lib/busBounce";
 import {
   busKey,
   occupancy,
@@ -184,6 +189,10 @@ export class BusModelLayer implements CustomLayerInterface {
   private disposed = false;
   private nextBounce?: ReturnType<typeof setTimeout>;
 
+  constructor(
+    private readonly crowdingPreview: CrowdingPreview | null = null,
+  ) {}
+
   private readonly discGeometry = new THREE.CircleGeometry(1, DISC_SEGMENTS);
   private readonly shadowMaterial = discMaterial(SHADOW_COLOR, SHADOW_OPACITY);
   private readonly haloMaterial = discMaterial(BUS_RED, HALO_OPACITY);
@@ -343,7 +352,11 @@ export class BusModelLayer implements CustomLayerInterface {
         template,
       );
       this.frame.toLocal(bus.lng, bus.lat, group.position);
-      const crowding = occupancy(bus)?.crowding ?? null;
+      const crowding = previewCrowding(
+        this.crowdingPreview,
+        key,
+        occupancy(bus)?.crowding ?? null,
+      );
       const bounce = this.reducedMotion
         ? busBounce(null, now, offset)
         : busBounce(crowding, now, offset);

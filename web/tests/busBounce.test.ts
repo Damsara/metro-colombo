@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { bounceOffset, busBounce } from "../src/lib/busBounce";
+import {
+  bounceOffset,
+  busBounce,
+  parseCrowdingPreview,
+  previewCrowding,
+} from "../src/lib/busBounce";
 
 const PEAK_FILLING = 550;
 const PEAK_CROWDED = 325;
@@ -55,4 +60,23 @@ test("each bus keeps its own rhythm", () => {
     busBounce("crowded", 100, bounceOffset("a")),
     busBounce("crowded", 100, bounceOffset("b")),
   );
+});
+
+test("the crowding preview overrides the real load, only for known values", () => {
+  assert.equal(previewCrowding("crowded", "a", "roomy"), "crowded");
+  assert.equal(previewCrowding("filling", "a", null), "filling");
+  assert.equal(previewCrowding(null, "a", "roomy"), "roomy");
+  assert.equal(parseCrowdingPreview("nonsense"), null);
+  assert.equal(parseCrowdingPreview(null), null);
+  assert.equal(parseCrowdingPreview("crowded"), "crowded");
+  assert.equal(parseCrowdingPreview("mixed"), "mixed");
+});
+
+test("a mixed preview spreads buses across every level", () => {
+  const levels = new Set(
+    Array.from({ length: 60 }, (_, i) =>
+      previewCrowding("mixed", `bus-${i}`, null),
+    ),
+  );
+  assert.deepEqual([...levels].sort(), ["crowded", "filling", "roomy"]);
 });
