@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { test } from "vitest";
-import { createElement, type ReactElement } from "react";
+import { test, vi } from "vitest";
+import {
+  createElement,
+  useState,
+  type MouseEvent,
+  type ReactElement,
+} from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import JourneyResults, {
@@ -11,6 +16,7 @@ import JourneyResults, {
 } from "../src/components/JourneyResults";
 import { countdown, countdownLabel, i18n } from "../src/i18n";
 import { LanguageProvider } from "../src/lib/language";
+import { Button } from "../src/components/ui/Button";
 import {
   colomboDate,
   type JourneyOption,
@@ -19,6 +25,13 @@ import {
   type RouteStops,
   type Stop,
 } from "../src/types";
+
+vi.mock("react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react")>();
+  return { ...actual, useState: vi.fn(actual.useState) };
+});
+
+vi.mock("../src/components/ui/Button", { spy: true });
 
 // Actual Panadura -> Battaramulla capture, reduced to rendered fields; booking token omitted.
 const option: JourneyOption = JSON.parse(
@@ -190,7 +203,7 @@ test("an assigned bus running this ride now can be shown on the map", () => {
     direction_id: ride.ride.direction_id,
     registration_number: plate.toLowerCase().replace(/-/g, " "),
   };
-  assert.doesNotMatch(render(option), /show on map/);
+  assert.doesNotMatch(render(option), /follow on map/);
   // Shift the trip so this ride boards in ten minutes.
   const shift =
     Date.now() + 10 * 60_000 - Date.parse(ride.ride.board.scheduled_time!);
@@ -203,12 +216,12 @@ test("an assigned bus running this ride now can be shown on the map", () => {
     leg.ride.alight.scheduled_time = at(leg.ride.alight.scheduled_time!);
   }
   const html = render(soon, [live], [soon]);
-  assert.equal((html.match(/show on map/g) ?? []).length, 1);
+  assert.equal((html.match(/Live · follow on map/g) ?? []).length, 1);
   assert.match(html, /Bus live/);
   // With tracking on offer it leads, and the plain map view stays.
   const trackable = render(soon, [live], [soon], () => {});
-  assert.equal((trackable.match(/Track this bus/g) ?? []).length, 1);
-  assert.match(trackable, /Show on map/);
+  assert.equal((trackable.match(/Track my trip/g) ?? []).length, 1);
+  assert.match(trackable, /Follow on map/);
 });
 
 test("an assigned bus that is live elsewhere is not presented as this trip", () => {
@@ -231,9 +244,9 @@ test("an assigned bus that is live elsewhere is not presented as this trip", () 
   ];
   for (const bus of cases) {
     const html = render(option, [bus]);
-    assert.doesNotMatch(html, /show on map/);
+    assert.doesNotMatch(html, /Live · follow on map/);
     assert.doesNotMatch(html, /Bus live/);
-    assert.match(html, /On another trip now/);
+    assert.match(html, /On another trip · follow on map/);
   }
 });
 
@@ -396,4 +409,136 @@ test("an option says whether its rides have buses assigned yet", () => {
   assert.match(html, /No bus assigned yet<\/span>/);
   assert.match(html, /can’t be followed live/);
   assert.doesNotMatch(render(option), /No bus assigned/);
+});
+
+function withoutBuses(source: JourneyOption, partial = false): JourneyOption {
+  const copy = structuredClone(source);
+  for (const leg of copy.legs) {
+    if (leg.kind !== "ride") continue;
+    leg.ride.bus = undefined;
+    if (partial) break;
+  }
+  return copy;
+}
+
+test("the next bus skips unassigned and partially assigned departures", () => {
+  const now = Date.now();
+  const none = withoutBuses(boardingIn(option, 5));
+  const some = withoutBuses(boardingIn(option, 10), true);
+  const assigned = boardingIn(option, 20);
+  assert.equal(nextBusIndex([none, some, assigned], true, now), 2);
+  assert.equal(nextBusIndex([none, some], true, now), -1);
+  assert.equal(nextBusIndex([], true, now), -1);
+  assert.doesNotMatch(renderToday([none, some]), /Next bus/);
+});
+
+test("today's unassigned departures fold into one row and toggle inline in order", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-11T08:00:00+05:30"));
+  const actual = await vi.importActual<typeof import("react")>("react");
+  let expandedPlan: JourneyPlan | undefined;
+  const setExpandedPlan = (value: JourneyPlan | undefined) => {
+    expandedPlan = value;
+  };
+  vi.mocked(useState).mockImplementation(((...args: unknown[]) =>
+    args.length === 0
+      ? [expandedPlan, setExpandedPlan]
+      : actual.useState(args[0])) as typeof useState);
+  try {
+    const currentPlan = {
+      ...plan,
+      date: colomboDate(),
+      options: [
+        boardingIn(option, 1),
+        withoutBuses(boardingIn(option, 5)),
+        boardingIn(option, 10),
+        withoutBuses(boardingIn(option, 15), true),
+      ],
+    };
+    const element = createElement(JourneyResults, {
+      plan: currentPlan,
+      selected: null,
+      liveBuses: [],
+      onShowBus: () => {},
+      loading: false,
+      error: null,
+      language: "en",
+      onSelect: () => {},
+      onRetry: () => {},
+      onNextDay: () => {},
+      routeColors: new Map(),
+    });
+    const clickToggle = (label: string) => {
+      const props = vi
+        .mocked(Button)
+        .mock.calls.map(([props]) => props)
+        .reverse()
+        .find((props) => props.children === label);
+      assert.ok(props?.onClick);
+      props.onClick({} as MouseEvent<HTMLButtonElement>);
+    };
+    const collapsed = markup(element);
+    assert.match(collapsed, /2 departures without a bus yet/);
+    assert.match(collapsed, /aria-expanded="false">Show<\/button>/);
+    assert.doesNotMatch(collapsed, /Leaves in (5|15) min/);
+    assert.ok(
+      collapsed.indexOf("Leaves in 1 min") < collapsed.indexOf("2 departures"),
+    );
+    assert.ok(
+      collapsed.indexOf("2 departures") < collapsed.indexOf("Leaves in 10 min"),
+    );
+    clickToggle("Show");
+    const expanded = markup(element);
+    assert.match(expanded, /aria-expanded="true">Hide<\/button>/);
+    assert.match(
+      expanded,
+      /border-dashed border-line-strong[^>]*id="[^"]*-card-1"/,
+    );
+    assert.match(expanded, /No bus assigned yet/);
+    assert.match(expanded, /Not every bus assigned yet/);
+    const positions = [1, 5, 10, 15].map((minutes) =>
+      expanded.indexOf(`Leaves in ${minutes} min`),
+    );
+    assert.ok(positions.every((position) => position >= 0));
+    assert.deepEqual(
+      positions,
+      [...positions].sort((a, b) => a - b),
+    );
+    clickToggle("Hide");
+    assert.doesNotMatch(markup(element), /Leaves in (5|15) min/);
+  } finally {
+    vi.mocked(useState).mockImplementation(actual.useState);
+    vi.useRealTimers();
+  }
+});
+
+test("the fold includes now through 30 minutes and keeps later departures as cards", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-11T08:00:00+05:30"));
+  try {
+    const html = renderToday(
+      [0, 30, 31].map((minutes) => withoutBuses(boardingIn(option, minutes))),
+    );
+    assert.match(html, /2 departures without a bus yet/);
+    assert.doesNotMatch(html, /Leaves now|Leaves in 30 min/);
+    assert.match(html, /Leaves in 31 min/);
+    assert.match(html, /No bus assigned yet/);
+    const one = renderToday([withoutBuses(boardingIn(option, 5))]);
+    assert.match(one, /1 departure without a bus yet/);
+    const otherDay = render(null, [], [withoutBuses(boardingIn(option, 5))]);
+    assert.doesNotMatch(otherDay, /departures? without a bus yet/);
+    assert.match(otherDay, /No bus assigned yet/);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("folded departures do not fill the first page ahead of assigned buses", () => {
+  const unassigned = [1, 2, 3, 4, 5, 6].map((minutes) =>
+    withoutBuses(boardingIn(option, minutes)),
+  );
+  const html = renderToday([...unassigned, boardingIn(option, 10)]);
+  assert.match(html, /6 departures without a bus yet/);
+  assert.match(html, /Next bus/);
+  assert.doesNotMatch(html, /Show more journeys/);
 });

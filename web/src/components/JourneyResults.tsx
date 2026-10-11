@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { Fragment, useEffect, useId, useMemo, useState } from "react";
 import {
   ArrowDown,
   ArrowRight,
@@ -180,6 +180,7 @@ export function nextBusIndex(
   if (!isToday) return -1;
   let soonest = -1;
   options.forEach((option, index) => {
+    if (busAssignment(option) !== "all") return;
     const time = boardTime(option);
     if (time >= now && (soonest < 0 || time < boardTime(options[soonest])))
       soonest = index;
@@ -306,7 +307,7 @@ function LiveBusButton({
             className="size-2 shrink-0 animate-follow-pulse rounded-full bg-white"
             aria-hidden="true"
           />
-          {t`Track this bus`}
+          {t`Track my trip`}
         </Button>
         <Button
           variant="secondary"
@@ -314,7 +315,7 @@ function LiveBusButton({
           pill
           onClick={() => onShowBus(bus)}
         >
-          {t`Show on map`}
+          {t`Follow on map`}
           <LocateFixed size={14} aria-hidden="true" />
         </Button>
       </>
@@ -327,7 +328,7 @@ function LiveBusButton({
           className="size-2 shrink-0 animate-follow-pulse rounded-full bg-brand"
           aria-hidden="true"
         />
-        {t`Live · show on map`}
+        {t`Live · follow on map`}
         <LocateFixed size={14} aria-hidden="true" />
       </Button>
     );
@@ -336,7 +337,7 @@ function LiveBusButton({
   // head the other way thinking it's theirs.
   return (
     <Button variant="neutral" size="xs" pill onClick={() => onShowBus(bus)}>
-      {t`On another trip now · see where`}
+      {t`On another trip · follow on map`}
     </Button>
   );
 }
@@ -682,6 +683,8 @@ export default function JourneyResults({
     plan: JourneyPlan | undefined;
     count: number;
   }>({ plan, count: PAGE_SIZE });
+  const [expandedPlan, setExpandedPlan] = useState<JourneyPlan>();
+  const expanded = plan !== undefined && expandedPlan === plan;
   const visibleCount = pagination.plan === plan ? pagination.count : PAGE_SIZE;
   const today = colomboDate(now);
   const options = useMemo(() => {
@@ -735,9 +738,26 @@ export default function JourneyResults({
     return () => window.clearTimeout(timeout);
   }, [plan, today, options]);
 
-  const remaining = options.length - visibleCount;
   const isToday = plan?.date === today;
   const nextIndex = nextBusIndex(options, isToday, now);
+  const foldedIndexes = new Set(
+    options.flatMap((option, index) =>
+      isToday &&
+      busAssignment(option) !== "all" &&
+      boardTime(option) >= now &&
+      boardTime(option) <= now + 30 * 60_000
+        ? [index]
+        : [],
+    ),
+  );
+  const firstFoldedIndex = foldedIndexes.values().next().value;
+  const rows = options.flatMap((_, index) =>
+    !foldedIndexes.has(index) || index === firstFoldedIndex ? [index] : [],
+  );
+  const visibleIndexes = new Set(rows.slice(0, visibleCount));
+  const showFold =
+    firstFoldedIndex !== undefined && visibleIndexes.has(firstFoldedIndex);
+  const remaining = rows.length - visibleCount;
 
   if (loading) {
     return (
@@ -827,26 +847,52 @@ export default function JourneyResults({
         </Badge>
       </div>
       <ol className="mt-4 flex flex-col gap-3">
-        {options.slice(0, visibleCount).map((option, index) => {
+        {options.map((option, index) => {
+          const folded = foldedIndexes.has(index);
+          if (folded ? !showFold : !visibleIndexes.has(index)) return null;
           const key = journeyKey(option);
           const isSelected = selected !== null && journeyKey(selected) === key;
           return (
-            <JourneyCard
-              key={key}
-              option={option}
-              cardId={`${id}-card-${index}`}
-              detailsId={`${id}-steps-${index}`}
-              isSelected={isSelected}
-              isToday={isToday}
-              isNext={index === nextIndex}
-              onToggle={() => onSelect(isSelected ? null : option)}
-              language={language}
-              routeColors={routeColors}
-              liveBuses={liveBuses}
-              onShowBus={onShowBus}
-              onTrack={onTrack && ((ride, bus) => onTrack(option, ride, bus))}
-              now={now}
-            />
+            <Fragment key={key}>
+              {index === firstFoldedIndex && (
+                <li className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-line-strong px-4 py-2 text-sm text-muted">
+                  <span>
+                    <Plural
+                      value={foldedIndexes.size}
+                      one="# departure without a bus yet"
+                      other="# departures without a bus yet"
+                    />
+                  </span>
+                  <Button
+                    variant="quiet"
+                    size="sm"
+                    aria-expanded={expanded}
+                    onClick={() => setExpandedPlan(expanded ? undefined : plan)}
+                  >
+                    {expanded ? t`Hide` : t`Show`}
+                  </Button>
+                </li>
+              )}
+              {(!folded || expanded) && (
+                <JourneyCard
+                  option={option}
+                  cardId={`${id}-card-${index}`}
+                  detailsId={`${id}-steps-${index}`}
+                  isSelected={isSelected}
+                  isToday={isToday}
+                  isNext={index === nextIndex}
+                  onToggle={() => onSelect(isSelected ? null : option)}
+                  language={language}
+                  routeColors={routeColors}
+                  liveBuses={liveBuses}
+                  onShowBus={onShowBus}
+                  onTrack={
+                    onTrack && ((ride, bus) => onTrack(option, ride, bus))
+                  }
+                  now={now}
+                />
+              )}
+            </Fragment>
           );
         })}
       </ol>
