@@ -836,7 +836,6 @@ function Home() {
           </Trans>
         </p>
         <div className="flex flex-wrap justify-center gap-x-5 empty:hidden">
-          {/* Phones keep the header to the logo and language; the API and data links live here. */}
           <Link
             className={`${FOOTER_LINK} inline-flex min-h-9 items-center md:hidden`}
             to="/docs"
@@ -888,13 +887,13 @@ function Home() {
             reloadHome
             className="max-md:border-line/70 max-md:bg-paper/80 max-md:backdrop-blur-md max-md:reduce-transparency:bg-paper max-md:reduce-transparency:backdrop-blur-none"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 max-md:gap-1.5">
               <Link
                 className={`${buttonClass({
                   variant: "neutral",
                   size: "xs",
                   pill: true,
-                })} max-md:hidden`}
+                })} max-[359px]:px-2`}
                 to="/docs"
               >
                 API
@@ -904,7 +903,7 @@ function Home() {
                   variant: "neutral",
                   size: "xs",
                   pill: true,
-                })} max-md:hidden`}
+                })} max-[359px]:px-2`}
                 to="/data"
               >
                 Data

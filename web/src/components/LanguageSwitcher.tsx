@@ -45,13 +45,21 @@ export function LanguageSwitcher() {
         })}
       </div>
       {/* The drop-down is invisible over a pill showing the current choice, so the pill stays as narrow as its label. */}
-      <label className="relative inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card pr-2.5 pl-3 text-sm font-semibold text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink xl:hidden">
+      <label className="relative inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card pr-2.5 pl-3 text-sm font-semibold text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink max-[359px]:px-3.5 xl:hidden">
         <span className="sr-only">{t`Language`}</span>
         <Globe size={16} aria-hidden="true" className="text-muted" />
-        <span lang={current?.value} aria-hidden="true">
+        <span
+          lang={current?.value}
+          aria-hidden="true"
+          className="max-[429px]:hidden"
+        >
           {current?.label}
         </span>
-        <ChevronDown size={15} aria-hidden="true" className="text-muted" />
+        <ChevronDown
+          size={15}
+          aria-hidden="true"
+          className="text-muted max-[359px]:hidden"
+        />
         <select
           value={language}
           onChange={(event) => {
