@@ -1,6 +1,5 @@
 import type { CatalogStop } from "../types";
 
-/** A stop as remembered: its code to find it again, and a name to show. */
 export interface RecentStop {
   code: string;
   name: string;
@@ -49,7 +48,6 @@ function defaultStore(): KeyValueStore | null {
   }
 }
 
-/** Puts a trip first, dropping an older copy of it and anything past the cap. */
 export function addRecentTrip(
   trips: readonly RecentTrip[],
   trip: RecentTrip,
@@ -96,7 +94,7 @@ export function clearRecentTrips(
   try {
     store?.removeItem(KEY);
   } catch {
-    // Nothing to clear.
+    // Storage may be unavailable.
   }
 }
 
@@ -104,7 +102,6 @@ export function recentStop(stop: CatalogStop): RecentStop {
   return { code: stop.stop_code, name: stop.stop_name_en };
 }
 
-/** The catalog entry for a remembered stop, if the catalog has it. */
 export function findStop(
   stops: readonly CatalogStop[],
   stop: RecentStop,
@@ -112,7 +109,6 @@ export function findStop(
   return stops.find((item) => item.stop_code === stop.code);
 }
 
-/** The distinct stops of the recent trips, destinations first. */
 export function recentStops(
   trips: readonly RecentTrip[],
   stops: readonly CatalogStop[],

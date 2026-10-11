@@ -43,7 +43,6 @@ interface Target {
   key: string;
   option: JourneyOption;
   ride: Ride;
-  /** The bus as last seen, for its plate and route while it isn't reporting. */
   bus: LiveBus;
 }
 
@@ -52,13 +51,8 @@ export interface Reassignment {
   to: string;
 }
 
-/** Phases worth telling a screen reader about, once each. */
 export type Announcement = "headOut" | "nextStop" | "arrived" | "lost";
 
-/**
- * Tracking one journey's bus from "it's coming" through boarding to the stop
- * you get off at. In the URL (`?track=1`) so the Back button ends it.
- */
 export function useTracking({
   buses,
   liveLoaded,
@@ -68,9 +62,7 @@ export function useTracking({
 }: {
   buses: readonly LiveBus[];
   liveLoaded: boolean;
-  /** When the latest live feed arrived. */
   receivedAt: number;
-  /** The latest live feed's own timestamp. */
   feedTimestamp?: number;
   plan: JourneyPlan | undefined;
 }) {
@@ -147,7 +139,6 @@ export function useTracking({
   useEffect(() => {
     setLastLive(null);
     if (!active) return;
-    // Tracking starts with a full grace period.
     setLastSeen(Date.now());
     const interval = window.setInterval(
       () => setNow(Date.now()),
@@ -226,7 +217,6 @@ export function useTracking({
     option: active ? target?.option : undefined,
     ride: active ? ride : undefined,
     bus: active ? bus : undefined,
-    /** The bus's entry in the live feed right now, if it's in it. */
     liveBus,
     lost,
     phase,

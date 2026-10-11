@@ -22,7 +22,6 @@ const CHIP =
 
 type DateChoice = "today" | "tomorrow" | "pick";
 
-/** Today, Tomorrow, or "Pick a date", which shows the native date field. */
 function DateChips({
   date,
   onDateChange,
@@ -105,10 +104,6 @@ function DateChips({
   );
 }
 
-/**
- * The trip form: where to first, then the starting stop (the nearest one when
- * location is already allowed), an optional location lookup and the date.
- */
 export function TripForm({
   from,
   to,
@@ -147,20 +142,16 @@ export function TripForm({
   routeColors: ReadonlyMap<string, string>;
   language: Language;
   locationBusy: boolean;
-  /** What the location lookup found, or "" before it runs. */
   locationMessage: string;
   onLocate: () => void;
-  /** The starting stop came from the location lookup. */
   fromIsNearest: boolean;
-  /** Picker shortcuts (recent, nearby, popular) for an empty query. */
   stopSections: readonly StopSection[];
 }) {
   const { t } = useLingui();
   return (
     <form
       className="relative"
-      // The submit handler moves a past date to today instead of
-      // letting the browser block the search.
+      // The submit handler moves a past date to today instead of letting the browser block the search.
       noValidate
       onSubmit={(event) => {
         event.preventDefault();

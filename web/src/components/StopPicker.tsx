@@ -18,7 +18,6 @@ const STATUS = "bg-tint-50 px-3 py-2.5 text-2xs leading-normal text-muted";
 
 type Choice = { key: string; stop: CatalogStop; place?: Place };
 
-/** Shortcuts listed before all stops while nothing has been typed. */
 export interface StopSection {
   key: string;
   title: string;
@@ -27,7 +26,6 @@ export interface StopSection {
 
 type Group = { key: string; title?: string; choices: Choice[] };
 
-/** Where the arrow keys land first: the top going down, the bottom going up. */
 function startIndex(step: 1 | -1, count: number): number {
   return step === 1 ? 0 : count - 1;
 }
@@ -49,13 +47,9 @@ interface StopPickerProps {
   language: Language;
   loading: boolean;
   routeColors: ReadonlyMap<string, string>;
-  /** Landmarks, searchable by name; choosing one picks its nearest stop. */
   places: ReadonlyArray<Place>;
-  /** Shown before all stops when the query is empty; empty ones are skipped. */
   sections?: readonly StopSection[];
-  /** A short note after the label, such as "(nearest)". */
   labelNote?: string;
-  /** The larger first field of the form. */
   prominent?: boolean;
   onChange: (stop: CatalogStop | null) => void;
 }
@@ -125,7 +119,6 @@ export default function StopPicker({
     });
     return [{ key: "matches", choices: [...placeChoices, ...stopChoices] }];
   }, [stops, places, query, sections, t]);
-  // Keyboard focus moves through one flat list across the sections.
   const choices = useMemo(
     () => groups.flatMap((group) => group.choices),
     [groups],
@@ -139,7 +132,6 @@ export default function StopPicker({
   const sheetOpen = expanded && mobile;
   const activeStop = activeIndex >= 0 ? choices[activeIndex]?.stop : undefined;
 
-  // Shared by the inline combobox and the phone sheet's search field.
   const onListKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.nativeEvent.isComposing) return;
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -437,7 +429,6 @@ export default function StopPicker({
             aria-modal="true"
             aria-label={label}
           >
-            {/* Back and the search field share one row, like any phone search. */}
             <div className="flex items-center gap-1.5 border-b border-line py-2 pr-3 pl-1.5">
               <IconButton
                 variant="plain"

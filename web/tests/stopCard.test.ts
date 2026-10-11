@@ -74,7 +74,6 @@ test("the secondary name is another language's, never a repeat", () => {
   assert.equal(secondaryStopName(kottawa, "en"), "කොට්ටාව");
   assert.equal(secondaryStopName(kottawa, "si"), "Kottawa");
   assert.equal(secondaryStopName(kottawa, "ta"), "Kottawa");
-  // No Sinhala name: the Sinhala view falls back to English, so no repeat.
   assert.equal(secondaryStopName(maharagama, "si"), undefined);
   assert.equal(secondaryStopName(maharagama, "en"), undefined);
 });
@@ -99,7 +98,6 @@ test("with a start set, going here completes the trip", () => {
     current: null,
     completes: { from: fort },
   });
-  // A destination elsewhere doesn't change that; going here replaces it.
   assert.equal(stopActions(kottawa, fort, maharagama).primary, "to");
 });
 
@@ -112,19 +110,16 @@ test("with only a destination set, starting here completes the trip", () => {
 });
 
 test("a stop that is already one end of the trip says so", () => {
-  // Already the start, with a destination: search from here.
   assert.deepEqual(stopActions(kottawa, kottawa, fort), {
     primary: "from",
     current: "from",
     completes: { to: fort },
   });
-  // Already the destination, with a start: search to here.
   assert.deepEqual(stopActions(kottawa, fort, kottawa), {
     primary: "to",
     current: "to",
     completes: { from: fort },
   });
-  // Already the start and nothing else: no trip to complete.
   assert.deepEqual(stopActions(kottawa, kottawa, null), {
     primary: "to",
     current: "from",

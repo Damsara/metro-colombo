@@ -1,6 +1,3 @@
-// Upstream clients for the MetroBus backend (metrobusapiprod.eimsky.com) and
-// lankametro.lk, exposed as an Effect service with stale-on-error caching.
-
 import {
   Cache,
   Cause,
@@ -23,7 +20,6 @@ export class UpstreamError extends Schema.TaggedError<UpstreamError>()(
   {
     message: Schema.String,
     status: Schema.optional(Schema.Number),
-    /** The upstream's own explanation of a rejected request. */
     detail: Schema.optional(Schema.String),
     cause: Schema.optional(Schema.Defect()),
   },
@@ -55,8 +51,7 @@ const JourneyResponse = Schema.Struct({ data: S.JourneyPlan });
 const REQUEST_TIMEOUT = Duration.seconds(15);
 const FAILURE_RETRY_AFTER = Duration.seconds(2);
 
-// lankametro.lk numbers its stops itself. `/api/stops` maps those numbers to
-// the MetroBus stop code and id used everywhere else.
+// lankametro.lk numbers its stops itself, so `/api/stops` maps those numbers to the MetroBus stop code and id.
 const LkPlacesResponse = Schema.Struct({
   places: Schema.Array(
     Schema.Struct({
@@ -83,7 +78,6 @@ const LkStopsResponse = Schema.Struct({
 });
 type LkStop = (typeof LkStopsResponse.Type)["stops"][number];
 
-/** Attaches each place's nearest stop. Places whose stop is unknown are dropped. */
 export function linkPlaces(
   places: ReadonlyArray<LkPlace>,
   stops: ReadonlyArray<LkStop>,
@@ -104,13 +98,7 @@ export function linkPlaces(
   });
 }
 
-// Successful lookups are kept for `freshTtl`, so a healthy origin is barely
-// bothered. After that the last good value is still answered straight away
-// while a single background refresh fetches a new one, so no request waits
-// on the origin for data it has seen before. Past `serveStaleFor` (defaults
-// to `staleTtl`) we block on the origin instead, and only use the old value
-// if it errors. Past `staleTtl` without a successful refresh, requests wait
-// for the origin again and fail with it. Failures are retried after 2s.
+// Stale values are served at once while one background refresh runs; past `serveStaleFor` requests wait on the origin and use the old value only if it errors.
 export const staleCache = Effect.fnUntraced(function* <A>(
   lookup: (key: string) => Effect.Effect<A, UpstreamError>,
   options: {
@@ -121,8 +109,7 @@ export const staleCache = Effect.fnUntraced(function* <A>(
     readonly capacity: number;
   },
 ) {
-  // Shares in-flight lookups, and holds a failure for 2s so a struggling
-  // origin isn't hammered.
+  // Holds a failure for 2s so a struggling origin isn't hammered.
   const cache = yield* Cache.makeWith(lookup, {
     capacity: options.capacity,
     timeToLive: (exit) =>
@@ -208,7 +195,6 @@ export class UpstreamApi extends Context.Service<
       routeId: string,
       directionId: string,
     ) => Effect.Effect<ReadonlyArray<S.Stop>, UpstreamError>;
-    /** Every stop on every route direction, keyed by `stop_code`. */
     readonly stopIdsByCode: Effect.Effect<
       ReadonlyMap<string, string>,
       UpstreamError
@@ -289,7 +275,6 @@ export class UpstreamApi extends Context.Service<
         ),
       );
 
-      // Same as getJson but attaches the current auto-renewed bearer token.
       const getAuthed = Effect.fn("UpstreamApi.getAuthed")(function* <A>(
         schema: Schema.Codec<A, unknown>,
         endpoint: Endpoint,
@@ -385,9 +370,7 @@ export class UpstreamApi extends Context.Service<
         Effect.withSpan("UpstreamApi.places"),
       );
 
-      // Route GeoJSON lives on Google Cloud Storage and lankametro.lk proxies the
-      // same objects (by their already-encoded path) when direct access fails.
-      // Only GCS URLs are fetched, whatever the upstream route data says.
+      // Route GeoJSON lives on Google Cloud Storage, which lankametro.lk proxies when direct access fails; only GCS URLs are fetched.
       const GCS = "https://storage.googleapis.com/";
       const fetchGeometry = Effect.fn("UpstreamApi.geometry")(function* (
         url: string,
@@ -408,17 +391,14 @@ export class UpstreamApi extends Context.Service<
         );
       });
 
-      // Reference data is cached for hours and served stale for days, so the
-      // API rides out an upstream outage. Journeys change by the minute, so
-      // they stay short-lived.
+      // Reference data is cached for hours and served stale for days to ride out upstream outages; journeys change by the minute.
       const routes = yield* staleCache(() => fetchRoutes, {
         name: "routes",
         freshTtl: Duration.hours(12),
         staleTtl: Duration.days(7),
         capacity: 1,
       });
-      // Kept apart from routes so one failed lookup doesn't leave every route
-      // uncoloured until the routes cache expires.
+      // Kept apart from routes so one failed lookup doesn't leave every route uncoloured.
       const colours = yield* staleCache(() => fetchColours, {
         name: "colours",
         freshTtl: Duration.hours(12),
@@ -467,8 +447,7 @@ export class UpstreamApi extends Context.Service<
       const stopsFor = (routeId: string, directionId: string) =>
         stops(`${routeId}|${directionId}`);
 
-      // Built from the caches on each call, so a stop list that failed to load
-      // earlier is picked up once it succeeds.
+      // Built from the caches on each call, so a stop list that failed to load earlier is picked up once it succeeds.
       const stopIdsByCode = Effect.gen(function* () {
         const directions = (yield* routes("all")).flatMap((route) =>
           route.directions.map((direction) => ({ route, direction })),

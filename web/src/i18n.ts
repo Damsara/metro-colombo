@@ -33,10 +33,7 @@ export function minutesLabel(i18n: I18n, value: number): string {
   return t(i18n)`${minutes} min`;
 }
 
-// Month and weekday names come from the catalogs, not Intl.DateTimeFormat:
-// Chrome has no Sinhala date data (it quietly falls back to English) and
-// Safari uses the traditional month names, like වප් for October, which belong
-// on a Poya calendar.
+// Month and weekday names come from the catalogs because Chrome has no Sinhala date data and Safari uses traditional month names that belong on a Poya calendar.
 const WEEKDAYS = [
   msg({ message: "Sun", context: "weekday" }),
   msg({ message: "Mon", context: "weekday" }),
@@ -61,7 +58,6 @@ const MONTHS = [
   msg({ message: "Dec", context: "month" }),
 ];
 
-/** A travel date (YYYY-MM-DD) such as "Sat, 10 Oct". */
 export function dateLabel(i18n: I18n, isoDay: string): string {
   const date = new Date(`${isoDay}T00:00:00Z`);
   const weekday = i18n._(WEEKDAYS[date.getUTCDay()]);
@@ -73,7 +69,6 @@ export function dateLabel(i18n: I18n, isoDay: string): string {
   });
 }
 
-/** A readable clock time, such as "3:05 PM". */
 export function timeLabel(i18n: I18n, value: string): string {
   const colombo = new Date(Date.parse(value) + COLOMBO_OFFSET_MS);
   const hours = colombo.getUTCHours();
@@ -86,10 +81,6 @@ export function timeLabel(i18n: I18n, value: string): string {
   });
 }
 
-/**
- * How a departure reads against the clock: "now", minutes to go, minutes
- * since it left, or far enough off that the clock time says it better.
- */
 export type Countdown =
   | { kind: "now" }
   | { kind: "in"; minutes: number }
@@ -113,7 +104,6 @@ export function countdown(departure: number, now: number): Countdown {
   return minutes === 0 ? { kind: "now" } : { kind: "left", minutes };
 }
 
-/** "Leaves in 12 min", "Leaves now" or "Left 3 min ago"; null for "clock". */
 export function countdownLabel(i18n: I18n, value: Countdown): string | null {
   switch (value.kind) {
     case "now":

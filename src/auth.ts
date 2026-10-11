@@ -1,6 +1,3 @@
-// Auto-renews the upstream `webview_token` from the single-use `refresh_token`,
-// persisting the rotated token so it survives restarts.
-
 import {
   Clock,
   Context,
@@ -62,8 +59,7 @@ type TokenState = {
   readonly expiresAt: number;
 };
 
-// Renew this far before the webview token's 1-hour expiry, so a request never
-// races the boundary.
+// Renew early so a request never races the 1-hour expiry boundary.
 const RENEW_MARGIN = Duration.minutes(10);
 
 const RefreshResponse = Schema.Struct({
@@ -106,9 +102,7 @@ export class Auth extends Context.Service<
       const authBase = `${config.eimskyBase}/user-service/api/v1/auth`;
       const stateFile = path.resolve(config.authStatePath);
 
-      // The stored token wins, since the seed is spent after the first
-      // refresh. A seed that differs from it is kept back in case it's from a
-      // newer login.
+      // The stored token wins because the seed is spent after the first refresh.
       const stored = readStoredRefresh(stateFile);
       const envSeed = Option.match(config.refreshToken, {
         onNone: () => "",
@@ -120,8 +114,7 @@ export class Auth extends Context.Service<
       const state = yield* Ref.make<TokenState | null>(
         seed ? { webviewToken: "", refreshToken: seed, expiresAt: 0 } : null,
       );
-      // Refresh tokens are single-use, so two renewals racing each other would
-      // leave one of them holding a dead token.
+      // Refresh tokens are single-use, so racing renewals would leave one holding a dead token.
       const renewing = yield* Semaphore.make(1);
 
       const isFresh = (current: TokenState | null) =>
@@ -200,8 +193,7 @@ export class Auth extends Context.Service<
               { mode: 0o600 },
             );
           } catch {
-            // Keeps working until the next restart, which then needs a new
-            // login.
+            // Keeps working until the next restart, which then needs a new login.
           }
         });
       }).pipe(Effect.withSpan("Auth.refresh"), renewing.withPermits(1));

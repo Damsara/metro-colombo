@@ -111,15 +111,11 @@ export function busReassignment(
   return from && to && normalize(from) !== normalize(to) ? { from, to } : null;
 }
 
-/** Within this of a stop, the bus counts as at it. */
 export const AT_STOP_METERS = 40;
 // Slack for GPS drift when deciding the bus has left its nearest stop.
 const PASSED_SLACK_METERS = 25;
-/** "Head to the stop now" once the bus is this many stops away or closer. */
 export const HEAD_OUT_STOPS = 2;
-/** "Get off at the next stop" at this many stops to go. */
 export const NEXT_STOP_STOPS = 1;
-/** A tracked bus missing from the live feed this long is lost. */
 export const LOST_AFTER_MS = 60_000;
 
 export function orderedStops(stops: readonly Stop[]): Stop[] {
@@ -128,10 +124,7 @@ export function orderedStops(stops: readonly Stop[]): Stop[] {
     .sort((a, b) => (a.sequence_number ?? 0) - (b.sequence_number ?? 0));
 }
 
-/**
- * Where the bus is along a direction's stop list, in half steps: a whole
- * number while it is at that stop, and n + 0.5 between stops n and n + 1.
- */
+// Half steps: n while at stop n, n + 0.5 between stops n and n + 1.
 export function busPosition(
   bus: Pick<LiveBus, "lat" | "lng">,
   stops: readonly Stop[],
@@ -160,11 +153,7 @@ export function busPosition(
   return nearest - 0.5;
 }
 
-/**
- * How many stops the bus makes until it reaches `target`, counting that
- * stop: 1 when it is the next one, 0 while the bus is there, negative once
- * it has gone past.
- */
+// Counts the target stop itself: 1 when it is the next one, 0 while the bus is there, negative once passed.
 export function stopsUntil(position: number, target: number): number {
   return position > target
     ? Math.floor(target - position)
@@ -172,8 +161,12 @@ export function stopsUntil(position: number, target: number): number {
 }
 
 export type TrackingPhase =
-  /** The stop list or the bus's place on it isn't known yet. */
-  "waiting" | "approaching" | "headOut" | "riding" | "nextStop" | "arrived";
+  | "waiting"
+  | "approaching"
+  | "headOut"
+  | "riding"
+  | "nextStop"
+  | "arrived";
 
 const ORDER: readonly TrackingPhase[] = [
   "waiting",
@@ -184,7 +177,6 @@ const ORDER: readonly TrackingPhase[] = [
   "arrived",
 ];
 
-/** The phase for a bus `boardLeft` stops from boarding and `alightLeft` from getting off. */
 export function trackingPhase(
   boardLeft: number | null,
   alightLeft: number | null,
@@ -197,10 +189,7 @@ export function trackingPhase(
   return "arrived";
 }
 
-/**
- * Phases only move forward, so GPS jitter around a stop can't flip
- * "Get off at the next stop" back to "2 stops to go", or replay a nudge.
- */
+// Phases only move forward so GPS jitter around a stop can't flip them back or replay a nudge.
 export function advancePhase(
   previous: TrackingPhase,
   next: TrackingPhase,
@@ -217,12 +206,7 @@ const SECONDS_TIMESTAMP_LIMIT = 1e11;
 const toMs = (value: number) =>
   value < SECONDS_TIMESTAMP_LIMIT ? value * 1000 : value;
 
-/**
- * When, on this device's clock, the bus's latest fix was taken. The fix's age
- * is measured against the feed's own timestamp when there is one, so a phone
- * whose clock is off doesn't count every bus as lost (or none). Without a fix
- * time, receiving it is the best we know.
- */
+// Ages the fix by the feed's own timestamp when there is one, so a phone with a wrong clock doesn't count every bus as lost (or none).
 export function lastSeenAt(
   bus: Pick<LiveBus, "timestamp">,
   receivedAt: number,
@@ -237,10 +221,6 @@ export function lastSeenAt(
   return receivedAt - Math.max(0, reference - toMs(fix));
 }
 
-/**
- * Where to place the tracked bus: its entry in the feed now, else its last
- * live fix, else where it was when tracking began.
- */
 export function trackedFix<T>(
   live: T | undefined,
   lastLive: T | null,
@@ -249,11 +229,7 @@ export function trackedFix<T>(
   return live ?? lastLive ?? start;
 }
 
-/**
- * "Last seen" after a live feed arrives: moved up to the fix's time when the
- * bus is in it, never back. A bus that leaves the feed keeps its last time,
- * so it gets the full grace period from its last fix.
- */
+// "Last seen" never moves back, and a bus that leaves the feed keeps its last time so it gets the full grace period.
 export function nextLastSeen(
   previous: number,
   bus: Pick<LiveBus, "timestamp"> | undefined,
@@ -265,11 +241,7 @@ export function nextLastSeen(
     : previous;
 }
 
-/**
- * Where the ride's stops sit on the direction's list. The stop you get off at
- * is the first one at or after the boarding stop, so a loop route that passes
- * a stop twice still counts the right visit.
- */
+// The stop you get off at is the first one at or after boarding, so a loop route that passes a stop twice counts the right visit.
 export function rideIndexes(
   stops: readonly Stop[],
   boardId: string,
@@ -282,12 +254,7 @@ export function rideIndexes(
   return { board, alight };
 }
 
-/**
- * The same ride in a refreshed plan, matched on what doesn't change with live
- * estimates or a bus swap: route, direction, stops and slot. Prefers the one
- * still assigned to the tracked bus, then the closest departure; falls back
- * to the ride as it was.
- */
+// Matched on what doesn't change with live estimates or a bus swap: route, direction, stops and slot.
 export function refreshedRide(
   plan: JourneyPlan | undefined,
   ride: Ride,
@@ -322,7 +289,6 @@ export function refreshedRide(
   );
 }
 
-/** Whole minutes until the live estimate for boarding, or null without a usable one. */
 export function liveMinutes(stop: Ride["board"], now: number): number | null {
   if (stop.time_status !== "live" || !stop.estimated_time) return null;
   const minutes = Math.round((Date.parse(stop.estimated_time) - now) / 60_000);
@@ -331,14 +297,9 @@ export function liveMinutes(stop: Ride["board"], now: number): number | null {
 
 export type ProgressRow =
   | { kind: "stop"; index: number; stop: Stop; bus: boolean; target: boolean }
-  /** The bus, between the stop above and the one below. */
   | { kind: "bus" }
   | { kind: "gap"; count: number };
 
-/**
- * The stops from the bus to `target`, for a compact progress line. Long runs
- * keep the first and last couple of stops around a "N more stops" gap.
- */
 export function progressRows(
   stops: readonly Stop[],
   position: number,

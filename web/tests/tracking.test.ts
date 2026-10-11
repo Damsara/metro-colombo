@@ -32,7 +32,6 @@ function stopAt(id: string, latitude: number): Stop {
   };
 }
 
-// Stops about 1.1 km apart on a line heading north.
 const line = ["a", "b", "c", "d", "e", "f", "g", "h"].map((id, index) =>
   stopAt(id, 6.8 + index * 0.01),
 );
@@ -40,11 +39,8 @@ const near = (latitude: number) => ({ lat: latitude, lng: 79.9 });
 
 test("the bus sits on a stop or between two, in half steps", () => {
   assert.equal(busPosition(near(6.8), line), 0);
-  // GPS a little off the stop still counts as there.
   assert.equal(busPosition(near(6.8102), line), 1);
-  // Just past b, heading for c.
   assert.equal(busPosition(near(6.8115), line), 1.5);
-  // Nearly at c, coming from b.
   assert.equal(busPosition(near(6.819), line), 1.5);
   assert.equal(busPosition(near(6.8), []), null);
 });
@@ -61,11 +57,9 @@ test("phases follow the bus from coming to arriving", () => {
   assert.equal(trackingPhase(null, null), "waiting");
   assert.equal(trackingPhase(4, 9), "approaching");
   assert.equal(trackingPhase(3, 8), "approaching");
-  // Head out at two stops, one stop, and while the bus is there.
   assert.equal(trackingPhase(2, 7), "headOut");
   assert.equal(trackingPhase(1, 6), "headOut");
   assert.equal(trackingPhase(0, 5), "headOut");
-  // Past the boarding stop, you're on it.
   assert.equal(trackingPhase(-1, 4), "riding");
   assert.equal(trackingPhase(-1, 2), "riding");
   assert.equal(trackingPhase(-1, null), "riding");
@@ -123,7 +117,6 @@ test("the progress line runs from the bus to the stop", () => {
   assert.deepEqual(ids(progressRows(line, 1, 3)), ["b*", "c", "d!"]);
   assert.deepEqual(ids(progressRows(line, 1.5, 3)), ["bus", "c", "d!"]);
   assert.deepEqual(ids(progressRows(line, 3, 3)), ["d*!"]);
-  // Long runs fold the middle.
   assert.deepEqual(ids(progressRows(line, 0, 7)), ["a*", "b", "+4", "g", "h!"]);
   assert.deepEqual(progressRows(line, 4, 3), []);
 });
@@ -138,7 +131,6 @@ test("progress rows carry their place on the line, so a repeated stop keys apart
 });
 
 test("on a loop, you get off at the visit after you board", () => {
-  // a b c d a: board at b, get off at a on the way round.
   const loop = [...line.slice(0, 4), line[0]];
   assert.deepEqual(rideIndexes(loop, "b", "a"), { board: 1, alight: 4 });
   assert.deepEqual(rideIndexes(line, "b", "e"), { board: 1, alight: 4 });
@@ -156,27 +148,21 @@ test("a bus out of the feed stays at its last fix, not where tracking began", ()
 });
 
 test("last seen is the fix's time, measured on the feed's own clock", () => {
-  // This device's clock, and the server's, an hour apart.
   const received = 1_791_660_000_000;
   const feed = received + 3_600_000;
-  // The fix is 20 s older than the feed, whatever this device's clock says.
   assert.equal(
     lastSeenAt({ timestamp: feed - 20_000 }, received, feed),
     received - 20_000,
   );
-  // Seconds work as well as milliseconds.
   assert.equal(
     lastSeenAt({ timestamp: feed / 1000 - 20 }, received, feed / 1000),
     received - 20_000,
   );
-  // A fix stamped after the feed doesn't count as from the future.
   assert.equal(lastSeenAt({ timestamp: feed + 100 }, received, feed), received);
-  // Without a feed time, this device's clock is the reference.
   assert.equal(
     lastSeenAt({ timestamp: received - 5_000 }, received),
     received - 5_000,
   );
-  // Without a fix time, receiving it is all we know.
   assert.equal(lastSeenAt({}, received, feed), received);
 });
 
@@ -191,13 +177,11 @@ test("a frozen fix runs out; a bus that leaves the feed gets the full grace", ()
   assert.equal(seen, fix);
   assert.equal(isLost(seen, fix + 70_000), true);
 
-  // A fresh fix, then the bus drops out: lost only a minute after that fix.
   seen = nextLastSeen(0, { timestamp: fix }, fix, fix);
   seen = nextLastSeen(seen, undefined, fix + 5_000, fix + 5_000);
   assert.equal(seen, fix);
   assert.equal(isLost(seen, fix + 59_000), false);
   assert.equal(isLost(seen, fix + LOST_AFTER_MS + 1), true);
-  // Last seen never moves back.
   assert.equal(nextLastSeen(fix, { timestamp: fix - 30_000 }, fix, fix), fix);
 });
 
@@ -249,10 +233,8 @@ test("a refreshed plan finds the ride despite new estimates or times", () => {
   });
   const other = ride({ slot_id: "s2" });
   assert.equal(refreshedRide(planOf(other, fresh), original, tracked), fresh);
-  // Nothing matching keeps the ride as it was.
   assert.equal(refreshedRide(planOf(other), original, tracked), original);
   assert.equal(refreshedRide(undefined, original, tracked), original);
-  // A different alighting stop is a different ride.
   const elsewhere = ride({ alight: { ...line[5] } });
   assert.equal(refreshedRide(planOf(elsewhere), original, tracked), original);
 });
@@ -277,7 +259,6 @@ test("without a slot, the tracked bus's ride wins, then the closest departure", 
     refreshedRide(planOf(later, swapped, mine), original, tracked),
     mine,
   );
-  // Reassigned to another bus: the departure nearest the original.
   assert.equal(
     refreshedRide(planOf(later, swapped), original, tracked),
     swapped,

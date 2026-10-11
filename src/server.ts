@@ -32,9 +32,7 @@ type ApiError = BadRequest | NotFound | UpstreamError | Schema.SchemaError;
 const json = (body: unknown, status = 200) =>
   HttpServerResponse.jsonUnsafe(body, { status });
 
-// How long browsers (and a CDN set to cache /api) may reuse a response: fresh
-// for a while, then used while a fresh copy is fetched behind it. Reference
-// data changes a few times a day at most; errors and live data aren't reused.
+// Reference data changes a few times a day at most; errors and live data aren't reused.
 const CACHE = {
   reference: "public, max-age=3600, stale-while-revalidate=86400",
   geometry: "public, max-age=86400, stale-while-revalidate=604800",
@@ -107,7 +105,6 @@ const resolveStopId = Effect.fnUntraced(function* (ref: string) {
   return stopId;
 });
 
-// Asia/Colombo is UTC+5:30
 const COLOMBO_UTC_OFFSET_MS = 5.5 * 3_600_000;
 
 const todayInColombo = Clock.currentTimeMillis.pipe(
@@ -208,7 +205,6 @@ const journeyHandler = respond(
       resolveStopId(query.from),
       resolveStopId(query.to),
     ]);
-    // Pass on the upstream's reason for rejecting a query (e.g. a past date).
     return yield* api.journey(from, to, date).pipe(
       Effect.catchIf(
         (error) => error.status === 400 && error.detail !== undefined,
@@ -231,8 +227,7 @@ const liveHandler = Effect.gen(function* () {
   return noStore(json(yield* (yield* LiveFleet).snapshot));
 });
 
-// Health checks and live map polls would drown out everything else in traces
-// and request logs.
+// Health checks and live map polls would drown out everything else in traces and request logs.
 const untraced = <A, E, R>(handler: Effect.Effect<A, E, R>) =>
   HttpMiddleware.withLoggerDisabled(Effect.withTracerEnabled(handler, false));
 
@@ -277,7 +272,6 @@ const HttpLive = Layer.unwrap(
   }),
 );
 
-// Loads reference data in the background so the first visitors don't wait on upstream.
 const WarmCaches = Layer.effectDiscard(
   Effect.gen(function* () {
     const api = yield* UpstreamApi;

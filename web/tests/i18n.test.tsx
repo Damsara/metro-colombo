@@ -166,13 +166,11 @@ test("a saved Sinhala choice renders the journey in Sinhala word order", () => {
       }),
     }),
   );
-  // The stop name comes before the verb.
   assert.match(html, /පානදුර <strong>හිදී නගින්න<\/strong>/);
   assert.match(html, /ගමන් 1ක්/);
   assert.doesNotMatch(html, /Get on at/);
 });
 
-/** msgid/msgstr pairs of a .po file, joining continuation lines. */
 function entries(po: string): [string, string][] {
   const field = String.raw`"(?:[^"\\]|\\.)*"(?:\n"(?:[^"\\]|\\.)*")*`;
   const join = (quoted: string) =>
@@ -185,8 +183,7 @@ function entries(po: string): [string, string][] {
   ].map(([, id, str]) => [join(id), join(str)]);
 }
 
-// A translation that drops or renames a placeholder would show a raw `{name}`
-// or lose the value, which the build's missing-translation check cannot see.
+// A translation that drops or renames a placeholder would show a raw `{name}`, which the build's missing-translation check cannot see.
 test("every translation keeps the source message's placeholders and tags", () => {
   const placeholders = (message: string) =>
     [...message.matchAll(/\{(\w+)[,}]|<\/?(\d+)>/g)]
@@ -204,7 +201,6 @@ test("every translation keeps the source message's placeholders and tags", () =>
       "utf8",
     );
     const pairs = entries(po).filter(([id]) => id);
-    // Every message parsed (the header's empty msgid aside).
     assert.equal(pairs.length, (po.match(/^msgid /gm) ?? []).length - 1);
     for (const [id, str] of pairs) {
       if (!str) continue;

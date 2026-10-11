@@ -13,7 +13,6 @@ const SIZES = {
   sm: "relative size-8 after:absolute after:-inset-1.5",
 };
 
-/** A round icon-only button. `label` is its accessible name. */
 export function IconButton({
   label,
   variant = "outline",

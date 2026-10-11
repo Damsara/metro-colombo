@@ -7,8 +7,7 @@ import {
   type Route,
 } from "./types";
 
-// Positions are worked out in metres on a flat grid around Colombo, which is
-// plenty accurate for a city-sized network.
+// Positions are worked out in metres on a flat grid around Colombo, accurate enough for a city-sized network.
 export const LAT_METERS = 111320;
 export const LNG_METERS = LAT_METERS * Math.cos((6.9271 * Math.PI) / 180);
 
@@ -18,9 +17,7 @@ const MAX_SPEED = 25; // m/s (90 km/h). Faster is GPS noise, even on Galle Road.
 // to a stop.
 const PREDICT_SECONDS = 30;
 const COAST_SECONDS = 10;
-// Roughly how long a new speed takes to take over from the old one.
 const SPEED_CHANGE_SECONDS = 1.2;
-// The shortest gap between fixes we trust when working out a speed.
 const MIN_FIX_GAP_SECONDS = 0.2;
 
 // A fix joins a route line within ACQUIRE_METERS of it, and may drift up to
@@ -46,14 +43,10 @@ const MIN_CORRECTION_SECONDS = 2;
 const MAX_FIX_GAP_FOR_CORRECTION_SECONDS = 10;
 const CORRECTION_SPEED_SHARE = 0.7;
 
-// Steering looks this far behind and ahead of the bus along its line.
 const LOOK_BEHIND_METERS = 4;
 const LOOK_AHEAD_METERS = 8;
-// A line whose ends are closer than this is treated as a loop route.
 const LOOP_GAP_METERS = 20;
-// Route points closer together than this are duplicates.
 const MIN_STEP_METERS = 0.01;
-// Seconds for the drawn heading to swing most of the way to a new course.
 const HEADING_SMOOTHING_SECONDS = 0.18;
 // Feed timestamps below this are in seconds rather than milliseconds.
 const SECONDS_TIMESTAMP_LIMIT = 1e11;
@@ -68,7 +61,6 @@ const bearing = (dx: number, dy: number) =>
 
 export type XY = { x: number; y: number };
 
-/** One route line, in metres, with the running distance at each point. */
 export type Path = {
   key: string;
   code: string;
@@ -81,14 +73,10 @@ export type Path = {
 
 type Match = { path: Path; distance: number; error: number; heading: number };
 
-/** Everything we know about one bus, and where it's drawn right now. */
 type Track = {
-  /** The latest record from the feed; it's re-emitted with the drawn position. */
   source: LiveBus;
-  /** The route line the bus is snapped to; none when it's off-route. */
   path?: Path;
 
-  // Where the last accepted fix put the bus.
   fixX: number;
   fixY: number;
   /** Distance along `path` that the prediction starts from. */
@@ -96,7 +84,6 @@ type Track = {
   /** Distance along `path` as measured, for speed and jitter checks. */
   observedDistance: number;
 
-  // Where the bus is drawn.
   x: number;
   y: number;
   /** Distance along `path`; it never goes backwards. */
@@ -110,18 +97,14 @@ type Track = {
   /** Whether to turn towards the course or the line, or hold the heading. */
   steer: boolean;
 
-  // What's left of the last correction, blended out over `correctionTime`.
   correction: number;
   correctionX: number;
   correctionY: number;
   correctionTime: number;
 
-  // Clocks, in milliseconds.
-  /** When the current prediction started. */
   at: number;
   observedAt: number;
   frameAt: number;
-  /** The last accepted fix's own timestamp. */
   fixTime?: number;
   /** The newest timestamp seen, including fixes that were rejected. */
   lastTimestamp?: number;
@@ -184,12 +167,10 @@ export function routePaths(route: MapRoute): Path[] {
   );
 }
 
-/** The point `distance` metres along a path (wrapping round on a loop). */
 export function pathPoint(path: Path, distance: number): XY {
   const along = path.loop
     ? ((distance % path.length) + path.length) % path.length
     : clamp(distance, 0, path.length);
-  // Binary search for the segment that contains `along`.
   let low = 0;
   let high = path.distances.length - 1;
   while (low + 1 < high) {
@@ -209,13 +190,11 @@ export function pathPoint(path: Path, distance: number): XY {
 }
 
 function pathHeading(path: Path, distance: number, sign: number): number {
-  // Look a few metres either side of the bus to steer gradually through corners.
   const behind = pathPoint(path, distance - sign * LOOK_BEHIND_METERS);
   const ahead = pathPoint(path, distance + sign * LOOK_AHEAD_METERS);
   return bearing(ahead.x - behind.x, ahead.y - behind.y);
 }
 
-/** Where `point` lands on the segment start→end: how far along (0–1) and how far off. */
 export function project(point: XY, start: XY, end: XY) {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
@@ -245,7 +224,6 @@ function fixTime(bus: LiveBus): number | undefined {
     : bus.timestamp;
 }
 
-// Seconds since the previous fix, by the fixes' own clocks when both have one.
 function secondsSince(
   previous: Track,
   stamp: number | undefined,
@@ -356,7 +334,6 @@ export class BusMotion {
     this.paths = geometries.flatMap(routePaths);
   }
 
-  /** Takes in the latest fixes; buses missing from the list are dropped. */
   update(buses: LiveBus[], now: number): void {
     const present = new Set<string>();
     for (const bus of buses) {
@@ -406,9 +383,6 @@ export class BusMotion {
     return result;
   }
 
-  // The track this fix should start, or undefined when it doesn't start one:
-  // stale, repeated and impossible fixes are skipped, and wobble only
-  // updates the existing track in place.
   private nextTrack(
     previous: Track | undefined,
     bus: LiveBus,
@@ -512,8 +486,6 @@ export class BusMotion {
     return resolveBusDirectionId(route, raw);
   }
 
-  // The best spot for this fix on its route's lines. Without a direction,
-  // both directions are compared against the observed course and continuity.
   private match(
     bus: LiveBus,
     previous: Track | undefined,

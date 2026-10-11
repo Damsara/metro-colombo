@@ -13,7 +13,6 @@ import { isLanguage, type Language } from "../types";
 
 const STORAGE_KEY = "metro-language";
 
-// A saved choice wins, otherwise the browser's preferred language.
 function readInitialLanguage(): Language {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);

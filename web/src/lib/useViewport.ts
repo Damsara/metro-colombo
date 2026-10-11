@@ -11,7 +11,6 @@ export function useViewportHeight(): number {
   return height;
 }
 
-/** The home indicator's inset at the bottom of the screen, in pixels. */
 export function useSafeAreaBottom(): number {
   const [inset, setInset] = useState(0);
   useEffect(() => {
@@ -31,7 +30,6 @@ export function useSafeAreaBottom(): number {
   return inset;
 }
 
-/** An element's rendered height, kept current as it changes. */
 export function useElementHeight(ref: RefObject<HTMLElement | null>): number {
   const [height, setHeight] = useState(0);
   useEffect(() => {

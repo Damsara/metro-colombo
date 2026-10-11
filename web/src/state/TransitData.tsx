@@ -7,9 +7,7 @@ const EMPTY_ROUTES: Route[] = [];
 const EMPTY_PLACES: Place[] = [];
 const NO_STOPS: ReadonlyMap<string, Stop> = new Map();
 
-// The reference data most of the app leans on: routes, every stop, landmarks
-// and the lookups built from them. It changes rarely, unlike the live buses,
-// which stay out of here so a position update doesn't re-render every reader.
+// Live buses stay out of here so a position update doesn't re-render every reader.
 function useTransitDataSource() {
   const routesQuery = useRoutes();
   const routes = routesQuery.data ?? EMPTY_ROUTES;
@@ -17,16 +15,13 @@ function useTransitDataSource() {
   const places = usePlaces().data ?? EMPTY_PLACES;
   const routeColors = useMemo(
     () =>
-      new Map(
-        routes.map((route) => [route.code, routeColor(route.color_hex)]),
-      ),
+      new Map(routes.map((route) => [route.code, routeColor(route.color_hex)])),
     [routes],
   );
   const routeCodeById = useMemo(
     () => new Map(routes.map((route) => [route.id, route.code])),
     [routes],
   );
-  // Stops keyed by lower-case English name, for translating place names.
   const stopsByName = useMemo(
     () =>
       new Map<string, Stop>(

@@ -5,10 +5,6 @@ import { useConsent } from "../lib/consent";
 import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
 
-/**
- * Asks once whether usage may be counted. Not a wall: the app works behind
- * it, and both answers are one equal tap.
- */
 export function ConsentPrompt() {
   const { t } = useLingui();
   const { asking, choice, allow, decline, dismiss } = useConsent();
@@ -82,7 +78,6 @@ export function ConsentPrompt() {
   );
 }
 
-/** The footer link that reopens the prompt; absent when there's nothing to choose. */
 export function PrivacyChoicesLink({ className = "" }) {
   const { t } = useLingui();
   const { available, reopen } = useConsent();

@@ -9,11 +9,6 @@ const pushed: (keyof HomeSearch)[] = [];
 // going back would quietly reopen the view; strip them when that happens.
 const dismissed = new Set<keyof HomeSearch>();
 
-/**
- * A view kept in the URL (`?trip=1`, `?route=1`) so the browser's Back button
- * closes it. Opening pushes a history entry; closing pops that entry when it's
- * the newest one, so Back never reopens it.
- */
 export function useSearchFlag(key: keyof HomeSearch) {
   const navigate = useNavigate({ from: "/" });
   const router = useRouter();

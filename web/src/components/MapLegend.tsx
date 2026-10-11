@@ -3,7 +3,6 @@ import { useLingui } from "@lingui/react/macro";
 
 const LEGEND_ITEM = "flex items-center gap-1.5";
 
-/** The key in the map's corner. */
 export function MapLegend({
   showLive,
   hidden,

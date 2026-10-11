@@ -3,7 +3,6 @@ import { resolveBusDirectionId, type Route } from "../types";
 import { track } from "../lib/analytics";
 import { useSearchFlag } from "../useSearchFlag";
 
-/** The route opened on the Bus routes tab, and which direction is showing. */
 export function useRouteBrowser(routes: Route[]) {
   const [openCode, setOpenCode] = useState<string | null>(null);
   const [directionIndex, setDirectionIndex] = useState(0);
@@ -27,7 +26,6 @@ export function useRouteBrowser(routes: Route[]) {
   );
   const close = useCallback(() => setDetailOpen(false), [setDetailOpen]);
 
-  // Open the route a bus is on, turned to the direction it's heading.
   const showRouteOf = useCallback(
     (code: string, busDirection: string | undefined) => {
       setOpenCode(code);

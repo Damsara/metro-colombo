@@ -1,6 +1,4 @@
-// Google Analytics 4, only when a build sets VITE_GA_MEASUREMENT_ID and the
-// visitor agrees (see consent.tsx). Events carry route and stop codes, never
-// names, places or coordinates.
+// Events carry route and stop codes, never names, places or coordinates.
 
 type Events = {
   search_trip: {
@@ -34,15 +32,10 @@ declare global {
 const MEASUREMENT_ID = /^G-[A-Z0-9]+$/;
 let enabled = false;
 
-/** Whether this build can collect analytics at all: a valid id, and no Do Not Track. */
 export function analyticsAvailable(id: string | undefined): id is string {
   return !!id && MEASUREMENT_ID.test(id) && navigator.doNotTrack !== "1";
 }
 
-/**
- * Loads gtag.js for `id`. Call only after the visitor has agreed; returns
- * false when the id is unusable or Do Not Track is on.
- */
 export function initAnalytics(id: string | undefined): boolean {
   if (enabled || !analyticsAvailable(id)) return false;
   (window as unknown as Record<string, unknown>)[`ga-disable-${id}`] = false;
@@ -62,7 +55,6 @@ export function initAnalytics(id: string | undefined): boolean {
   return true;
 }
 
-/** Stops sending anything, for a visitor who withdraws consent. */
 export function stopAnalytics(id: string | undefined): void {
   if (id)
     (window as unknown as Record<string, unknown>)[`ga-disable-${id}`] = true;
@@ -71,7 +63,6 @@ export function stopAnalytics(id: string | undefined): void {
 
 let lastPath: string | null = null;
 
-/** A page view, once per path: the URL's flags (`?trip=1`) aren't pages. */
 export function trackPage(path: string): void {
   if (!enabled || path === lastPath) return;
   lastPath = path;
@@ -87,7 +78,6 @@ export function track<E extends keyof Events>(event: E, params: Events[E]) {
   window.gtag?.("event", event, params);
 }
 
-/** Whole days from today (Sri Lanka time) to `date`, a YYYY-MM-DD string. */
 export function daysAhead(date: string, today: string): number {
   return Math.round((Date.parse(date) - Date.parse(today)) / 86_400_000);
 }

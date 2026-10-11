@@ -28,7 +28,6 @@ function useOccupancyLabels(bus: LiveBus) {
   };
 }
 
-/** A bar filled as far as the bus is full, coloured once it gets busy. */
 function Fill({ percent, crowding }: { percent: number; crowding: Crowding }) {
   return (
     <span
@@ -43,7 +42,6 @@ function Fill({ percent, crowding }: { percent: number; crowding: Crowding }) {
   );
 }
 
-/** How full a bus is: a people icon and a bar; the words are in its label. */
 export function OccupancyBadge({ bus }: { bus: LiveBus }) {
   const labels = useOccupancyLabels(bus);
   if (!labels) return null;
@@ -61,7 +59,6 @@ export function OccupancyBadge({ bus }: { bus: LiveBus }) {
   );
 }
 
-/** "Plenty of room ▰▰▱▱": the word first, then the proportion. */
 export function OccupancyMeter({ bus }: { bus: LiveBus }) {
   const labels = useOccupancyLabels(bus);
   if (!labels) return null;

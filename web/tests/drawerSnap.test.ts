@@ -91,7 +91,6 @@ test("tracking drops the drawer to the map, and leaving it brings results up", (
   const results = { ...form, showResults: true, journeyKey: "j1" };
   const tracking = { ...results, busId: "b1", tracking: true };
   assert.equal(intentSnap(results, tracking, "full"), "peek");
-  // Live updates while tracking leave the drawer alone.
   assert.equal(intentSnap(tracking, tracking, "half"), "half");
   assert.equal(intentSnap(tracking, results, "peek"), "half");
 });
@@ -99,9 +98,7 @@ test("tracking drops the drawer to the map, and leaving it brings results up", (
 test("unrelated changes leave the drawer where the user put it", () => {
   assert.equal(intentSnap(form, form, "full"), "full");
   const results = { ...form, showResults: true };
-  // Going back to the form doesn't move the drawer.
   assert.equal(intentSnap(results, form, "half"), "half");
-  // Releasing a bus doesn't either.
   assert.equal(
     intentSnap({ ...results, busId: "b1" }, results, "peek"),
     "peek",

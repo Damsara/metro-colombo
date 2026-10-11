@@ -15,8 +15,7 @@ import {
 
 export type ConsentChoice = "granted" | "denied";
 
-// Bump the version when what we collect, or why, changes: everyone is asked
-// again.
+// Bump the version when what we collect, or why, changes so everyone is asked again.
 const STORAGE_KEY = "metro.analytics-consent.v1";
 
 export function readConsent(): ConsentChoice | null {
@@ -37,10 +36,8 @@ function saveConsent(choice: ConsentChoice): void {
 }
 
 interface Consent {
-  /** False when this build has no analytics, or Do Not Track is on. */
   available: boolean;
   choice: ConsentChoice | null;
-  /** The prompt is showing: on a first visit, or reopened from the footer. */
   asking: boolean;
   allow: () => void;
   decline: () => void;

@@ -23,10 +23,6 @@ import { cardClass } from "./ui/Card";
 
 const LINE = { "--line": "var(--color-line-strong)" } as CSSProperties;
 
-/**
- * The stops from the bus to the one that matters next, bus in red, your stop
- * in bold.
- */
 function ProgressLine({
   tracking,
   target,
@@ -131,10 +127,6 @@ function BusChangeNotice({
   );
 }
 
-/**
- * "Your bus is coming": where the tracked bus is against your boarding stop,
- * then against the stop you get off at, until you arrive.
- */
 export function TrackingPanel({
   tracking,
   language,
@@ -146,7 +138,6 @@ export function TrackingPanel({
   tracking: Tracking;
   language: Language;
   routeColors: ReadonlyMap<string, string>;
-  /** Whether the map is following the tracked bus. */
   followState: FollowState;
   onFollow: () => void;
   onStop: () => void;

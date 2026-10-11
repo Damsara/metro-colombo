@@ -1,14 +1,5 @@
 #!/usr/bin/env node
-// Seed the LMT-GO refresh token into `.env` (gitignored). The API server
-// auto-renews from it, so this only needs to run once (or after ~7 days
-// offline, once the refresh token has expired).
-//
-// Usage:
-//   node scripts/otp-login.mjs <phone>               # full phone-OTP login
-//   node scripts/otp-login.mjs --refresh             # rotate the stored token
-//   node scripts/otp-login.mjs --token <refresh_token>  # set a token you have
-//
-// `<phone>` accepts `07XXXXXXXX`, `94XXXXXXXXX`, or `+94XXXXXXXXX`.
+// Seeds the refresh token into `.env`; run once, or after ~7 days offline once it has expired.
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -101,7 +92,6 @@ function persist(tokens) {
   console.log("Wrote METRO_REFRESH_TOKEN to .env");
 }
 
-// --- refresh mode ---------------------------------------------------------
 if (process.argv.includes("--refresh")) {
   const refreshToken = envValue("METRO_REFRESH_TOKEN");
   if (!refreshToken) fail("No METRO_REFRESH_TOKEN in .env — log in first.");
@@ -111,7 +101,6 @@ if (process.argv.includes("--refresh")) {
   process.exit(0);
 }
 
-// --- direct token mode ----------------------------------------------------
 const tokenIndex = process.argv.indexOf("--token");
 if (tokenIndex !== -1) {
   const token = process.argv[tokenIndex + 1];
@@ -121,7 +110,6 @@ if (tokenIndex !== -1) {
   process.exit(0);
 }
 
-// --- full login flow ------------------------------------------------------
 const phone = normalizePhone(process.argv[2] ?? process.env.PHONE ?? "");
 if (!phone) {
   fail("usage: node scripts/otp-login.mjs <phone>  (e.g. 0712345678)");
@@ -144,8 +132,7 @@ const verify = await post("/customer/verify-otp", {
 });
 if (verify.status >= 400) fail(`verify-otp failed (HTTP ${verify.status})`);
 
-// New accounts: verify-otp returns a `verified_reference` (purpose: register);
-// `register` then creates the account and returns the tokens.
+// New accounts: verify-otp returns a `verified_reference` that `register` exchanges for tokens.
 let tokens = extractTokens(verify.json);
 if (verify.json?.data?.purpose === "register" && !tokens.access_token) {
   console.log("\nNew account: registration required.");

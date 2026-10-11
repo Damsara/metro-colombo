@@ -7,8 +7,7 @@ import { ConfigProvider, Effect, Layer, Redacted } from "effect";
 import { HttpClient, HttpClientResponse } from "effect/http";
 import { Auth } from "../src/auth.js";
 
-// A fake auth server: each refresh token works once and is replaced by the
-// next one, like the real one.
+// Each refresh token works once and is replaced by the next, like the real server.
 const fakeAuthServer = (valid: string) => {
   const calls = { refresh: 0, webview: 0 };
   const client = HttpClient.make((request, url) =>
