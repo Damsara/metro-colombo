@@ -16,6 +16,7 @@ import type {
   RouteStops,
   Stop,
 } from "./types";
+import { routeColor } from "./lib/routeColor";
 
 const base = "/api";
 const MINUTE_MS = 60_000;
@@ -215,7 +216,7 @@ export function useAllRouteGeometries(routes: Route[]) {
         mapRoutes.push({
           code: spec.route.code,
           directionId: spec.direction.id,
-          color: spec.route.color_hex || "#147d57",
+          color: routeColor(spec.route.color_hex),
           geometry,
         });
       });

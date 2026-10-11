@@ -1,11 +1,11 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { usePlaces, useRoutes, useStopCatalog } from "../api";
 import type { Place, Route, Stop } from "../types";
+import { routeColor } from "../lib/routeColor";
 
 const EMPTY_ROUTES: Route[] = [];
 const EMPTY_PLACES: Place[] = [];
 const NO_STOPS: ReadonlyMap<string, Stop> = new Map();
-const FALLBACK_ROUTE_COLOR = "#147d57";
 
 // The reference data most of the app leans on: routes, every stop, landmarks
 // and the lookups built from them. It changes rarely, unlike the live buses,
@@ -18,10 +18,7 @@ function useTransitDataSource() {
   const routeColors = useMemo(
     () =>
       new Map(
-        routes.map((route) => [
-          route.code,
-          route.color_hex || FALLBACK_ROUTE_COLOR,
-        ]),
+        routes.map((route) => [route.code, routeColor(route.color_hex)]),
       ),
     [routes],
   );

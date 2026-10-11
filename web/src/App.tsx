@@ -7,6 +7,7 @@ import {
   RotateCcw,
   Route as RouteIcon,
   Search,
+  X,
 } from "lucide-react";
 import {
   lazy,
@@ -153,6 +154,10 @@ function Home() {
       : activeRoute?.directions[browser.directionIndex]?.id;
   const routeStops = useRouteStops(activeRoute?.code, direction);
   const geometry = useGeometry(activeRoute?.code, direction);
+  const lineKey = `${activeRoute?.code}|${direction}`;
+  const [closedLineNotice, setClosedLineNotice] = useState<string | null>(
+    null,
+  );
   const { mapRoutes: networkMapRoutes } = useAllRouteGeometries(routes);
   const mapLayers = useMapLayers({
     tab,
@@ -841,21 +846,28 @@ function Home() {
                 </strong>
               </div>
             </div>
-            {geometry.isError && (
-              <Notice
-                tone="warning"
-                className="absolute top-31 left-7.5 max-w-82 text-sm max-md:top-[calc(var(--header-height,60px)+8px)] max-md:right-3 max-md:left-3 max-md:max-w-none"
-                action={
-                  <Button
-                    variant="link"
-                    onClick={() => void geometry.refetch()}
-                  >
-                    {t`Retry map route`}
-                  </Button>
-                }
+            {geometry.isError && closedLineNotice !== lineKey && (
+              <div
+                role="status"
+                className="absolute top-31 left-7.5 flex max-w-82 items-center gap-2 rounded-xl border border-warning-200 bg-warning-50 py-1 pr-1 pl-3 text-xs leading-snug text-ink shadow-float max-md:top-[calc(var(--header-height,60px)+8px)] max-md:left-3 max-md:max-w-[calc(100%-1.5rem)]"
               >
-                {t`Route line unavailable. Stops and trip planning still work.`}
-              </Notice>
+                <span>{t`Lanka Metro isn’t sending this route line right now.`}</span>
+                <Button
+                  variant="link"
+                  className="shrink-0 whitespace-nowrap"
+                  onClick={() => void geometry.refetch()}
+                >
+                  {t`Try again`}
+                </Button>
+                <IconButton
+                  variant="plain"
+                  size="sm"
+                  label={t`Close`}
+                  onClick={() => setClosedLineNotice(lineKey)}
+                >
+                  <X size={15} aria-hidden="true" />
+                </IconButton>
+              </div>
             )}
             {!phone && stopCard}
             {/* Phones keep the map clear; MapView still names the key for screen readers. */}

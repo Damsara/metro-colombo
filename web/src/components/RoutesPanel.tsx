@@ -4,6 +4,7 @@ import { distanceMeters } from "../api";
 import { Plural, useLingui } from "@lingui/react/macro";
 import { towards } from "../i18n";
 import { usePlaceName } from "../lib/placeNames";
+import { routeColor } from "../lib/routeColor";
 import { secondaryStopName } from "../lib/stopCard";
 import { busKey, resolveBusDirectionId, stopName } from "../types";
 import type { CatalogStop, Language, LiveBus, Route, Stop } from "../types";
@@ -15,7 +16,6 @@ import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
 import { Notice } from "./ui/Notice";
 
-const DEFAULT_COLOR = "#147d57";
 
 /** Every route, busiest first. */
 export function RouteList({
@@ -129,7 +129,7 @@ export function RouteDetail({
 }) {
   const { t, i18n } = useLingui();
   const place = usePlaceName();
-  const color = route.color_hex || DEFAULT_COLOR;
+  const color = routeColor(route.color_hex);
   const directionId = route.directions[directionIndex]?.id;
   const ordered = useMemo(
     () =>

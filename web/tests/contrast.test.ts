@@ -45,6 +45,7 @@ const PAIRS: Pair[] = [
   [palette.danger, palette["danger-50"], "danger on danger-50"],
   [WHITE, palette.ink, "white on ink"],
   [WHITE, palette.bus, "white on bus"],
+  [WHITE, palette.muted, "white on the fallback route colour"],
 ];
 
 for (const [text, background, name] of PAIRS) {

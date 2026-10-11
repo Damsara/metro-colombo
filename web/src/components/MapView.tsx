@@ -19,6 +19,7 @@ import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { i18n } from "../i18n";
 import { MAP_STATUS } from "../classNames";
+import { routeColor as colorForRoute } from "../lib/routeColor";
 import { palette } from "../theme";
 import { BusModelLayer } from "./BusModelLayer";
 import { FollowBusPill } from "./FollowBusPill";
@@ -39,7 +40,6 @@ const STOPS = "metro-stops";
 const STOP_HIT = "metro-stop-hit";
 const STOP_COLOR = palette.ink;
 const WALK_COLOR = palette.muted;
-const FALLBACK_ROUTE_COLOR = "#146c94";
 const FOLLOW_FOCUS = "bus-follow";
 const CAMERA_MS = 900;
 const FOLLOW_MIN_ZOOM = 15;
@@ -96,12 +96,6 @@ function stopPosition(stop: Stop): Position {
 
 function validStop(stop: Stop): boolean {
   return coordinatesValid(stopPosition(stop));
-}
-
-function routeLineColor(color: string): string {
-  return /^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(color)
-    ? color
-    : FALLBACK_ROUTE_COLOR;
 }
 
 // A missing direction on either side matches any direction.
@@ -516,7 +510,7 @@ export default function MapView(props: MapViewProps) {
                 geometry,
                 properties: {
                   code: route.code,
-                  color: routeLineColor(route.color),
+                  color: colorForRoute(route.color),
                   highlight,
                   dimmed,
                 },
