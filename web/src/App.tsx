@@ -62,7 +62,9 @@ import { useRouteBrowser } from "./state/useRouteBrowser";
 import { useTracking } from "./state/useTracking";
 import { useTrip } from "./state/useTrip";
 import {
+  busDirection,
   busKey,
+  findLiveBus,
   isOnRide,
   type CatalogStop,
   type JourneyOption,
@@ -159,7 +161,10 @@ function Home() {
   const firstRideTrip = firstRide?.kind === "ride" ? firstRide.ride : undefined;
   const markRide = tracking.active ? tracking.ride : firstRideTrip;
   const onRide =
-    !!cardBus && !!markRide && isOnRide(cardBus, markRide, Date.now());
+    !!cardBus &&
+    !!markRide &&
+    !!findLiveBus([cardBus], markRide.bus) &&
+    isOnRide(cardBus, markRide, Date.now());
   const boardId = onRide ? markRide?.board.id : undefined;
   const alightId = onRide ? markRide?.alight.id : undefined;
   const busJourney = useBusJourney(selectedBus, { boardId, alightId });
@@ -304,9 +309,10 @@ function Home() {
   const cardRouteCode = cardBus ? routeCodeOf(cardBus) : undefined;
   const cardRoute = cardRouteCode ?? "unknown";
   const busLine = busJourney?.line;
-  const cardDestination = routes
-    .find((route) => route.code === busLine?.routeCode)
-    ?.directions.find((item) => item.id === busLine?.directionId)?.end_location;
+  const cardDestination = busDirection(
+    routes.find((route) => route.code === busLine?.routeCode),
+    busLine?.directionId,
+  )?.end_location;
 
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -440,6 +446,7 @@ function Home() {
     showRouteOf(cardRouteCode, cardBus.direction_id);
     if (phone) setCardAsideFor(viewBus);
   };
+  const [cardBottom, setCardBottom] = useState(0);
   const busCard = cardBus && (
     <BusCard
       bus={cardBus}
@@ -455,6 +462,7 @@ function Home() {
       onRelease={() => handleBusSelect(null)}
       onExpand={(expanded) => setSnap(expanded ? "half" : "peek")}
       onSeeAllStops={seeAllStops}
+      onFloatingBottom={setCardBottom}
     />
   );
 
@@ -901,11 +909,21 @@ function Home() {
                 language={language}
                 onStopSelect={(stop) => (stop ? openStop(stop) : closeStop())}
                 onBusSelect={handleBusSelect}
-                onFollowEvent={selection.dispatch}
+                onFollowEvent={(event) => {
+                  if (event.type === "tapSelected" && cardAsideFor) {
+                    setCardAsideFor(null);
+                    return;
+                  }
+                  selection.dispatch(event);
+                }}
                 showLive={selection.showLive}
                 onShowLiveChange={handleShowLiveChange}
                 insets={
-                  phone ? { top: headerHeight, bottom: mapInset } : undefined
+                  phone
+                    ? { top: headerHeight, bottom: mapInset }
+                    : cardBottom
+                      ? { top: cardBottom, bottom: 0 }
+                      : undefined
                 }
               />
             </Suspense>

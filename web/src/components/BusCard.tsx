@@ -43,6 +43,7 @@ export function BusCard({
   onRelease,
   onExpand,
   onSeeAllStops,
+  onFloatingBottom,
 }: {
   bus: LiveBus;
   routeCode?: string;
@@ -57,6 +58,7 @@ export function BusCard({
   onRelease: () => void;
   onExpand?: (expanded: boolean) => void;
   onSeeAllStops: () => void;
+  onFloatingBottom?: (bottom: number) => void;
 }) {
   const { i18n, t } = useLingui();
   const place = usePlaceName();
@@ -71,16 +73,33 @@ export function BusCard({
   // Once per opening, not per live update.
   const expandedRoute = useRef(routeCode);
   expandedRoute.current = routeCode;
+  const wasOpen = useRef(open);
   useEffect(() => {
-    if (open)
+    if (open && !wasOpen.current)
       track("bus_card_expand", { route: expandedRoute.current ?? "unknown" });
+    wasOpen.current = open;
   }, [open]);
+  const section = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const element = section.current;
+    if (inline || !element || !onFloatingBottom) return;
+    const update = () =>
+      onFloatingBottom(element.offsetTop + element.offsetHeight);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      onFloatingBottom(0);
+    };
+  }, [inline, onFloatingBottom]);
   const journey = result?.status === "ready" ? result.journey : null;
   const board = journey?.board;
   const toBoard = journey?.stopsToBoard;
 
   return (
     <section
+      ref={section}
       className={inline ? "px-4 pb-6" : `${FLOATING} px-3.5`}
       style={{ "--line": color } as CSSProperties}
       aria-label={t`Tracked bus`}
@@ -198,7 +217,7 @@ export function BusCard({
               : "-mx-3.5 max-h-[min(60vh,28rem)] min-h-0 overflow-y-auto overscroll-contain border-t border-line px-3.5 pt-3 pb-3.5 motion-safe:animate-page-forward"
           }
         >
-          {board && toBoard != null && (
+          {board && toBoard ? (
             <p className="text-base font-semibold">
               {t({
                 message: plural(toBoard, {
@@ -207,7 +226,7 @@ export function BusCard({
                 }),
               })}
             </p>
-          )}
+          ) : null}
           <JourneyTimeline journey={journey} language={language} />
           <Button
             variant="secondary"

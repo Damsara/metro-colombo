@@ -191,6 +191,13 @@ test("expanded, it lists every stop left with the bus and Next", () => {
   assert.match(words, /See all stops/);
 });
 
+test("no stop count while the bus is at your stop", () => {
+  const words = text(
+    render(ready({ ...mine, stopsToBoard: 0 }), { expanded: true }),
+  );
+  assert.doesNotMatch(words, /stops? to Nugegoda/);
+});
+
 test("a bus at a stop sits on that stop in the timeline", () => {
   const atStop: BusJourney = {
     ...plain,
