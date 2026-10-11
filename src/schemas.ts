@@ -38,7 +38,6 @@ export const RouteStops = Schema.Struct({
   stops: Schema.Array(Stop),
 });
 
-// A landmark and the stop nearest to it.
 export const Place = Schema.Struct({
   id: Schema.Number,
   name: Schema.String,
@@ -50,8 +49,6 @@ export const Place = Schema.Struct({
   stop_id: Schema.String,
 });
 
-// Live bus positions from the ticketing-service GPS feed. Only these fields are
-// kept from upstream frames.
 export const LiveBus = Schema.Struct({
   id: Schema.String,
   lat: Schema.Number,
@@ -74,8 +71,7 @@ export const LiveFeed = Schema.Struct({
   buses: Schema.Array(LiveBus),
 });
 
-// Journey plans are passed through from upstream (nested `legs` are complex and
-// versioned by the backend). We're going to ype the envelope, keep the payload open.
+// Plans are passed through because the nested `legs` are complex and versioned by the backend.
 const OpenRecord = Schema.Record(Schema.String, Schema.Unknown);
 
 export const JourneyPlan = Schema.Struct({

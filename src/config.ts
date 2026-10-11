@@ -16,7 +16,6 @@ export const UpstreamConfig = Config.all({
 
   // One-time seed from scripts/otp-login.mjs; Auth auto-renews from it.
   refreshToken: Config.option(Config.Redacted("METRO_REFRESH_TOKEN")),
-  // Where the rotated refresh token is kept between restarts.
   authStatePath: Config.String("AUTH_STATE_PATH").pipe(
     Config.withDefault(".auth-state"),
   ),

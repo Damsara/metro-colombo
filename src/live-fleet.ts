@@ -16,8 +16,7 @@ import type * as S from "./schemas.js";
 import { UpstreamApi } from "./upstream.js";
 
 const STALE_AFTER = Duration.seconds(60);
-// The feed chats every few seconds. If it goes quiet for longer than this,
-// assume the line is dead and dial again.
+// The feed chats every few seconds, so a longer silence means the line is dead.
 const SILENT_AFTER = Duration.seconds(30);
 const WATCHDOG_EVERY_MS = 5_000;
 
@@ -48,7 +47,6 @@ const OPTIONAL_NUMBERS = [
   "timestamp",
 ] as const;
 
-// Keep only known fields. Upstream frames are never forwarded verbatim.
 export function toFix(input: unknown, receivedAt: number): Fix | undefined {
   if (!Predicate.isObject(input)) return undefined;
   const bus = input as Record<string, unknown>;
@@ -56,9 +54,7 @@ export function toFix(input: unknown, receivedAt: number): Fix | undefined {
   let lat = finite(bus.lat) ?? finite(bus.latitude);
   let lng = finite(bus.lng) ?? finite(bus.longitude);
   if (!id || lat === undefined || lng === undefined) return undefined;
-  // Some fixes arrive exactly one degree north and east of the truth, which
-  // would put a Colombo bus somewhere around Polonnaruwa. The real network
-  // sits below 7.2 N and west of 80.4 E, so those get moved back.
+  // Some fixes arrive a degree north and east of the truth; the real network sits below 7.2 N and west of 80.4 E.
   if (lat > NETWORK_MAX_LAT || lng > NETWORK_MAX_LNG) {
     lat -= 1;
     lng -= 1;
@@ -80,7 +76,6 @@ export function toFix(input: unknown, receivedAt: number): Fix | undefined {
   return fix;
 }
 
-// The positions in a `gps_update` text frame, or undefined for anything else.
 const gpsPayload = (
   bytes: WebSocket.RawData,
   isBinary: boolean,
@@ -117,7 +112,6 @@ export class LiveFleet extends Context.Service<
       let lastUpdate = 0;
       let connected = false;
 
-      // Returns whether the message carried position data.
       const onMessage = (
         bytes: WebSocket.RawData,
         isBinary: boolean,
@@ -133,16 +127,12 @@ export class LiveFleet extends Context.Service<
         return true;
       };
 
-      // One connection's lifetime. It ends when the socket closes, noting
-      // whether any positions arrived. Only a session that actually delivered
-      // data resets the reconnect backoff, so an upstream that keeps picking
-      // up and hanging up on us isn't redialled in a tight loop.
+      // Only a session that delivered data resets the reconnect backoff, so an upstream that keeps hanging up isn't redialled in a tight loop.
       const session = Effect.gen(function* () {
-        // Fetch a fresh token for this connection; a failure counts as a
-        // dropped session so the retry/backoff dials again later.
+        // A failed token fetch counts as a dropped session so the backoff applies.
         const token = yield* auth.currentToken.pipe(
-          Effect.catch(
-            () => Effect.fail(new LiveFeedClosed({ receivedData: false })),
+          Effect.catch(() =>
+            Effect.fail(new LiveFeedClosed({ receivedData: false })),
           ),
         );
         const url = new URL("/ticketing-service/ws", config.eimskyBase);
@@ -199,11 +189,9 @@ export class LiveFleet extends Context.Service<
         Effect.forkScoped,
       );
 
-      // `success` says whether we're connected. Connected with an empty
-      // `buses` list just means nobody is out right now (try 2am).
+      // Connected with an empty `buses` list just means nobody is out right now.
       const snapshot = Effect.gen(function* () {
         const now = yield* Clock.currentTimeMillis;
-        // The feed identifies routes by id; add the public route code.
         const routes = yield* upstream.routes.pipe(
           Effect.orElseSucceed(() => []),
         );
@@ -224,8 +212,7 @@ export class LiveFleet extends Context.Service<
           success: connected,
           count: buses.length,
           timestamp: lastUpdate,
-          // Age by the server's clock, so clients can time their next poll
-          // without trusting a phone clock that may be minutes off.
+          // Aged by the server's clock so clients needn't trust a phone clock that may be minutes off.
           ...(lastUpdate ? { age_ms: Math.max(0, now - lastUpdate) } : {}),
           buses,
         };
