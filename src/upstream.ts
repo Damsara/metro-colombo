@@ -106,14 +106,16 @@ export function linkPlaces(
 // Successful lookups are kept for `freshTtl`, so a healthy origin is barely
 // bothered. After that the last good value is still answered straight away
 // while a single background refresh fetches a new one, so no request waits
-// on the origin for data it has seen before. Past `staleTtl` without a
-// successful refresh, requests wait for the origin again and fail with it.
-// Failures are retried after 2s.
+// on the origin for data it has seen before. Past `serveStaleFor` (defaults
+// to `staleTtl`) we block on the origin instead, and only use the old value
+// if it errors. Past `staleTtl` without a successful refresh, requests wait
+// for the origin again and fail with it. Failures are retried after 2s.
 export const staleCache = Effect.fnUntraced(function* <A>(
   lookup: (key: string) => Effect.Effect<A, UpstreamError>,
   options: {
     readonly freshTtl: Duration.Input;
     readonly staleTtl: Duration.Input;
+    readonly serveStaleFor?: Duration.Input;
     readonly capacity: number;
   },
 ) {
@@ -129,6 +131,9 @@ export const staleCache = Effect.fnUntraced(function* <A>(
   );
   const staleMillis = Duration.toMillis(
     Duration.fromInputUnsafe(options.staleTtl),
+  );
+  const serveStaleMillis = Duration.toMillis(
+    Duration.fromInputUnsafe(options.serveStaleFor ?? options.staleTtl),
   );
   // Insertion-ordered. First key is the least recently refreshed.
   const lastGood = new Map<
@@ -159,6 +164,10 @@ export const staleCache = Effect.fnUntraced(function* <A>(
       const previous = lastGood.get(key);
       if (!previous || now - previous.at > staleMillis)
         return yield* fetch(key);
+      if (now - previous.at > serveStaleMillis) {
+        const result = yield* Effect.exit(fetch(key));
+        return Exit.isSuccess(result) ? result.value : previous.value;
+      }
       if (now - previous.at >= freshMillis && !refreshing.has(key)) {
         refreshing.add(key);
         yield* fetch(key).pipe(
@@ -360,6 +369,8 @@ export class UpstreamApi extends Context.Service<
         },
         {
           freshTtl: Duration.seconds(60),
+          // Today's plans have live ETAs, don't hand out old ones for long.
+          serveStaleFor: Duration.minutes(2),
           staleTtl: Duration.minutes(10),
           capacity: 128,
         },
