@@ -189,6 +189,9 @@ function Home() {
     activeRoute,
     direction,
     selectedJourney,
+    resultOptions: showResults ? (journey.data?.options ?? null) : null,
+    trackedJourney: tracking.option ?? null,
+    trackedBus: tracking.bus ?? null,
     routeStops: routeStops.data?.stops,
     allStops: catalog.stops,
   });
