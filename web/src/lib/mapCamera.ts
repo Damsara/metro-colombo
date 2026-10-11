@@ -70,12 +70,7 @@ export function initialTilt(mode: MapMode): TiltState {
   };
 }
 
-/**
- * The pitch a camera update at this zoom should take, or undefined to keep
- * the pitch it asked for. A hand-set tilt holds until the zoom leaves its band,
- * then blends back over half a zoom level; with reduced motion the zoom-led
- * pitch is left to snap once the move ends.
- */
+/** The pitch a camera update should take, or undefined to keep the one it asked for. */
 export function tiltFor(
   state: TiltState,
   zoom: number,
