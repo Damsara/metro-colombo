@@ -14,6 +14,7 @@ import { Auth } from "./auth.js";
 import { UpstreamConfig } from "./config.js";
 import type * as S from "./schemas.js";
 import { UpstreamApi } from "./upstream.js";
+import { RecordBuffer } from "./archive/rows.js";
 
 const STALE_AFTER = Duration.seconds(60);
 // The feed chats every few seconds, so a longer silence means the line is dead.
@@ -28,6 +29,9 @@ class LiveFeedClosed extends Data.TaggedError("LiveFeedClosed")<{
 }> {}
 
 type Fix = S.LiveBus & { readonly receivedAt: number };
+
+// About an hour of fixes; the archive takes them every few minutes.
+const MAX_RECORDED_FIXES = 200_000;
 
 const finite = (value: unknown): number | undefined =>
   Predicate.isNumber(value) && Number.isFinite(value) ? value : undefined;
@@ -99,7 +103,10 @@ const gpsPayload = (
 
 export class LiveFleet extends Context.Service<
   LiveFleet,
-  { readonly snapshot: Effect.Effect<S.LiveFeed> }
+  {
+    readonly snapshot: Effect.Effect<S.LiveFeed>;
+    readonly takeRecorded: Effect.Effect<ReadonlyArray<Fix>>;
+  }
 >()("lmt-go/LiveFleet") {
   static readonly layer = Layer.effect(
     LiveFleet,
@@ -109,6 +116,7 @@ export class LiveFleet extends Context.Service<
       const upstream = yield* UpstreamApi;
       const auth = yield* Auth;
       const fixes = new Map<string, Fix>();
+      const recorded = new RecordBuffer<Fix>(MAX_RECORDED_FIXES);
       let lastUpdate = 0;
       let connected = false;
 
@@ -121,7 +129,10 @@ export class LiveFleet extends Context.Service<
         const receivedAt = clock.currentTimeMillisUnsafe();
         for (const value of payload) {
           const fix = toFix(value, receivedAt);
-          if (fix) fixes.set(fix.id, fix);
+          if (fix) {
+            fixes.set(fix.id, fix);
+            recorded.push(fix);
+          }
         }
         lastUpdate = receivedAt;
         return true;
@@ -218,7 +229,10 @@ export class LiveFleet extends Context.Service<
         };
       });
 
-      return LiveFleet.of({ snapshot });
+      return LiveFleet.of({
+        snapshot,
+        takeRecorded: Effect.sync(() => recorded.take()),
+      });
     }),
   );
 }
