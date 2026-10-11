@@ -1,10 +1,29 @@
 import type { FeatureCollection, Geometry } from "geojson";
 import type { ReactNode } from "react";
 
-export type Language = "en" | "si" | "ta";
+export const LANGUAGES = [
+  "en",
+  "si",
+  "ta",
+  "hi",
+  "ru",
+  "zh",
+  "de",
+  "fr",
+  "ja",
+] as const;
+export type Language = (typeof LANGUAGES)[number];
 
 export function isLanguage(value: string): value is Language {
-  return value === "en" || value === "si" || value === "ta";
+  return (LANGUAGES as readonly string[]).includes(value);
+}
+
+/** The languages upstream data has names in. */
+export type NameLanguage = "en" | "si" | "ta";
+
+/** The language whose upstream names an interface language shows. */
+export function nameLanguage(language: Language): NameLanguage {
+  return language === "si" || language === "ta" ? language : "en";
 }
 
 export interface Direction {
@@ -56,9 +75,9 @@ export interface Place {
 }
 export function placeTitle(place: Place, language: Language): string {
   return (
-    (language === "si"
+    (nameLanguage(language) === "si"
       ? place.name_si
-      : language === "ta"
+      : nameLanguage(language) === "ta"
         ? place.name_ta
         : place.name
     ).trim() || place.name
@@ -281,9 +300,9 @@ export interface MapViewProps {
 
 export function stopName(stop: Stop, language: Language): string {
   return (
-    (language === "si"
+    (nameLanguage(language) === "si"
       ? stop.stop_name_si
-      : language === "ta"
+      : nameLanguage(language) === "ta"
         ? stop.stop_name_tm
         : stop.stop_name_en
     )?.trim() || stop.stop_name_en

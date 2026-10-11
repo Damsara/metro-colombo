@@ -6,7 +6,12 @@ import { towards } from "../i18n";
 import { usePlaceName } from "../lib/placeNames";
 import { routeColor } from "../lib/routeColor";
 import { secondaryStopName } from "../lib/stopCard";
-import { busKey, resolveBusDirectionId, stopName } from "../types";
+import {
+  busKey,
+  nameLanguage,
+  resolveBusDirectionId,
+  stopName,
+} from "../types";
 import type { CatalogStop, Language, LiveBus, Route, Stop } from "../types";
 import LiveBusList from "./LiveBusList";
 import { OccupancyBadge } from "./OccupancyBadge";
@@ -15,7 +20,6 @@ import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
 import { Notice } from "./ui/Notice";
-
 
 /** Every route, busiest first. */
 export function RouteList({
@@ -272,7 +276,7 @@ export function RouteDetail({
                   </strong>
                   {secondary && (
                     <span
-                      lang={language === "en" ? "si" : "en"}
+                      lang={nameLanguage(language) === "en" ? "si" : "en"}
                       className="block text-sm leading-snug text-muted"
                     >
                       {secondary}

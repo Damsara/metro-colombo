@@ -12,7 +12,17 @@ import {
   timeLabel,
 } from "../src/i18n";
 import { LanguageProvider } from "../src/lib/language";
-import type { JourneyOption, Language } from "../src/types";
+import {
+  LANGUAGES,
+  nameLanguage,
+  placeTitle,
+  stopName,
+  type JourneyOption,
+  type Language,
+  type Place,
+  type Stop,
+} from "../src/types";
+import { secondaryStopName } from "../src/lib/stopCard";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -79,7 +89,46 @@ test("units follow each language's order", () => {
 test("the browser's language is used until one is chosen", () => {
   assert.equal(preferredLanguage(["si-LK", "en-US"]), "si");
   assert.equal(preferredLanguage(["fr-FR", "ta-IN"]), "ta");
-  assert.equal(preferredLanguage(["fr-FR"]), undefined);
+  assert.equal(preferredLanguage(["xx-XX"]), undefined);
+  assert.equal(preferredLanguage(["zh-CN"]), "zh");
+  assert.equal(preferredLanguage(["zh-Hans", "en"]), "zh");
+  assert.equal(preferredLanguage(["hi-IN"]), "hi");
+  assert.equal(preferredLanguage(["fr-FR", "ta-IN"]), "fr");
+  for (const language of LANGUAGES) {
+    assert.equal(preferredLanguage([language]), language);
+  }
+});
+
+test("names without upstream data show in English, with Sinhala beneath", () => {
+  const stop = {
+    stop_name_en: "Fort",
+    stop_name_si: "කොටුව",
+    stop_name_tm: "கோட்டை",
+  } as Stop;
+  const place = { name: "Fort", name_si: "කොටුව", name_ta: "கோட்டை" } as Place;
+  assert.equal(nameLanguage("si"), "si");
+  assert.equal(nameLanguage("ta"), "ta");
+  for (const language of ["en", "hi", "ru", "zh", "de", "fr", "ja"] as const) {
+    assert.equal(stopName(stop, language), "Fort");
+    assert.equal(placeTitle(place, language), "Fort");
+    assert.equal(secondaryStopName(stop, language), "කොටුව");
+  }
+  assert.equal(stopName(stop, "ta"), "கோட்டை");
+  assert.equal(secondaryStopName(stop, "si"), "Fort");
+});
+
+test("an untranslated language reads in English, not message ids", () => {
+  const afternoon = "2026-10-09T09:35:00Z";
+  for (const language of ["hi", "ru", "zh", "de", "fr", "ja"] as const) {
+    assert.equal(
+      inLanguage(language, () => dateLabel(i18n, "2026-10-10")),
+      "Sat, 10 Oct",
+    );
+    assert.equal(
+      inLanguage(language, () => timeLabel(i18n, afternoon)),
+      "3:05 PM",
+    );
+  }
 });
 
 test("a saved Sinhala choice renders the journey in Sinhala word order", () => {
@@ -145,7 +194,13 @@ test("every translation keeps the source message's placeholders and tags", () =>
     [...message.matchAll(/\{(\w+)[,}]|<\/?(\d+)>/g)]
       .map((match) => match[1] ?? `<${match[2]}>`)
       .sort();
-  for (const locale of ["si", "ta"]) {
+  // Languages differ in plural categories, so only the shape must match:
+  // which variable is pluralised and that it keeps an `other` branch.
+  const plurals = (message: string) =>
+    [...message.matchAll(/\{(\w+), (plural|select|selectordinal),/g)]
+      .map((match) => `${match[1]}:${match[2]}`)
+      .sort();
+  for (const locale of LANGUAGES.filter((language) => language !== "en")) {
     const po = readFileSync(
       new URL(`../src/locales/${locale}/messages.po`, import.meta.url),
       "utf8",
@@ -154,8 +209,12 @@ test("every translation keeps the source message's placeholders and tags", () =>
     // Every message parsed (the header's empty msgid aside).
     assert.equal(pairs.length, (po.match(/^msgid /gm) ?? []).length - 1);
     for (const [id, str] of pairs) {
-      assert.ok(str, `${locale}: "${id}" is untranslated`);
+      if (!str) continue;
       assert.deepEqual(placeholders(str), placeholders(id), `${locale}: ${id}`);
+      assert.deepEqual(plurals(str), plurals(id), `${locale}: ${id}`);
+      if (plurals(id).length) {
+        assert.match(str, /other \{/, `${locale}: ${id} lacks "other"`);
+      }
     }
   }
 });

@@ -1,4 +1,10 @@
-import { stopName, type Language, type Stop, type StopService } from "../types";
+import {
+  nameLanguage,
+  stopName,
+  type Language,
+  type Stop,
+  type StopService,
+} from "../types";
 
 /** A route calling at a stop and where its buses go from there. */
 export interface ServedBy {
@@ -36,14 +42,16 @@ export function servedBy(
 
 /**
  * The stop's name in another language, for riders matching it to a sign:
- * English under Sinhala or Tamil, Sinhala under English. Nothing when it
+ * English under Sinhala or Tamil, Sinhala under English and the languages
+ * without upstream names. Nothing when it
  * would just repeat the main name.
  */
 export function secondaryStopName(
   stop: Stop,
   language: Language,
 ): string | undefined {
-  const other = language === "en" ? stop.stop_name_si : stop.stop_name_en;
+  const other =
+    nameLanguage(language) === "en" ? stop.stop_name_si : stop.stop_name_en;
   const name = other?.trim();
   if (!name || plain(name) === plain(stopName(stop, language))) return;
   return name;
