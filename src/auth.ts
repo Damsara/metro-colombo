@@ -23,13 +23,10 @@ export type Endpoint =
   | "places"
   | "geometry"
   | "colours"
+  | "occasions"
   | "auth";
 export type Outcome =
-  | "ok"
-  | "http_error"
-  | "decode_error"
-  | "timeout"
-  | "transport";
+  "ok" | "http_error" | "decode_error" | "timeout" | "transport";
 
 const requests = Metric.counter("upstream.requests", { incremental: true });
 const decodeFailures = Metric.counter("upstream.decode_failures", {

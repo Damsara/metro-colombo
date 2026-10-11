@@ -1,8 +1,14 @@
+import { Context, Duration, Effect, Layer } from "effect";
+import { HttpClient } from "effect/http";
+import { countFallback, countRequest } from "./auth.js";
+import { OccasionsConfig } from "./config.js";
 import {
   OCCASION_KINDS,
   type Occasion,
   type OccasionKind,
 } from "./occasion-kinds.js";
+import { FALLBACK_OCCASIONS } from "./occasions-fallback.js";
+import { staleCache, UpstreamError } from "./upstream.js";
 
 const RULES: ReadonlyArray<readonly [RegExp, OccasionKind]> = [
   [/vesak/i, "vesak"],
@@ -65,5 +71,81 @@ export function toOccasions(
   return [...fromFeed, ...fixedOccasions(fromYear, toYear)].sort(
     (a, b) =>
       a.date.localeCompare(b.date) || priority(a.kind) - priority(b.kind),
+  );
+}
+
+const UPCOMING_DAYS = 400;
+
+const addDays = (date: string, days: number) =>
+  new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+
+export class Occasions extends Context.Service<
+  Occasions,
+  {
+    readonly upcoming: (
+      today: string,
+    ) => Effect.Effect<ReadonlyArray<Occasion>>;
+  }
+>()("lmt-go/Occasions") {
+  static readonly layer = Layer.effect(
+    Occasions,
+    Effect.gen(function* () {
+      const { icsUrl } = yield* OccasionsConfig;
+      const http = yield* HttpClient.HttpClient;
+      const fetchFeed = Effect.gen(function* () {
+        const response = yield* http.get(icsUrl).pipe(
+          Effect.tapError(() => countRequest("occasions", "transport")),
+          Effect.mapError(
+            (cause) =>
+              new UpstreamError({ message: "holiday feed unreachable", cause }),
+          ),
+        );
+        if (response.status < 200 || response.status >= 300) {
+          yield* countRequest("occasions", "http_error");
+          return yield* new UpstreamError({
+            message: `holiday feed responded with HTTP ${response.status}`,
+            status: response.status,
+          });
+        }
+        const text = yield* response.text.pipe(
+          Effect.mapError(
+            (cause) =>
+              new UpstreamError({ message: "holiday feed unreadable", cause }),
+          ),
+        );
+        const events = parseIcs(text);
+        if (events.length === 0) {
+          yield* countRequest("occasions", "decode_error");
+          return yield* new UpstreamError({ message: "holiday feed is empty" });
+        }
+        yield* countRequest("occasions", "ok");
+        const years = events.map((event) => Number(event.date.slice(0, 4)));
+        return toOccasions(events, Math.min(...years), Math.max(...years) + 1);
+      }).pipe(Effect.withSpan("Occasions.fetchFeed"));
+      const feed = yield* staleCache(() => fetchFeed, {
+        name: "occasions",
+        freshTtl: Duration.hours(24),
+        staleTtl: Duration.days(30),
+        capacity: 1,
+      });
+      return Occasions.of({
+        upcoming: (today) =>
+          feed("all").pipe(
+            Effect.tapError((error) =>
+              Effect.andThen(
+                countFallback("occasions"),
+                Effect.logWarning("holiday feed unavailable", error),
+              ),
+            ),
+            Effect.orElseSucceed(() => FALLBACK_OCCASIONS),
+            Effect.map((all) => {
+              const until = addDays(today, UPCOMING_DAYS);
+              return all.filter((o) => o.date >= today && o.date <= until);
+            }),
+          ),
+      });
+    }),
   );
 }
