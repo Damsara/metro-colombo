@@ -25,7 +25,6 @@ vi.mock("../src/components/ui/Button", async (original) => {
   };
 });
 
-// The strip's layout is the journey lane's; these tests hand it the items.
 const strips = vi.hoisted(() => new Map<object, StripItem[]>());
 vi.mock("../src/lib/busCard", () => ({
   journeyStrip: (journey: object) => strips.get(journey) ?? [],

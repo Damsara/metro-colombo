@@ -59,7 +59,6 @@ test("corrupt or foreign storage loads as no trips", () => {
   assert.deepEqual(loadRecentTrips(memoryStore("{not json")), []);
   assert.deepEqual(loadRecentTrips(memoryStore('{"a":1}')), []);
   assert.deepEqual(loadRecentTrips(null), []);
-  // Bad entries are dropped and the good ones kept.
   const mixed = JSON.stringify([
     trip("A", "B"),
     { from: "A" },

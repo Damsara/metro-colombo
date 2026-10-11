@@ -57,8 +57,6 @@ const plan: JourneyPlan = {
   options: [option],
 };
 
-// Renders in the provider tree the app uses; the language is English unless a
-// test switches it. Seed `client` to hand components cached query data.
 function markup(
   element: ReactElement,
   client: QueryClient = new QueryClient(),
@@ -71,7 +69,6 @@ function markup(
   );
 }
 
-/** A copy of `source` whose first ride boards `minutes` from now, today. */
 function boardingIn(source: JourneyOption, minutes: number): JourneyOption {
   const first = source.legs.find((leg) => leg.kind === "ride");
   assert.ok(first?.kind === "ride");
@@ -204,7 +201,6 @@ test("an assigned bus running this ride now can be shown on the map", () => {
     registration_number: plate.toLowerCase().replace(/-/g, " "),
   };
   assert.doesNotMatch(render(option), /follow on map/);
-  // Shift the trip so this ride boards in ten minutes.
   const shift =
     Date.now() + 10 * 60_000 - Date.parse(ride.ride.board.scheduled_time!);
   const at = (value: string) =>
@@ -218,7 +214,6 @@ test("an assigned bus running this ride now can be shown on the map", () => {
   const html = render(soon, [live], [soon]);
   assert.equal((html.match(/Live · follow on map/g) ?? []).length, 1);
   assert.match(html, /Bus live/);
-  // With tracking on offer it leads, and the plain map view stays.
   const trackable = render(soon, [live], [soon], () => {});
   assert.equal((trackable.match(/Track my trip/g) ?? []).length, 1);
   assert.match(trackable, /Follow on map/);
@@ -235,7 +230,6 @@ test("an assigned bus that is live elsewhere is not presented as this trip", () 
   const cases: LiveBus[] = [
     { ...base, route_code: "CM99" },
     { ...base, route_code: ride.ride.route.code, direction_id: "other-way" },
-    // Right route and direction, but the ride boards tomorrow: an earlier run.
     {
       ...base,
       route_code: ride.ride.route.code,
@@ -284,9 +278,7 @@ test("today's journeys lead with a countdown and mark the next bus", () => {
   const html = renderToday([boardingIn(option, 70), boardingIn(option, 10.5)]);
   assert.match(html, /Leaves in 10 min/);
   assert.equal((html.match(/Next bus/g) ?? []).length, 1);
-  // The later one is over an hour off, so it shows its clock time instead.
   assert.equal((html.match(/Leaves in/g) ?? []).length, 1);
-  // Next bus sits on the soonest card, which is listed first.
   assert.ok(html.indexOf("Next bus") < html.indexOf("Leaves in 10 min"));
   assert.match(html, /Scheduled/);
   assert.match(html, /All times are Sri Lanka time/);
@@ -325,7 +317,6 @@ function stopAt(id: string, latitude: number): Stop {
   };
 }
 
-// Stops about 1.1 km apart on a line heading north.
 const line = ["a", "b", "c", "d", "e", "f"].map((id, index) =>
   stopAt(id, 6.8 + index * 0.01),
 );
@@ -333,11 +324,8 @@ const line = ["a", "b", "c", "d", "e", "f"].map((id, index) =>
 test("stops away counts the stops until the bus reaches yours", () => {
   const near = (latitude: number) => ({ lat: latitude, lng: 79.9 });
   assert.equal(stopsAway(near(6.8), line, "e"), 4);
-  // Just past b, heading for c: c, d, then e.
   assert.equal(stopsAway(near(6.8115), line, "e"), 3);
-  // Nearly at c.
   assert.equal(stopsAway(near(6.819), line, "e"), 3);
-  // Between d and e, e is next.
   assert.equal(stopsAway(near(6.835), line, "e"), 1);
   assert.equal(stopsAway(near(6.84), line, "e"), 0);
   assert.equal(stopsAway(near(6.85), line, "e"), -1);
@@ -350,7 +338,6 @@ test("a live bus on the ride shows how far off it is and how full", () => {
   assert.ok(first?.kind === "ride" && first.ride.bus);
   const ride = first.ride;
   const plate = first.ride.bus.registration_number;
-  // Put the journey's boarding stop fourth on the direction's stop list.
   const stops = [...line.slice(0, 3), ride.board, ...line.slice(3)];
   const client = new QueryClient();
   client.setQueryData<RouteStops>(
@@ -376,7 +363,6 @@ test("a live bus on the ride shows how far off it is and how full", () => {
   assert.match(html, /3 stops away/);
   assert.match(html, /Plenty of room/);
 
-  // One stop out reads in the singular, and without stop data it just says live.
   const oneOut = { ...bus, lat: line[2].latitude };
   assert.match(renderToday([soon], [oneOut], client), /1 stop away/);
   const unknown = renderToday([soon], [bus]);
@@ -404,7 +390,6 @@ test("an option says whether its rides have buses assigned yet", () => {
     ),
   };
   assert.equal(busAssignment(none), "none");
-  // The card says so, and so does the ride in its steps.
   const html = render(none, [], [none]);
   assert.match(html, /No bus assigned yet<\/span>/);
   assert.match(html, /can’t be followed live/);

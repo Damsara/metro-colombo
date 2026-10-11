@@ -47,7 +47,6 @@ function stopAt(id: string, latitude: number): Stop {
     longitude: 79.9,
   };
 }
-// The boarding stop fourth and the alighting stop seventh on the line.
 const stops = [
   stopAt("a", 6.8),
   stopAt("b", 6.81),

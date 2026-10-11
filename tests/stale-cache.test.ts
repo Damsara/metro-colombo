@@ -28,19 +28,17 @@ test("serves the last good value when revalidation fails, then degrades past the
     );
 
     assert.equal(yield* get("a"), "v1:a");
-    assert.equal(yield* get("a"), "v1:a"); // cache hit
+    assert.equal(yield* get("a"), "v1:a");
     assert.equal(calls, 1);
 
     upstreamOk = false;
-    yield* TestClock.adjust(Duration.minutes(20)); // past fresh, within stale
+    yield* TestClock.adjust(Duration.minutes(20));
 
-    // The last good value is served at once; the refresh runs behind it and
-    // fails.
     assert.equal(yield* get("a"), "v1:a");
     yield* Effect.yieldNow;
     assert.equal(calls, 2);
 
-    yield* TestClock.adjust(Duration.minutes(20)); // 40 min total: past stale
+    yield* TestClock.adjust(Duration.minutes(20));
 
     const result = yield* Effect.exit(get("a"));
     assert.ok(Exit.isFailure(result));
@@ -67,10 +65,10 @@ test("serves each key independently and evicts the least recently refreshed", as
 
     assert.equal(yield* get("a"), "value-a");
     assert.equal(yield* get("b"), "value-b");
-    assert.equal(yield* get("c"), "value-c"); // evicts "a"
+    assert.equal(yield* get("c"), "value-c");
 
     upstreamOk = false;
-    yield* TestClock.adjust(Duration.minutes(15)); // past fresh, within stale
+    yield* TestClock.adjust(Duration.minutes(15));
 
     assert.equal(yield* get("c"), "value-c");
     assert.ok(
@@ -89,7 +87,6 @@ test("answers stale requests at once and refreshes once in the background", asyn
       (key: string) =>
         Effect.gen(function* () {
           calls += 1;
-          // A slow origin: only the first lookup is waited on.
           if (calls > 1) yield* Effect.sleep(Duration.seconds(10));
           return `v${calls}:${key}`;
         }),
@@ -102,16 +99,14 @@ test("answers stale requests at once and refreshes once in the background", asyn
     );
 
     assert.equal(yield* get("a"), "v1:a");
-    yield* TestClock.adjust(Duration.minutes(11)); // past fresh
+    yield* TestClock.adjust(Duration.minutes(11));
 
-    // Several requests during the slow refresh all get the old value now,
-    // and start only one refresh between them.
     assert.equal(yield* get("a"), "v1:a");
     assert.equal(yield* get("a"), "v1:a");
     yield* Effect.yieldNow;
     assert.equal(calls, 2);
 
-    yield* TestClock.adjust(Duration.seconds(10)); // the refresh lands
+    yield* TestClock.adjust(Duration.seconds(10));
     yield* Effect.yieldNow;
     assert.equal(yield* get("a"), "v2:a");
     assert.equal(calls, 2);
@@ -138,8 +133,8 @@ test("waits for the origin when there is nothing usable to serve", async () => {
     );
 
     assert.equal(yield* get("a"), "v1:a");
-    yield* TestClock.adjust(Duration.minutes(31)); // past stale
-    assert.equal(yield* get("a"), "v2:a"); // fetched while waiting, not served old
+    yield* TestClock.adjust(Duration.minutes(31));
+    assert.equal(yield* get("a"), "v2:a");
   });
 
   await Effect.runPromise(program.pipe(Effect.provide(TestClock.layer())));
@@ -170,19 +165,19 @@ test("past serveStaleFor, waits for a fresh value and falls back to the old one 
     );
 
     assert.equal(yield* get("a"), "v1:a");
-    yield* TestClock.adjust(Duration.seconds(90)); // within serveStaleFor
+    yield* TestClock.adjust(Duration.seconds(90));
     assert.equal(yield* get("a"), "v1:a");
     yield* Effect.yieldNow;
     assert.equal(calls, 2);
 
-    yield* TestClock.adjust(Duration.minutes(3)); // past serveStaleFor
+    yield* TestClock.adjust(Duration.minutes(3));
     assert.equal(yield* get("a"), "v3:a");
 
     upstreamOk = false;
-    yield* TestClock.adjust(Duration.minutes(3)); // past serveStaleFor again
+    yield* TestClock.adjust(Duration.minutes(3));
     assert.equal(yield* get("a"), "v3:a");
 
-    yield* TestClock.adjust(Duration.minutes(8)); // past staleTtl
+    yield* TestClock.adjust(Duration.minutes(8));
     assert.ok(Exit.isFailure(yield* Effect.exit(get("a"))));
   });
 

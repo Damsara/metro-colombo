@@ -29,8 +29,7 @@ const onSurfaces = (text: PaletteToken, surfaces: PaletteToken[]): Pair[] =>
     `${text} on ${surface}`,
   ]);
 
-// Every text colour on every surface it is used on. Warning text only sits
-// on the page and on cards (occupancy, delays), never on a selected field.
+// Warning text only sits on the page and on cards, never on a selected field.
 const SURFACES: PaletteToken[] = ["paper", "field", "card", "tint-50"];
 const PAIRS: Pair[] = [
   ...onSurfaces("ink", SURFACES),
