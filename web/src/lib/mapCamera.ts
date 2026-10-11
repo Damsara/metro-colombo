@@ -51,6 +51,8 @@ export type TiltState = {
   mode: MapMode;
   reducedMotion: boolean;
   directed: boolean;
+  // Driver view owns the tilt until it ends.
+  chase: boolean;
   manualBand: 0 | 1 | 2 | null;
   blend: { pitch: number; zoom: number; progress: number } | null;
 };
@@ -60,6 +62,7 @@ export function initialTilt(mode: MapMode): TiltState {
     mode,
     reducedMotion: false,
     directed: false,
+    chase: false,
     manualBand: null,
     blend: null,
   };
@@ -70,7 +73,7 @@ export function tiltFor(
   zoom: number,
   pitch: number,
 ): number | undefined {
-  if (state.directed) return undefined;
+  if (state.directed || state.chase) return undefined;
   if (state.mode === "2d") return 0;
   if (state.manualBand !== null) {
     if (zoomBand(zoom) === state.manualBand) return undefined;

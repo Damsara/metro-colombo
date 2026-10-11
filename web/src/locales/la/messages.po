@@ -9,7 +9,7 @@ msgstr ""
 
 #. placeholder {0}: credit.title
 #. placeholder {1}: credit.author
-#: src/components/festiveMap.ts:48
+#: src/components/festiveMap.ts:50
 msgid "“{0}” by {1}"
 msgstr "„{0}“ a {1}"
 
@@ -141,7 +141,7 @@ msgstr "<0>Conscende ad</0> {boardName}"
 msgid "A peaceful Poya day"
 msgstr "Pax tibi die Poya"
 
-#: src/components/MapView.tsx:1488
+#: src/components/MapView.tsx:1592
 msgid "A: Start · B: Destination"
 msgstr "A: Initium · B: Meta"
 
@@ -309,11 +309,11 @@ msgctxt "month"
 msgid "Dec"
 msgstr "Dec"
 
-#: src/components/festiveMap.ts:49
+#: src/components/festiveMap.ts:51
 msgid "Decorations"
 msgstr "Ornamenta"
 
-#: src/components/MapView.tsx:1388
+#: src/components/MapView.tsx:1492
 msgid "Destination: {stopLabel}"
 msgstr "Meta: {stopLabel}"
 
@@ -329,6 +329,10 @@ msgstr "Factum"
 #: src/components/PhoneDrawer.tsx:118
 msgid "Drag to resize"
 msgstr "Trahe ut magnitudinem mutes"
+
+#: src/components/MapView.tsx:589
+msgid "Driver view"
+msgstr "Aurigae prospectus"
 
 #: src/components/JourneyResults.tsx:618
 msgid "Duration unavailable"
@@ -385,7 +389,7 @@ msgstr "Omnibus ab {start} ad {end} quaere"
 msgid "Find my bus"
 msgstr "Omnibum meum quaere"
 
-#: src/components/MapView.tsx:424
+#: src/components/MapView.tsx:433
 msgid "Find my location"
 msgstr "Ubi sum?"
 
@@ -519,7 +523,7 @@ msgstr "Hinc → {end}"
 msgid "Hide"
 msgstr "Cela"
 
-#: src/components/MapView.tsx:586
+#: src/components/MapView.tsx:601
 msgid "Hide live buses"
 msgstr "Omnibus in vivo cela"
 
@@ -545,7 +549,7 @@ msgstr "Ian"
 msgid "Journey steps"
 msgstr "Gradus itineris"
 
-#: src/components/MapView.tsx:1479
+#: src/components/MapView.tsx:1583
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "Stationes itineris; circuli ascensum et descensum monstrant"
 
@@ -572,6 +576,10 @@ msgstr "Lingua"
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro hanc lineam nunc non mittit."
 
+#: src/components/MapView.tsx:589
+msgid "Leave driver view"
+msgstr "Aurigae prospectum relinque"
+
 #: src/i18n.ts:111
 msgid "Leaves now"
 msgstr "Nunc proficiscitur"
@@ -596,7 +604,7 @@ msgstr "Omnibus in vivo"
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "Loca omnibus in vivo nunc desunt. Horaria tamen valent."
 
-#: src/components/MapView.tsx:1485
+#: src/components/MapView.tsx:1589
 msgid "Live bus; tap to select and follow"
 msgstr "Omnibus in vivo; tange ut eligas et sequaris"
 
@@ -631,7 +639,7 @@ msgid "Loading bus routes…"
 msgstr "Lineae omnibus onerantur…"
 
 #: src/App.tsx:926
-#: src/components/MapView.tsx:1425
+#: src/components/MapView.tsx:1529
 msgid "Loading map…"
 msgstr "Tabula oneratur…"
 
@@ -643,11 +651,11 @@ msgstr "Stationes onerantur…"
 msgid "Loading the stops…"
 msgstr "Stationes onerantur…"
 
-#: src/components/MapView.tsx:1405
+#: src/components/MapView.tsx:1509
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "Licentia loci non data est. Stationes tamen eligere potes."
 
-#: src/components/MapView.tsx:425
+#: src/components/MapView.tsx:434
 msgid "Location unavailable"
 msgstr "Terra incognita"
 
@@ -659,19 +667,19 @@ msgstr "Locus praesto non erat. Stationem initii tamen scribere potes."
 msgid "Looking around"
 msgstr "Circumspicis"
 
-#: src/components/MapView.tsx:426
+#: src/components/MapView.tsx:435
 msgid "Map credits"
 msgstr "Auctores tabulae"
 
-#: src/components/MapView.tsx:1471
+#: src/components/MapView.tsx:1575
 msgid "Map key"
 msgstr "Clavis tabulae"
 
-#: src/components/MapView.tsx:1409
+#: src/components/MapView.tsx:1513
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "Tesserae tabulae a provisore externo onerari non potuerunt. Conexum interretialem inspice. Iter tamen parare potes."
 
-#: src/components/MapView.tsx:1435
+#: src/components/MapView.tsx:1539
 msgid "Map unavailable"
 msgstr "Tabula deest"
 
@@ -841,7 +849,7 @@ msgstr "Spatii satis"
 msgid "PM"
 msgstr "p.m."
 
-#: src/components/MapView.tsx:423
+#: src/components/MapView.tsx:432
 msgid "Point north"
 msgstr "Ad septentriones verte"
 
@@ -889,7 +897,7 @@ msgstr "Notae linearum et stationum, et quot dies in futurum quaeras."
 msgid "Routes"
 msgstr "Lineae"
 
-#: src/components/MapView.tsx:1414
+#: src/components/MapView.tsx:1518
 msgid "Routes and stops map"
 msgstr "Tabula linearum et stationum"
 
@@ -937,15 +945,15 @@ msgstr "Status servitii"
 msgid "Show"
 msgstr "Monstra"
 
-#: src/components/MapView.tsx:578
+#: src/components/MapView.tsx:593
 msgid "Show 3D map"
 msgstr "Tabulam 3D monstra"
 
-#: src/components/MapView.tsx:578
+#: src/components/MapView.tsx:593
 msgid "Show flat map"
 msgstr "Tabulam planam monstra"
 
-#: src/components/MapView.tsx:586
+#: src/components/MapView.tsx:601
 msgid "Show live buses"
 msgstr "Omnibus in vivo monstra"
 
@@ -969,7 +977,7 @@ msgstr "Diem sequentem monstra"
 msgid "Show tomorrow’s buses"
 msgstr "Omnibus crastina monstra"
 
-#: src/components/MapView.tsx:1410
+#: src/components/MapView.tsx:1514
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "Quaedam tabulae onerari non potuerunt. Tabula aut conexus fortasse deest. Iter tamen parare potes."
 
@@ -981,11 +989,11 @@ msgstr "Quaedam stationes onerari non potuerunt. Quaestio fortasse imperfecta es
 msgid "Start here"
 msgstr "Hinc incipe"
 
-#: src/components/MapView.tsx:1388
+#: src/components/MapView.tsx:1492
 msgid "Start: {stopLabel}"
 msgstr "Initium: {stopLabel}"
 
-#: src/components/MapView.tsx:1474
+#: src/components/MapView.tsx:1578
 msgid "Stop"
 msgstr "Statio"
 
@@ -1019,7 +1027,7 @@ msgstr "Stationem tange ut iter pares · omnibus tange ut sequaris"
 msgid "Tap a stop to plan a trip"
 msgstr "Stationem tange ut iter pares"
 
-#: src/components/MapView.tsx:1438
+#: src/components/MapView.tsx:1542
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "Tabula conexum interretialem et WebGL in navigatro postulat. Stationes tamen eligere et iter parare potes."
 
@@ -1069,7 +1077,7 @@ msgstr "Iter meum observa"
 msgid "Tracked bus"
 msgstr "Omnibus observatum"
 
-#: src/components/MapView.tsx:456
+#: src/components/MapView.tsx:465
 msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
 msgstr "Tabula vectionis. Clavibus sagittarum move, plus aut minus ut amplifices aut contrahas."
 
@@ -1094,8 +1102,8 @@ msgstr "Iter ab hac statione ad {end}"
 msgid "Try again"
 msgstr "Iterum tempta"
 
-#: src/components/MapView.tsx:1446
-#: src/components/MapView.tsx:1463
+#: src/components/MapView.tsx:1550
+#: src/components/MapView.tsx:1567
 msgid "Try map again"
 msgstr "Tabulam iterum tempta"
 
@@ -1198,7 +1206,7 @@ msgstr "Omnibus tuum nunc est {plate}"
 msgid "Your destination"
 msgstr "Meta tua"
 
-#: src/components/MapView.tsx:1407
+#: src/components/MapView.tsx:1511
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "Locus tuus inveniri non potuit. Stationes potius elige."
 
@@ -1211,10 +1219,10 @@ msgstr "Initium tuum"
 msgid "Your stop"
 msgstr "Statio tua"
 
-#: src/components/MapView.tsx:421
+#: src/components/MapView.tsx:430
 msgid "Zoom in"
 msgstr "Amplifica"
 
-#: src/components/MapView.tsx:422
+#: src/components/MapView.tsx:431
 msgid "Zoom out"
 msgstr "Contrahe"

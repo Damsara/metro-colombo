@@ -126,3 +126,10 @@ test("with reduced motion the tilt is held during a move", () => {
   assert.equal(tiltFor(state, 16, 40), undefined);
   assert.equal(state.manualBand, null);
 });
+
+test("driver view keeps its own tilt, even in flat mode", () => {
+  for (const mode of ["3d", "2d"] as const) {
+    const state = { ...initialTilt(mode), chase: true };
+    assert.equal(tiltFor(state, 20, 72), undefined);
+  }
+});

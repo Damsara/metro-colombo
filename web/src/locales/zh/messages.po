@@ -9,7 +9,7 @@ msgstr ""
 
 #. placeholder {0}: credit.title
 #. placeholder {1}: credit.author
-#: src/components/festiveMap.ts:48
+#: src/components/festiveMap.ts:50
 msgid "“{0}” by {1}"
 msgstr "“{0}”，作者 {1}"
 
@@ -141,7 +141,7 @@ msgstr "<0>在此上车:</0>{boardName}"
 msgid "A peaceful Poya day"
 msgstr "祝波亚日安宁"
 
-#: src/components/MapView.tsx:1488
+#: src/components/MapView.tsx:1592
 msgid "A: Start · B: Destination"
 msgstr "A:起点 · B:目的地"
 
@@ -309,11 +309,11 @@ msgctxt "month"
 msgid "Dec"
 msgstr "12月"
 
-#: src/components/festiveMap.ts:49
+#: src/components/festiveMap.ts:51
 msgid "Decorations"
 msgstr "装饰"
 
-#: src/components/MapView.tsx:1388
+#: src/components/MapView.tsx:1492
 msgid "Destination: {stopLabel}"
 msgstr "目的地:{stopLabel}"
 
@@ -329,6 +329,10 @@ msgstr "完成"
 #: src/components/PhoneDrawer.tsx:118
 msgid "Drag to resize"
 msgstr "拖动调整大小"
+
+#: src/components/MapView.tsx:589
+msgid "Driver view"
+msgstr "司机视角"
 
 #: src/components/JourneyResults.tsx:618
 msgid "Duration unavailable"
@@ -385,7 +389,7 @@ msgstr "查找公交车:{start} 至 {end}"
 msgid "Find my bus"
 msgstr "查找公交车"
 
-#: src/components/MapView.tsx:424
+#: src/components/MapView.tsx:433
 msgid "Find my location"
 msgstr "定位我的位置"
 
@@ -519,7 +523,7 @@ msgstr "这里 → {end}"
 msgid "Hide"
 msgstr "隐藏"
 
-#: src/components/MapView.tsx:586
+#: src/components/MapView.tsx:601
 msgid "Hide live buses"
 msgstr "隐藏实时公交车"
 
@@ -545,7 +549,7 @@ msgstr "1月"
 msgid "Journey steps"
 msgstr "行程步骤"
 
-#: src/components/MapView.tsx:1479
+#: src/components/MapView.tsx:1583
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "行程站点;圆环标出上车和下车位置"
 
@@ -572,6 +576,10 @@ msgstr "语言"
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro 目前没有提供这条线路的路线图。"
 
+#: src/components/MapView.tsx:589
+msgid "Leave driver view"
+msgstr "退出司机视角"
+
 #: src/i18n.ts:111
 msgid "Leaves now"
 msgstr "现在发车"
@@ -596,7 +604,7 @@ msgstr "实时公交车"
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "暂时无法获取公交车实时位置,时刻表仍可使用。"
 
-#: src/components/MapView.tsx:1485
+#: src/components/MapView.tsx:1589
 msgid "Live bus; tap to select and follow"
 msgstr "实时公交车;点按即可选择并跟随"
 
@@ -631,7 +639,7 @@ msgid "Loading bus routes…"
 msgstr "正在加载公交线路…"
 
 #: src/App.tsx:926
-#: src/components/MapView.tsx:1425
+#: src/components/MapView.tsx:1529
 msgid "Loading map…"
 msgstr "正在加载地图…"
 
@@ -643,11 +651,11 @@ msgstr "正在加载站点…"
 msgid "Loading the stops…"
 msgstr "正在加载站点…"
 
-#: src/components/MapView.tsx:1405
+#: src/components/MapView.tsx:1509
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "未获得位置权限。你仍可自行选择站点。"
 
-#: src/components/MapView.tsx:425
+#: src/components/MapView.tsx:434
 msgid "Location unavailable"
 msgstr "无法获取位置"
 
@@ -659,19 +667,19 @@ msgstr "无法获取位置。你仍可输入起点站。"
 msgid "Looking around"
 msgstr "正在浏览周围"
 
-#: src/components/MapView.tsx:426
+#: src/components/MapView.tsx:435
 msgid "Map credits"
 msgstr "地图版权信息"
 
-#: src/components/MapView.tsx:1471
+#: src/components/MapView.tsx:1575
 msgid "Map key"
 msgstr "地图图例"
 
-#: src/components/MapView.tsx:1409
+#: src/components/MapView.tsx:1513
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "无法从外部地图服务加载地图图块。请检查网络连接。你仍可规划行程。"
 
-#: src/components/MapView.tsx:1435
+#: src/components/MapView.tsx:1539
 msgid "Map unavailable"
 msgstr "地图不可用"
 
@@ -841,7 +849,7 @@ msgstr "空位充足"
 msgid "PM"
 msgstr "下午"
 
-#: src/components/MapView.tsx:423
+#: src/components/MapView.tsx:432
 msgid "Point north"
 msgstr "指向北方"
 
@@ -889,7 +897,7 @@ msgstr "线路和站点编号,以及你提前搜索的天数。"
 msgid "Routes"
 msgstr "线路"
 
-#: src/components/MapView.tsx:1414
+#: src/components/MapView.tsx:1518
 msgid "Routes and stops map"
 msgstr "线路和站点地图"
 
@@ -937,15 +945,15 @@ msgstr "服务状态"
 msgid "Show"
 msgstr "显示"
 
-#: src/components/MapView.tsx:578
+#: src/components/MapView.tsx:593
 msgid "Show 3D map"
 msgstr "显示 3D 地图"
 
-#: src/components/MapView.tsx:578
+#: src/components/MapView.tsx:593
 msgid "Show flat map"
 msgstr "显示平面地图"
 
-#: src/components/MapView.tsx:586
+#: src/components/MapView.tsx:601
 msgid "Show live buses"
 msgstr "显示实时公交车"
 
@@ -969,7 +977,7 @@ msgstr "显示第二天"
 msgid "Show tomorrow’s buses"
 msgstr "显示明天的公交车"
 
-#: src/components/MapView.tsx:1410
+#: src/components/MapView.tsx:1514
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "部分地图内容无法加载。地图或网络连接可能不可用。你仍可规划行程。"
 
@@ -981,11 +989,11 @@ msgstr "部分站点无法加载,搜索结果可能不完整。"
 msgid "Start here"
 msgstr "从这里出发"
 
-#: src/components/MapView.tsx:1388
+#: src/components/MapView.tsx:1492
 msgid "Start: {stopLabel}"
 msgstr "起点:{stopLabel}"
 
-#: src/components/MapView.tsx:1474
+#: src/components/MapView.tsx:1578
 msgid "Stop"
 msgstr "站点"
 
@@ -1019,7 +1027,7 @@ msgstr "点按站点规划行程 · 点按公交车进行跟随"
 msgid "Tap a stop to plan a trip"
 msgstr "点按站点即可规划行程"
 
-#: src/components/MapView.tsx:1438
+#: src/components/MapView.tsx:1542
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "地图需要网络连接和浏览器的 WebGL 支持。你仍可选择站点并规划行程。"
 
@@ -1069,7 +1077,7 @@ msgstr "追踪我的行程"
 msgid "Tracked bus"
 msgstr "已跟随的公交车"
 
-#: src/components/MapView.tsx:456
+#: src/components/MapView.tsx:465
 msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
 msgstr "公交地图。用方向键移动,用加号或减号缩放。"
 
@@ -1094,8 +1102,8 @@ msgstr "从这个站点到 {end} 的行程"
 msgid "Try again"
 msgstr "重试"
 
-#: src/components/MapView.tsx:1446
-#: src/components/MapView.tsx:1463
+#: src/components/MapView.tsx:1550
+#: src/components/MapView.tsx:1567
 msgid "Try map again"
 msgstr "重新加载地图"
 
@@ -1198,7 +1206,7 @@ msgstr "你的公交车已换成 {plate}"
 msgid "Your destination"
 msgstr "你的目的地"
 
-#: src/components/MapView.tsx:1407
+#: src/components/MapView.tsx:1511
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "无法获取你的位置。请自行选择站点。"
 
@@ -1211,10 +1219,10 @@ msgstr "你的起点"
 msgid "Your stop"
 msgstr "你的站点"
 
-#: src/components/MapView.tsx:421
+#: src/components/MapView.tsx:430
 msgid "Zoom in"
 msgstr "放大"
 
-#: src/components/MapView.tsx:422
+#: src/components/MapView.tsx:431
 msgid "Zoom out"
 msgstr "缩小"

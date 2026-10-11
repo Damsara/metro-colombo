@@ -49,7 +49,15 @@ import {
   type Road,
 } from "./festiveMap";
 import { StandModelLayer } from "./StandModelLayer";
+import { DriveControl } from "./DriveControl";
 import { MapModeControl } from "./MapModeControl";
+import {
+  CHASE_MAX_PITCH,
+  CHASE_PITCH,
+  CHASE_ZOOM,
+  chaseBearing,
+  chaseOffset,
+} from "../lib/chaseCamera";
 import { Button } from "./ui/Button";
 import { Notice } from "./ui/Notice";
 import {
@@ -575,6 +583,12 @@ function steerPitch(
   );
 }
 
+const DEFAULT_MAX_PITCH = 60;
+
+function driveLabels(driving: boolean): string {
+  return driving ? t(i18n)`Leave driver view` : t(i18n)`Driver view`;
+}
+
 function mapModeLabels(mode: MapMode): { aria: string; title: string } {
   const label = mode === "3d" ? t(i18n)`Show flat map` : t(i18n)`Show 3D map`;
   return { aria: label, title: label };
@@ -662,6 +676,7 @@ export default function MapView(props: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LibreMap | null>(null);
   const liveControlRef = useRef<LiveBusesControl | null>(null);
+  const driveControlRef = useRef<DriveControl | null>(null);
   const modeControlRef = useRef<MapModeControl | null>(null);
   const [mapMode, setMapMode] = useState<MapMode>(storedMapMode);
   const tilt = useRef<TiltState>(initialTilt(mapMode));
@@ -824,6 +839,14 @@ export default function MapView(props: Props) {
   );
 
   const following = followBus && selectedBusKey !== "";
+  const [driving, setDriving] = useState(false);
+  const isDriving = following && driving;
+  useEffect(() => {
+    if (!following) setDriving(false);
+  }, [following]);
+  useEffect(() => {
+    driveControlRef.current?.update(following, isDriving);
+  }, [following, isDriving, status]);
   const focus = useMemo(() => {
     if (following) return { coordinates: [], key: FOLLOW_FOCUS };
     let coordinates: Position[] = [];
@@ -989,6 +1012,11 @@ export default function MapView(props: Props) {
       );
       liveControlRef.current = liveControl;
       activeMap.addControl(liveControl, "top-right");
+      const driveControl = new DriveControl(driveLabels, () =>
+        setDriving((current) => !current),
+      );
+      driveControlRef.current = driveControl;
+      activeMap.addControl(driveControl, "top-right");
       geolocation.on("error", (event) => {
         if (!disposed) setWarning(event.code === 1 ? "permission" : "location");
       });
@@ -1215,6 +1243,7 @@ export default function MapView(props: Props) {
   useEffect(() => {
     liveControlRef.current?.setLabels(liveBusLabels);
     modeControlRef.current?.setLabels(mapModeLabels);
+    driveControlRef.current?.setLabels(driveLabels);
   }, [language]);
 
   useEffect(() => {
@@ -1320,6 +1349,21 @@ export default function MapView(props: Props) {
     map.scrollZoom.enable(around);
     map.touchZoomRotate.disable();
     map.touchZoomRotate.enable(around);
+    let chaseZoom = Math.max(map.getZoom(), CHASE_ZOOM);
+    const zoomed = (event: { originalEvent?: unknown }) => {
+      if (event.originalEvent) chaseZoom = map.getZoom();
+    };
+    if (isDriving) {
+      tilt.current.chase = true;
+      map.setMaxPitch(CHASE_MAX_PITCH);
+      map.on("zoomend", zoomed);
+      map.dragPan.disable();
+      map.dragRotate.disable();
+      map.keyboard.disable();
+      map.touchZoomRotate.disableRotation();
+    }
+    let bearing = map.getBearing();
+    let lastTick = performance.now();
     let frame = 0;
     let phase: "start" | "gliding" | "tracking" = "start";
     let firstGlide = true;
@@ -1329,7 +1373,48 @@ export default function MapView(props: Props) {
     };
     const tick = () => {
       const position = busLayerRef.current?.positionOf(selectedBusKey);
-      if (position) {
+      const now = performance.now();
+      if (isDriving)
+        bearing = chaseBearing(
+          bearing,
+          busLayerRef.current?.headingOf(selectedBusKey),
+          now - lastTick,
+          reducedMotion,
+        );
+      lastTick = now;
+      if (position && isDriving) {
+        const offset: [number, number] = [
+          0,
+          chaseOffset(
+            map.getContainer().clientHeight,
+            followShift(latest.current.props.insets),
+          ),
+        ];
+        if (phase === "start" && !map.isMoving()) {
+          phase = "gliding";
+          map.once("moveend", settle);
+          map.easeTo({
+            center: position,
+            bearing,
+            pitch: CHASE_PITCH,
+            zoom: chaseZoom,
+            offset,
+            duration: firstGlide ? CAMERA_MS : CAMERA_MS / 2,
+          });
+          firstGlide = false;
+        } else if (phase === "tracking" && map.isMoving()) {
+          phase = "start";
+        } else if (phase === "tracking") {
+          map.easeTo({
+            center: position,
+            bearing,
+            pitch: CHASE_PITCH,
+            zoom: chaseZoom,
+            offset,
+            duration: 0,
+          });
+        }
+      } else if (position) {
         if (phase === "start" && !map.isMoving()) {
           phase = "gliding";
           map.once("moveend", settle);
@@ -1369,8 +1454,23 @@ export default function MapView(props: Props) {
       map.scrollZoom.enable();
       map.touchZoomRotate.disable();
       map.touchZoomRotate.enable();
+      if (isDriving) {
+        tilt.current.chase = false;
+        map.off("zoomend", zoomed);
+        map.dragPan.enable();
+        map.dragRotate.enable();
+        map.keyboard.enable();
+        map.touchZoomRotate.enableRotation();
+        map.once("moveend", () => map.setMaxPitch(DEFAULT_MAX_PITCH));
+        steerPitch(
+          map,
+          tilt.current,
+          tilt.current.mode === "3d" ? pitchForZoom(map.getZoom()) : 0,
+          { bearing: 0 },
+        );
+      }
     };
-  }, [following, selectedBusKey, status, reducedMotion]);
+  }, [following, selectedBusKey, status, reducedMotion, isDriving]);
 
   useEffect(() => {
     const map = mapRef.current;

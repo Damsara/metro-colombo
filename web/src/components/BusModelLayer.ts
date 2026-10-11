@@ -183,6 +183,7 @@ export class BusModelLayer implements CustomLayerInterface {
   private readonly motion = new BusMotion();
   private readonly vehicles = new Map<string, BusInstance>();
   private readonly positions = new Map<string, [number, number]>();
+  private readonly headings = new Map<string, number>();
   private selected = "";
   private reducedMotion = false;
   // Set once removed, so a model that finishes loading late is thrown away.
@@ -232,6 +233,10 @@ export class BusModelLayer implements CustomLayerInterface {
       hex ? Number.parseInt(hex.slice(1), 16) : BUS_RED,
     );
     this.map?.triggerRepaint();
+  }
+
+  headingOf(key: string): number | undefined {
+    return this.headings.get(key);
   }
 
   positionOf(key: string): [number, number] | undefined {
@@ -347,6 +352,7 @@ export class BusModelLayer implements CustomLayerInterface {
       if (!previous || previous[0] !== bus.lng || previous[1] !== bus.lat)
         moving = true;
       this.positions.set(key, [bus.lng, bus.lat]);
+      if (bus.heading !== undefined) this.headings.set(key, bus.heading);
       const { group, bouncer, shadow, halo, offset } = this.instanceFor(
         key,
         template,
@@ -386,6 +392,7 @@ export class BusModelLayer implements CustomLayerInterface {
       this.scene.remove(group);
       this.vehicles.delete(key);
       this.positions.delete(key);
+      this.headings.delete(key);
     }
     return { moving, bouncing };
   }
