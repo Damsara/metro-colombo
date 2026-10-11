@@ -16,6 +16,8 @@ type Events = {
     milestone: "head_out" | "next_stop" | "arrived" | "lost";
   };
   follow_bus: { route: string };
+  bus_card_expand: { route: string };
+  bus_card_all_stops: { route: string };
   open_route: { route: string };
   use_location: { result: "found" | "failed" | "unsupported" };
   change_language: { language: string };
