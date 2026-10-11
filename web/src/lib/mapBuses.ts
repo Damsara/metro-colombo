@@ -10,12 +10,10 @@ interface PlanBusInputs {
   buses: LiveBus[];
   routes: Route[];
   routeCodeOf: (bus: LiveBus) => string | undefined;
-  /** The journeys on screen, or null when no results are showing. */
   journeys: readonly JourneyOption[] | null;
   keep: readonly (LiveBus | null | undefined)[];
 }
 
-/** The buses worth drawing while journeys are on screen. */
 export function planTabBuses({
   buses,
   routes,

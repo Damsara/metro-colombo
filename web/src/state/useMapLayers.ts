@@ -19,7 +19,6 @@ interface MapLayerInputs {
   activeRoute: Route | undefined;
   direction: string | undefined;
   selectedJourney: JourneyOption | null;
-  /** The plan's options while results are showing, otherwise null. */
   resultOptions: readonly JourneyOption[] | null;
   trackedJourney: JourneyOption | null;
   trackedBus: LiveBus | null;
