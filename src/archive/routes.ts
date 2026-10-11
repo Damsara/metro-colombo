@@ -30,7 +30,7 @@ export const ArchiveRoutes = Layer.unwrap(
       const request = yield* HttpServerRequest.HttpServerRequest;
       if (!isDuckDbAgent(request.headers["user-agent"]))
         return yield* HttpServerResponse.file(index, {
-          headers: { "cache-control": "no-cache" },
+          headers: { "cache-control": "no-cache", vary: "User-Agent" },
         });
       const store = yield* ArchiveStore;
       if (!store.enabled) return notConfigured;

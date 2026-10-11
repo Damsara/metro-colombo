@@ -33,7 +33,9 @@ export function catalogResponse(
       Effect.map((upstream) => {
         const headers = new Headers({
           "accept-ranges": "bytes",
-          "cache-control": "public, max-age=300",
+          // The site root answers browsers and DuckDB differently, so shared caches must not keep it.
+          "cache-control": "private, max-age=300",
+          vary: "User-Agent",
         });
         for (const name of PASSED_THROUGH) {
           const value = upstream.headers.get(name);

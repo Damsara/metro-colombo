@@ -64,6 +64,8 @@ test("the catalog is proxied with ranges and only safe headers", async () => {
   assert.equal(response.headers.get("content-range"), "bytes 0-9/100");
   assert.equal(response.headers.get("etag"), '"abc"');
   assert.equal(response.headers.get("accept-ranges"), "bytes");
+  assert.equal(response.headers.get("cache-control"), "private, max-age=300");
+  assert.equal(response.headers.get("vary"), "User-Agent");
   assert.equal(response.headers.get("set-cookie"), null);
   assert.equal(response.headers.get("cf-ray"), null);
   assert.equal(await response.text(), "0123456789");
