@@ -9,9 +9,10 @@ import { messages as zh } from "./locales/zh/messages.po";
 import { messages as de } from "./locales/de/messages.po";
 import { messages as fr } from "./locales/fr/messages.po";
 import { messages as ja } from "./locales/ja/messages.po";
+import { messages as la } from "./locales/la/messages.po";
 import { COLOMBO_OFFSET_MS, isLanguage, type Language } from "./types";
 
-i18n.load({ en, si, ta, hi, ru, zh, de, fr, ja });
+i18n.load({ en, si, ta, hi, ru, zh, de, fr, ja, la });
 
 export { i18n };
 

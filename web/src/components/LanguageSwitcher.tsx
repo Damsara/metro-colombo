@@ -13,6 +13,7 @@ const OPTIONS: { value: Language; label: string }[] = [
   { value: "de", label: "Deutsch" },
   { value: "fr", label: "Français" },
   { value: "ja", label: "日本語" },
+  { value: "la", label: "Latina" },
 ];
 
 export function LanguageSwitcher() {

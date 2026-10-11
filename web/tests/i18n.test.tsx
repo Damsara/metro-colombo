@@ -107,7 +107,16 @@ test("names without upstream data show in English, with Sinhala beneath", () => 
   const place = { name: "Fort", name_si: "කොටුව", name_ta: "கோட்டை" } as Place;
   assert.equal(nameLanguage("si"), "si");
   assert.equal(nameLanguage("ta"), "ta");
-  for (const language of ["en", "hi", "ru", "zh", "de", "fr", "ja"] as const) {
+  for (const language of [
+    "en",
+    "hi",
+    "ru",
+    "zh",
+    "de",
+    "fr",
+    "ja",
+    "la",
+  ] as const) {
     assert.equal(stopName(stop, language), "Fort");
     assert.equal(placeTitle(place, language), "Fort");
     assert.equal(secondaryStopName(stop, language), "කොටුව");
@@ -127,6 +136,18 @@ test("each added language shows its own dates and times, never message ids", () 
     assert.match(time, /3|15/);
     assert.doesNotMatch(time, /[{}]/);
   }
+});
+
+test("Latin uses Latin month and weekday names and Roman a.m. and p.m.", () => {
+  // 2026-01-05 is a Monday.
+  assert.equal(
+    inLanguage("la", () => dateLabel(i18n, "2026-01-05")),
+    "Lun, 5 Ian",
+  );
+  assert.equal(
+    inLanguage("la", () => timeLabel(i18n, "2026-10-09T09:35:00Z")),
+    "3:05 p.m.",
+  );
 });
 
 test("a saved Sinhala choice renders the journey in Sinhala word order", () => {

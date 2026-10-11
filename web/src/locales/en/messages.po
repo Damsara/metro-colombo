@@ -7,55 +7,55 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
-#: src/components/TripForm.tsx:198
+#: src/components/TripForm.tsx:189
 msgid "(nearest)"
 msgstr "(nearest)"
 
-#: src/components/StopCard.tsx:160
+#: src/components/StopCard.tsx:151
 msgid "(opens in a new tab)"
 msgstr "(opens in a new tab)"
 
 #. placeholder {0}: option.transfers
-#: src/components/JourneyResults.tsx:615
+#: src/components/JourneyResults.tsx:594
 msgid "{0, plural, =0 {Direct · no bus change} =1 {Change bus once} other {Change bus # times}}"
 msgstr "{0, plural, =0 {Direct · no bus change} =1 {Change bus once} other {Change bus # times}}"
 
 #. placeholder {0}: foldedIndexes.size
-#: src/components/JourneyResults.tsx:859
+#: src/components/JourneyResults.tsx:837
 msgid "{0, plural, one {# departure without a bus yet} other {# departures without a bus yet}}"
 msgstr "{0, plural, one {# departure without a bus yet} other {# departures without a bus yet}}"
 
 #. placeholder {0}: item.count
 #. placeholder {0}: row.count
 #: src/components/BusCard.tsx:313
-#: src/components/TrackingPanel.tsx:73
+#: src/components/TrackingPanel.tsx:69
 msgid "{0, plural, one {# more stop} other {# more stops}}"
 msgstr "{0, plural, one {# more stop} other {# more stops}}"
 
 #. placeholder {0}: options.length
-#: src/components/JourneyResults.tsx:845
+#: src/components/JourneyResults.tsx:823
 msgid "{0, plural, one {# option} other {# options}}"
 msgstr "{0, plural, one {# option} other {# options}}"
 
 #. placeholder {0}: value.minutes
-#: src/i18n.ts:122
+#: src/i18n.ts:113
 msgid "{0, plural, one {Leaves in # min} other {Leaves in # min}}"
 msgstr "{0, plural, one {Leaves in # min} other {Leaves in # min}}"
 
 #. placeholder {0}: value.minutes
-#: src/i18n.ts:129
+#: src/i18n.ts:120
 msgid "{0, plural, one {Left # min ago} other {Left # min ago}}"
 msgstr "{0, plural, one {Left # min ago} other {Left # min ago}}"
 
-#: src/components/TrackingPanel.tsx:202
+#: src/components/TrackingPanel.tsx:193
 msgid "{alightLeft, plural, one {# stop to {alight}} other {# stops to {alight}}}"
 msgstr "{alightLeft, plural, one {# stop to {alight}} other {# stops to {alight}}}"
 
-#: src/components/JourneyResults.tsx:501
+#: src/components/JourneyResults.tsx:484
 msgid "{away, plural, one {# stop away} other {# stops away}}"
 msgstr "{away, plural, one {# stop away} other {# stops away}}"
 
-#: src/components/RoutesPanel.tsx:77
+#: src/components/RoutesPanel.tsx:75
 msgid "{count, plural, one {# stop} other {# stops}}"
 msgstr "{count, plural, one {# stop} other {# stops}}"
 
@@ -63,52 +63,52 @@ msgstr "{count, plural, one {# stop} other {# stops}}"
 msgid "{current} of {total} places taken"
 msgstr "{current} of {total} places taken"
 
-#: src/components/StopPicker.tsx:41
+#: src/components/StopPicker.tsx:39
 msgid "{distance} walk"
 msgstr "{distance} walk"
 
 #. Clock time; period is AM or PM
-#: src/i18n.ts:83
+#: src/i18n.ts:79
 msgid "{hour}:{minute} {period}"
 msgstr "{hour}:{minute} {period}"
 
-#: src/i18n.ts:28
+#: src/i18n.ts:29
 msgid "{km} km"
 msgstr "{km} km"
 
-#: src/components/TrackingPanel.tsx:178
+#: src/components/TrackingPanel.tsx:169
 msgid "{left, plural, one {{plate} is # stop from {board}} other {{plate} is # stops from {board}}}"
 msgstr "{left, plural, one {{plate} is # stop from {board}} other {{plate} is # stops from {board}}}"
 
-#: src/components/RoutesPanel.tsx:85
+#: src/components/RoutesPanel.tsx:83
 msgid "{live} live"
 msgstr "{live} live"
 
-#: src/i18n.ts:25
+#: src/i18n.ts:26
 msgid "{metres} m"
 msgstr "{metres} m"
 
-#: src/i18n.ts:33
+#: src/i18n.ts:34
 msgid "{minutes} min"
 msgstr "{minutes} min"
 
-#: src/components/TrackingPanel.tsx:177
+#: src/components/TrackingPanel.tsx:168
 msgid "{plate} is at {board}"
 msgstr "{plate} is at {board}"
 
-#: src/components/TrackingPanel.tsx:175
+#: src/components/TrackingPanel.tsx:166
 msgid "{plate} is on its way to {board}"
 msgstr "{plate} is on its way to {board}"
 
-#: src/components/LiveBusList.tsx:111
+#: src/components/LiveBusList.tsx:110
 msgid "{selectedLabel} is selected. Tap it again to stop following."
 msgstr "{selectedLabel} is selected. Tap it again to stop following."
 
-#: src/components/StopPicker.tsx:224
+#: src/components/StopPicker.tsx:216
 msgid "{stopCount, plural, one {# stop. Tap one to select.} other {# stops. Tap one to select.}}"
 msgstr "{stopCount, plural, one {# stop. Tap one to select.} other {# stops. Tap one to select.}}"
 
-#: src/components/StopPicker.tsx:230
+#: src/components/StopPicker.tsx:222
 msgid "{stopCount, plural, one {# stop. Use the arrow keys to choose, then press Enter.} other {# stops. Use the arrow keys to choose, then press Enter.}}"
 msgstr "{stopCount, plural, one {# stop. Use the arrow keys to choose, then press Enter.} other {# stops. Use the arrow keys to choose, then press Enter.}}"
 
@@ -119,15 +119,15 @@ msgid "{toBoard, plural, one {# stop to {0}} other {# stops to {1}}}"
 msgstr "{toBoard, plural, one {# stop to {0}} other {# stops to {1}}}"
 
 #. Short travel date, e.g. Sat, 10 Oct
-#: src/i18n.ts:70
+#: src/i18n.ts:67
 msgid "{weekday}, {day} {month}"
 msgstr "{weekday}, {day} {month}"
 
-#: src/components/JourneyResults.tsx:417
+#: src/components/JourneyResults.tsx:402
 msgid "<0>Get off at</0> {alightName}"
 msgstr "<0>Get off at</0> {alightName}"
 
-#: src/components/JourneyResults.tsx:406
+#: src/components/JourneyResults.tsx:391
 msgid "<0>Get on at</0> {boardName}"
 msgstr "<0>Get on at</0> {boardName}"
 
@@ -135,44 +135,44 @@ msgstr "<0>Get on at</0> {boardName}"
 msgid "A: Start · B: Destination"
 msgstr "A: Start · B: Destination"
 
-#: src/components/TrackingPanel.tsx:306
+#: src/components/TrackingPanel.tsx:297
 msgid "About {minutesText}"
 msgstr "About {minutesText}"
 
-#: src/components/RoutesPanel.tsx:175
+#: src/components/RoutesPanel.tsx:171
 msgid "All bus routes"
 msgstr "All bus routes"
 
-#: src/components/StopPicker.tsx:116
+#: src/components/StopPicker.tsx:110
 msgid "All stops"
 msgstr "All stops"
 
-#: src/components/JourneyResults.tsx:911
+#: src/components/JourneyResults.tsx:889
 msgid "All times are Sri Lanka time."
 msgstr "All times are Sri Lanka time."
 
-#: src/components/ConsentPrompt.tsx:70
+#: src/components/ConsentPrompt.tsx:66
 msgid "Allow"
 msgstr "Allow"
 
-#: src/i18n.ts:82
+#: src/i18n.ts:78
 msgid "AM"
 msgstr "AM"
 
-#: src/i18n.ts:53
+#: src/i18n.ts:51
 msgctxt "month"
 msgid "Apr"
 msgstr "Apr"
 
-#: src/components/JourneyResults.tsx:390
+#: src/components/JourneyResults.tsx:375
 msgid "Assigned bus"
 msgstr "Assigned bus"
 
-#: src/components/JourneyResults.tsx:499
+#: src/components/JourneyResults.tsx:482
 msgid "At your stop"
 msgstr "At your stop"
 
-#: src/i18n.ts:57
+#: src/i18n.ts:55
 msgctxt "month"
 msgid "Aug"
 msgstr "Aug"
@@ -181,104 +181,104 @@ msgstr "Aug"
 msgid "Back to the map"
 msgstr "Back to the map"
 
-#: src/components/TripSummary.tsx:25
+#: src/components/TripSummary.tsx:24
 msgid "Back to the trip form"
 msgstr "Back to the trip form"
 
 #: src/components/BusCard.tsx:310
 #: src/components/BusCard.tsx:397
-#: src/components/LiveBusList.tsx:51
-#: src/components/LiveBusList.tsx:89
-#: src/components/RoutesPanel.tsx:346
+#: src/components/LiveBusList.tsx:50
+#: src/components/LiveBusList.tsx:88
+#: src/components/RoutesPanel.tsx:340
 msgid "Bus"
 msgstr "Bus"
 
 #: src/components/BusCard.tsx:430
-#: src/components/TrackingPanel.tsx:92
+#: src/components/TrackingPanel.tsx:88
 msgid "Bus is here"
 msgstr "Bus is here"
 
-#: src/components/JourneyResults.tsx:494
+#: src/components/JourneyResults.tsx:477
 msgid "Bus live"
 msgstr "Bus live"
 
-#: src/App.tsx:887
+#: src/App.tsx:879
 msgid "Bus route map"
 msgstr "Bus route map"
 
-#: src/App.tsx:472
+#: src/App.tsx:469
 msgid "Bus routes"
 msgstr "Bus routes"
 
-#: src/App.tsx:553
+#: src/App.tsx:548
 msgctxt "tab"
 msgid "Bus routes"
 msgstr "Bus routes"
 
-#: src/components/MapLegend.tsx:28
+#: src/components/MapLegend.tsx:27
 msgid "Bus stop"
 msgstr "Bus stop"
 
-#: src/components/JourneyResults.tsx:842
+#: src/components/JourneyResults.tsx:820
 msgid "Buses for your trip"
 msgstr "Buses for your trip"
 
-#: src/components/JourneyResults.tsx:222
+#: src/components/JourneyResults.tsx:208
 msgid "Change bus at {changeName}"
 msgstr "Change bus at {changeName}"
 
-#: src/components/JourneyResults.tsx:781
+#: src/components/JourneyResults.tsx:759
 msgid "Check both stops and choose today or a later date."
 msgstr "Check both stops and choose today or a later date."
 
-#: src/components/JourneyResults.tsx:800
+#: src/components/JourneyResults.tsx:778
 msgid "Check your connection and try again."
 msgstr "Check your connection and try again."
 
-#: src/components/TripForm.tsx:239
+#: src/components/TripForm.tsx:230
 msgid "Choose a different destination from your starting stop."
 msgstr "Choose a different destination from your starting stop."
 
-#: src/components/TripForm.tsx:199
+#: src/components/TripForm.tsx:190
 msgid "Choose a start stop"
 msgstr "Choose a start stop"
 
-#: src/components/HowToUse.tsx:18
+#: src/components/HowToUse.tsx:17
 msgid "Choose where you want to get off."
 msgstr "Choose where you want to get off."
 
-#: src/components/JourneyResults.tsx:811
+#: src/components/JourneyResults.tsx:789
 msgid "Choose your starting stop and destination to find a journey."
 msgstr "Choose your starting stop and destination to find a journey."
 
-#: src/App.tsx:649
+#: src/App.tsx:642
 msgctxt "recent trips"
 msgid "Clear"
 msgstr "Clear"
 
-#: src/components/StopPicker.tsx:408
-#: src/components/StopPicker.tsx:483
+#: src/components/StopPicker.tsx:400
+#: src/components/StopPicker.tsx:474
 msgid "Clear {label}"
 msgstr "Clear {label}"
 
-#: src/App.tsx:963
-#: src/components/StopPicker.tsx:444
+#: src/App.tsx:955
+#: src/components/StopPicker.tsx:435
 msgid "Close"
 msgstr "Close"
 
-#: src/components/StopCard.tsx:125
+#: src/components/StopCard.tsx:116
 msgid "Close stop details"
 msgstr "Close stop details"
 
-#: src/state/useTrip.ts:288
+#: src/state/useTrip.ts:281
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 
-#: src/App.tsx:941
+#: src/App.tsx:933
 msgid "Colombo & beyond"
 msgstr "Colombo & beyond"
 
-#: src/components/JourneyResults.tsx:792
+#: src/components/JourneyResults.tsx:770
 msgid "Could not load journeys"
 msgstr "Could not load journeys"
 
@@ -286,7 +286,7 @@ msgstr "Could not load journeys"
 msgid "Crowded"
 msgstr "Crowded"
 
-#: src/i18n.ts:61
+#: src/i18n.ts:59
 msgctxt "month"
 msgid "Dec"
 msgstr "Dec"
@@ -295,49 +295,49 @@ msgstr "Dec"
 msgid "Destination: {stopLabel}"
 msgstr "Destination: {stopLabel}"
 
-#: src/components/RoutesPanel.tsx:196
+#: src/components/RoutesPanel.tsx:192
 msgid "Direction"
 msgstr "Direction"
 
-#: src/components/TrackingPanel.tsx:269
-#: src/components/TrackingPanel.tsx:352
+#: src/components/TrackingPanel.tsx:260
+#: src/components/TrackingPanel.tsx:343
 msgid "Done"
 msgstr "Done"
 
-#: src/components/PhoneDrawer.tsx:126
+#: src/components/PhoneDrawer.tsx:118
 msgid "Drag to resize"
 msgstr "Drag to resize"
 
-#: src/components/JourneyResults.tsx:639
+#: src/components/JourneyResults.tsx:618
 msgid "Duration unavailable"
 msgstr "Duration unavailable"
 
-#: src/components/TripSummary.tsx:48
+#: src/components/TripSummary.tsx:47
 msgid "Edit"
 msgstr "Edit"
 
-#: src/components/TrackingPanel.tsx:269
-#: src/components/TrackingPanel.tsx:356
+#: src/components/TrackingPanel.tsx:260
+#: src/components/TrackingPanel.tsx:347
 msgid "End trip"
 msgstr "End trip"
 
-#: src/App.tsx:541
+#: src/App.tsx:536
 msgid "Explore Metro"
 msgstr "Explore Metro"
 
-#: src/components/JourneyResults.tsx:196
+#: src/components/JourneyResults.tsx:182
 msgid "Fare · Rs. {fare}"
 msgstr "Fare · Rs. {fare}"
 
-#: src/components/JourneyResults.tsx:195
+#: src/components/JourneyResults.tsx:181
 msgid "Fare · Rs. {fare} (estimate)"
 msgstr "Fare · Rs. {fare} (estimate)"
 
-#: src/components/JourneyResults.tsx:192
+#: src/components/JourneyResults.tsx:178
 msgid "Fare unavailable"
 msgstr "Fare unavailable"
 
-#: src/i18n.ts:51
+#: src/i18n.ts:49
 msgctxt "month"
 msgid "Feb"
 msgstr "Feb"
@@ -346,15 +346,15 @@ msgstr "Feb"
 msgid "Filling up"
 msgstr "Filling up"
 
-#: src/App.tsx:682
+#: src/App.tsx:675
 msgid "Find buses for the way back, from {end} to {start}"
 msgstr "Find buses for the way back, from {end} to {start}"
 
-#: src/App.tsx:668
+#: src/App.tsx:661
 msgid "Find buses from {start} to {end}"
 msgstr "Find buses from {start} to {end}"
 
-#: src/components/TripForm.tsx:253
+#: src/components/TripForm.tsx:244
 msgid "Find my bus"
 msgstr "Find my bus"
 
@@ -362,11 +362,11 @@ msgstr "Find my bus"
 msgid "Find my location"
 msgstr "Find my location"
 
-#: src/App.tsx:943
+#: src/App.tsx:935
 msgid "Find your way around."
 msgstr "Find your way around."
 
-#: src/components/JourneyResults.tsx:766
+#: src/components/JourneyResults.tsx:744
 msgid "Finding scheduled journeys…"
 msgstr "Finding scheduled journeys…"
 
@@ -374,21 +374,21 @@ msgstr "Finding scheduled journeys…"
 msgid "Finding this bus’s stops…"
 msgstr "Finding this bus’s stops…"
 
-#: src/components/TripForm.tsx:253
+#: src/components/TripForm.tsx:244
 msgid "Finding your buses…"
 msgstr "Finding your buses…"
 
-#: src/components/TripForm.tsx:228
+#: src/components/TripForm.tsx:219
 msgid "Finding your location…"
 msgstr "Finding your location…"
 
 #: src/components/BusCard.tsx:160
-#: src/components/RoutesPanel.tsx:352
-#: src/components/TrackingPanel.tsx:264
+#: src/components/RoutesPanel.tsx:346
+#: src/components/TrackingPanel.tsx:255
 msgid "Follow"
 msgstr "Follow"
 
-#: src/components/JourneyResults.tsx:317
+#: src/components/JourneyResults.tsx:302
 msgid "Follow on map"
 msgstr "Follow on map"
 
@@ -396,59 +396,59 @@ msgstr "Follow on map"
 msgid "Following"
 msgstr "Following"
 
-#: src/i18n.ts:46
+#: src/i18n.ts:44
 msgctxt "weekday"
 msgid "Fri"
 msgstr "Fri"
 
-#: src/components/TripForm.tsx:197
+#: src/components/TripForm.tsx:188
 msgid "From"
 msgstr "From"
 
-#: src/components/JourneyResults.tsx:245
+#: src/components/JourneyResults.tsx:231
 msgid "From {fromName}"
 msgstr "From {fromName}"
 
-#: src/components/TripSummary.tsx:32
+#: src/components/TripSummary.tsx:31
 msgid "From {fromName} to {toName}"
 msgstr "From {fromName} to {toName}"
 
-#: src/components/StopCard.tsx:106
+#: src/components/StopCard.tsx:97
 msgid "From {start} → here"
 msgstr "From {start} → here"
 
-#: src/components/RoutesPanel.tsx:215
+#: src/components/RoutesPanel.tsx:211
 msgid "from {startName}"
 msgstr "from {startName}"
 
-#: src/components/TrackingPanel.tsx:209
-#: src/components/TrackingPanel.tsx:220
+#: src/components/TrackingPanel.tsx:200
+#: src/components/TrackingPanel.tsx:211
 msgid "Get off at the next stop"
 msgstr "Get off at the next stop"
 
 #: src/components/BusCard.tsx:248
-#: src/components/TrackingPanel.tsx:344
+#: src/components/TrackingPanel.tsx:335
 msgid "Get off here"
 msgstr "Get off here"
 
-#: src/components/StopCard.tsx:73
+#: src/components/StopCard.tsx:64
 msgid "Go here"
 msgstr "Go here"
 
-#: src/components/TrackingPanel.tsx:193
-#: src/components/TrackingPanel.tsx:219
+#: src/components/TrackingPanel.tsx:184
+#: src/components/TrackingPanel.tsx:210
 msgid "Head to the stop now"
 msgstr "Head to the stop now"
 
-#: src/components/ConsentPrompt.tsx:33
+#: src/components/ConsentPrompt.tsx:29
 msgid "Help us make Metro better?"
 msgstr "Help us make Metro better?"
 
-#: src/components/StopCard.tsx:112
+#: src/components/StopCard.tsx:103
 msgid "Here → {end}"
 msgstr "Here → {end}"
 
-#: src/components/JourneyResults.tsx:871
+#: src/components/JourneyResults.tsx:849
 msgid "Hide"
 msgstr "Hide"
 
@@ -460,21 +460,21 @@ msgstr "Hide live buses"
 msgid "Hide stops"
 msgstr "Hide stops"
 
-#: src/components/HowToUse.tsx:14
+#: src/components/HowToUse.tsx:13
 msgid "How do I use this?"
 msgstr "How do I use this?"
 
-#: src/components/ConsentPrompt.tsx:63
+#: src/components/ConsentPrompt.tsx:59
 msgid "It's handled by Google Analytics."
 msgstr "It's handled by Google Analytics."
 
-#: src/i18n.ts:50
+#: src/i18n.ts:48
 msgctxt "month"
 msgid "Jan"
 msgstr "Jan"
 
-#: src/components/JourneyResults.tsx:442
-#: src/components/JourneyResults.tsx:647
+#: src/components/JourneyResults.tsx:426
+#: src/components/JourneyResults.tsx:626
 msgid "Journey steps"
 msgstr "Journey steps"
 
@@ -482,50 +482,50 @@ msgstr "Journey steps"
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "Journey stops; rings show boarding and getting off"
 
-#: src/i18n.ts:56
+#: src/i18n.ts:54
 msgctxt "month"
 msgid "Jul"
 msgstr "Jul"
 
-#: src/i18n.ts:55
+#: src/i18n.ts:53
 msgctxt "month"
 msgid "Jun"
 msgstr "Jun"
 
-#: src/components/ConsentPrompt.tsx:78
+#: src/components/ConsentPrompt.tsx:74
 msgid "Keep my current choice"
 msgstr "Keep my current choice"
 
-#: src/components/LanguageSwitcher.tsx:31
-#: src/components/LanguageSwitcher.tsx:53
+#: src/components/LanguageSwitcher.tsx:28
+#: src/components/LanguageSwitcher.tsx:49
 msgid "Language"
 msgstr "Language"
 
-#: src/App.tsx:952
+#: src/App.tsx:944
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro isn’t sending this route line right now."
 
-#: src/i18n.ts:120
+#: src/i18n.ts:111
 msgid "Leaves now"
 msgstr "Leaves now"
 
-#: src/components/RoutesPanel.tsx:188
+#: src/components/RoutesPanel.tsx:184
 msgid "live"
 msgstr "live"
 
-#: src/components/JourneyResults.tsx:330
+#: src/components/JourneyResults.tsx:315
 msgid "Live · follow on map"
 msgstr "Live · follow on map"
 
-#: src/components/JourneyResults.tsx:424
+#: src/components/JourneyResults.tsx:409
 msgid "Live arrival estimate"
 msgstr "Live arrival estimate"
 
-#: src/components/MapLegend.tsx:37
+#: src/components/MapLegend.tsx:36
 msgid "Live bus"
 msgstr "Live bus"
 
-#: src/components/LiveBusList.tsx:65
+#: src/components/LiveBusList.tsx:64
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "Live bus positions are unavailable right now. Timetables still work."
 
@@ -533,46 +533,46 @@ msgstr "Live bus positions are unavailable right now. Timetables still work."
 msgid "Live bus; tap to select and follow"
 msgstr "Live bus; tap to select and follow"
 
-#: src/components/LiveBusList.tsx:54
+#: src/components/LiveBusList.tsx:53
 msgid "Live buses on this route"
 msgstr "Live buses on this route"
 
-#: src/components/JourneyResults.tsx:413
+#: src/components/JourneyResults.tsx:398
 msgid "Live departure estimate"
 msgstr "Live departure estimate"
 
-#: src/components/JourneyResults.tsx:562
+#: src/components/JourneyResults.tsx:541
 msgid "Live estimate"
 msgstr "Live estimate"
 
-#: src/components/LiveBusList.tsx:58
+#: src/components/LiveBusList.tsx:57
 msgid "Live on this direction"
 msgstr "Live on this direction"
 
-#: src/components/TrackingPanel.tsx:190
-#: src/components/TrackingPanel.tsx:222
+#: src/components/TrackingPanel.tsx:181
+#: src/components/TrackingPanel.tsx:213
 #: src/lib/followLabels.ts:14
 msgid "Live position lost; showing schedule"
 msgstr "Live position lost; showing schedule"
 
-#: src/App.tsx:777
+#: src/App.tsx:770
 msgid "Load missing stops"
 msgstr "Load missing stops"
 
-#: src/App.tsx:724
+#: src/App.tsx:717
 msgid "Loading bus routes…"
 msgstr "Loading bus routes…"
 
-#: src/App.tsx:892
+#: src/App.tsx:884
 #: src/components/MapView.tsx:1370
 msgid "Loading map…"
 msgstr "Loading map…"
 
-#: src/components/StopPicker.tsx:220
+#: src/components/StopPicker.tsx:212
 msgid "Loading stops…"
 msgstr "Loading stops…"
 
-#: src/components/RoutesPanel.tsx:234
+#: src/components/RoutesPanel.tsx:230
 msgid "Loading the stops…"
 msgstr "Loading the stops…"
 
@@ -584,7 +584,7 @@ msgstr "Location permission was not granted. You can still choose your stops."
 msgid "Location unavailable"
 msgstr "Location unavailable"
 
-#: src/state/useTrip.ts:290
+#: src/state/useTrip.ts:283
 msgid "Location was not available. You can still type your starting stop."
 msgstr "Location was not available. You can still type your starting stop."
 
@@ -608,38 +608,38 @@ msgstr "Map tiles could not load from the external map provider. Check your inte
 msgid "Map unavailable"
 msgstr "Map unavailable"
 
-#: src/i18n.ts:52
+#: src/i18n.ts:50
 msgctxt "month"
 msgid "Mar"
 msgstr "Mar"
 
-#: src/i18n.ts:54
+#: src/i18n.ts:52
 msgctxt "month"
 msgid "May"
 msgstr "May"
 
-#: src/App.tsx:847
+#: src/App.tsx:839
 msgid "Metro home"
 msgstr "Metro home"
 
-#: src/i18n.ts:42
+#: src/i18n.ts:40
 msgctxt "weekday"
 msgid "Mon"
 msgstr "Mon"
 
-#: src/components/RoutesPanel.tsx:348
+#: src/components/RoutesPanel.tsx:342
 msgid "near {nearName}"
 msgstr "near {nearName}"
 
-#: src/App.tsx:338
+#: src/App.tsx:326
 msgid "Near you"
 msgstr "Near you"
 
-#: src/components/StopPicker.tsx:290
+#: src/components/StopPicker.tsx:282
 msgid "Nearest stop: {stopLabel} · {walk}"
 msgstr "Nearest stop: {stopLabel} · {walk}"
 
-#: src/components/ConsentPrompt.tsx:62
+#: src/components/ConsentPrompt.tsx:58
 msgid "Never your name, your location or anything you type."
 msgstr "Never your name, your location or anything you type."
 
@@ -648,81 +648,81 @@ msgctxt "stop"
 msgid "Next"
 msgstr "Next"
 
-#: src/components/JourneyResults.tsx:577
+#: src/components/JourneyResults.tsx:556
 msgid "Next bus"
 msgstr "Next bus"
 
-#: src/components/TrackingPanel.tsx:210
+#: src/components/TrackingPanel.tsx:201
 msgid "Next stop: {alight}"
 msgstr "Next stop: {alight}"
 
-#: src/components/JourneyResults.tsx:628
+#: src/components/JourneyResults.tsx:607
 msgid "No bus assigned yet"
 msgstr "No bus assigned yet"
 
-#: src/components/JourneyResults.tsx:384
+#: src/components/JourneyResults.tsx:369
 msgid "No bus assigned yet, so it can’t be followed live."
 msgstr "No bus assigned yet, so it can’t be followed live."
 
-#: src/components/LiveBusList.tsx:81
+#: src/components/LiveBusList.tsx:80
 msgid "No buses reporting here right now."
 msgstr "No buses reporting here right now."
 
-#: src/components/StopPicker.tsx:222
+#: src/components/StopPicker.tsx:214
 msgid "No matching stops. Try another stop name or a place."
 msgstr "No matching stops. Try another stop name or a place."
 
-#: src/components/JourneyResults.tsx:823
+#: src/components/JourneyResults.tsx:801
 msgid "No more scheduled departures today"
 msgstr "No more scheduled departures today"
 
-#: src/components/JourneyResults.tsx:824
+#: src/components/JourneyResults.tsx:802
 msgid "No scheduled journeys found"
 msgstr "No scheduled journeys found"
 
-#: src/components/ConsentPrompt.tsx:68
+#: src/components/ConsentPrompt.tsx:64
 msgid "No thanks"
 msgstr "No thanks"
 
-#: src/components/LiveBusList.tsx:71
+#: src/components/LiveBusList.tsx:70
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "None heading this way right now · {elsewhere} on the other direction"
 
-#: src/App.tsx:788
+#: src/App.tsx:781
 msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
 msgstr "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
 
-#: src/components/JourneyResults.tsx:629
+#: src/components/JourneyResults.tsx:608
 msgid "Not every bus assigned yet"
 msgstr "Not every bus assigned yet"
 
-#: src/i18n.ts:60
+#: src/i18n.ts:58
 msgctxt "month"
 msgid "Nov"
 msgstr "Nov"
 
-#: src/i18n.ts:59
+#: src/i18n.ts:57
 msgctxt "month"
 msgid "Oct"
 msgstr "Oct"
 
-#: src/components/TrackingPanel.tsx:126
+#: src/components/TrackingPanel.tsx:122
 msgid "OK"
 msgstr "OK"
 
-#: src/components/JourneyResults.tsx:339
+#: src/components/JourneyResults.tsx:324
 msgid "On another trip · follow on map"
 msgstr "On another trip · follow on map"
 
-#: src/components/RoutesPanel.tsx:352
+#: src/components/RoutesPanel.tsx:346
 msgid "On map"
 msgstr "On map"
 
-#: src/components/TrackingPanel.tsx:201
+#: src/components/TrackingPanel.tsx:192
 msgid "On your way to {alight}"
 msgstr "On your way to {alight}"
 
-#: src/App.tsx:721
+#: src/App.tsx:714
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "Open a route to see its stops and where its buses are now."
 
@@ -730,35 +730,35 @@ msgstr "Open a route to see its stops and where its buses are now."
 msgid "Page not found :c"
 msgstr "Page not found :c"
 
-#: src/components/ConsentPrompt.tsx:60
+#: src/components/ConsentPrompt.tsx:56
 msgid "Pages you open, and actions like searching a trip, following or tracking a bus, opening a route or changing language."
 msgstr "Pages you open, and actions like searching a trip, following or tracking a bus, opening a route or changing language."
 
-#: src/components/PhoneDrawer.tsx:61
+#: src/components/PhoneDrawer.tsx:54
 msgid "Panel: full height"
 msgstr "Panel: full height"
 
-#: src/components/PhoneDrawer.tsx:60
+#: src/components/PhoneDrawer.tsx:53
 msgid "Panel: half height"
 msgstr "Panel: half height"
 
-#: src/components/PhoneDrawer.tsx:59
+#: src/components/PhoneDrawer.tsx:52
 msgid "Panel: minimised"
 msgstr "Panel: minimised"
 
-#: src/components/TripForm.tsx:61
+#: src/components/TripForm.tsx:60
 msgid "Pick a date"
 msgstr "Pick a date"
 
-#: src/App.tsx:548
+#: src/App.tsx:543
 msgid "Plan a trip"
 msgstr "Plan a trip"
 
-#: src/App.tsx:472
+#: src/App.tsx:469
 msgid "Plan your bus trip"
 msgstr "Plan your bus trip"
 
-#: src/components/JourneyResults.tsx:768
+#: src/components/JourneyResults.tsx:746
 msgid "Please wait a moment."
 msgstr "Please wait a moment."
 
@@ -766,7 +766,7 @@ msgstr "Please wait a moment."
 msgid "Plenty of room"
 msgstr "Plenty of room"
 
-#: src/i18n.ts:82
+#: src/i18n.ts:78
 msgid "PM"
 msgstr "PM"
 
@@ -774,43 +774,43 @@ msgstr "PM"
 msgid "Point north"
 msgstr "Point north"
 
-#: src/App.tsx:339
+#: src/App.tsx:327
 msgid "Popular"
 msgstr "Popular"
 
-#: src/App.tsx:697
+#: src/App.tsx:690
 msgid "Popular starting stops"
 msgstr "Popular starting stops"
 
-#: src/components/HowToUse.tsx:20
+#: src/components/HowToUse.tsx:19
 msgid "Press “Find my bus”. Select a departure for boarding instructions."
 msgstr "Press “Find my bus”. Select a departure for boarding instructions."
 
-#: src/components/ConsentPrompt.tsx:96
+#: src/components/ConsentPrompt.tsx:91
 msgid "Privacy choices"
 msgstr "Privacy choices"
 
-#: src/App.tsx:337
+#: src/App.tsx:325
 msgid "Recent"
 msgstr "Recent"
 
-#: src/App.tsx:646
+#: src/App.tsx:639
 msgid "Recent trips"
 msgstr "Recent trips"
 
-#: src/components/StopCard.tsx:210
+#: src/components/StopCard.tsx:205
 msgid "Route {route}"
 msgstr "Route {route}"
 
-#: src/components/StopCard.tsx:209
+#: src/components/StopCard.tsx:204
 msgid "Route {route} towards {spokenPlaces}"
 msgstr "Route {route} towards {spokenPlaces}"
 
-#: src/components/ConsentPrompt.tsx:61
+#: src/components/ConsentPrompt.tsx:57
 msgid "Route and stop codes and how many days ahead you search."
 msgstr "Route and stop codes and how many days ahead you search."
 
-#: src/components/StopPicker.tsx:302
+#: src/components/StopPicker.tsx:294
 msgid "Routes"
 msgstr "Routes"
 
@@ -818,22 +818,22 @@ msgstr "Routes"
 msgid "Routes and stops map"
 msgstr "Routes and stops map"
 
-#: src/i18n.ts:47
+#: src/i18n.ts:45
 msgctxt "weekday"
 msgid "Sat"
 msgstr "Sat"
 
-#: src/components/JourneyResults.tsx:562
+#: src/components/JourneyResults.tsx:541
 msgid "Scheduled"
 msgstr "Scheduled"
 
-#: src/components/JourneyResults.tsx:423
-#: src/components/TrackingPanel.tsx:327
+#: src/components/JourneyResults.tsx:408
+#: src/components/TrackingPanel.tsx:318
 msgid "Scheduled arrival"
 msgstr "Scheduled arrival"
 
-#: src/components/JourneyResults.tsx:412
-#: src/components/TrackingPanel.tsx:320
+#: src/components/JourneyResults.tsx:397
+#: src/components/TrackingPanel.tsx:311
 msgid "Scheduled departure"
 msgstr "Scheduled departure"
 
@@ -841,24 +841,24 @@ msgstr "Scheduled departure"
 msgid "See all stops"
 msgstr "See all stops"
 
-#: src/components/StopCard.tsx:158
+#: src/components/StopCard.tsx:149
 msgid "See on Google Maps"
 msgstr "See on Google Maps"
 
-#: src/i18n.ts:58
+#: src/i18n.ts:56
 msgctxt "month"
 msgid "Sep"
 msgstr "Sep"
 
-#: src/components/StopCard.tsx:191
+#: src/components/StopCard.tsx:182
 msgid "Served by"
 msgstr "Served by"
 
-#: src/App.tsx:816
+#: src/App.tsx:809
 msgid "Service status"
 msgstr "Service status"
 
-#: src/components/JourneyResults.tsx:871
+#: src/components/JourneyResults.tsx:849
 msgid "Show"
 msgstr "Show"
 
@@ -874,7 +874,7 @@ msgstr "Show flat map"
 msgid "Show live buses"
 msgstr "Show live buses"
 
-#: src/components/JourneyResults.tsx:908
+#: src/components/JourneyResults.tsx:886
 msgid "Show more journeys ({remaining} more)"
 msgstr "Show more journeys ({remaining} more)"
 
@@ -882,15 +882,15 @@ msgstr "Show more journeys ({remaining} more)"
 msgid "Show stops"
 msgstr "Show stops"
 
-#: src/components/LiveBusList.tsx:77
+#: src/components/LiveBusList.tsx:76
 msgid "Show that direction"
 msgstr "Show that direction"
 
-#: src/components/JourneyResults.tsx:829
+#: src/components/JourneyResults.tsx:807
 msgid "Show the next day"
 msgstr "Show the next day"
 
-#: src/components/JourneyResults.tsx:829
+#: src/components/JourneyResults.tsx:807
 msgid "Show tomorrow’s buses"
 msgstr "Show tomorrow’s buses"
 
@@ -898,11 +898,11 @@ msgstr "Show tomorrow’s buses"
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 
-#: src/App.tsx:781
+#: src/App.tsx:774
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
 msgstr "Some stops couldn’t be loaded. Search may be incomplete."
 
-#: src/components/StopCard.tsx:73
+#: src/components/StopCard.tsx:64
 msgid "Start here"
 msgstr "Start here"
 
@@ -923,24 +923,24 @@ msgstr "Stop following"
 msgid "Stops ahead"
 msgstr "Stops ahead"
 
-#: src/components/TrackingPanel.tsx:50
+#: src/components/TrackingPanel.tsx:46
 msgid "Stops to go"
 msgstr "Stops to go"
 
-#: src/i18n.ts:41
+#: src/i18n.ts:39
 msgctxt "weekday"
 msgid "Sun"
 msgstr "Sun"
 
-#: src/components/TripForm.tsx:213
+#: src/components/TripForm.tsx:204
 msgid "Swap starting and destination stops"
 msgstr "Swap starting and destination stops"
 
-#: src/components/MapLegend.tsx:42
+#: src/components/MapLegend.tsx:41
 msgid "Tap a stop to plan · tap a bus to follow"
 msgstr "Tap a stop to plan · tap a bus to follow"
 
-#: src/components/MapLegend.tsx:43
+#: src/components/MapLegend.tsx:42
 msgid "Tap a stop to plan a trip"
 msgstr "Tap a stop to plan a trip"
 
@@ -948,45 +948,45 @@ msgstr "Tap a stop to plan a trip"
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 
-#: src/components/RoutesPanel.tsx:246
+#: src/components/RoutesPanel.tsx:242
 msgid "The stops couldn’t be loaded."
 msgstr "The stops couldn’t be loaded."
 
-#: src/components/JourneyResults.tsx:779
+#: src/components/JourneyResults.tsx:757
 msgid "This trip can’t be planned"
 msgstr "This trip can’t be planned"
 
-#: src/i18n.ts:45
+#: src/i18n.ts:43
 msgctxt "weekday"
 msgid "Thu"
 msgstr "Thu"
 
-#: src/components/JourneyResults.tsx:100
-#: src/components/TrackingPanel.tsx:227
+#: src/components/JourneyResults.tsx:97
+#: src/components/TrackingPanel.tsx:218
 msgid "Time unavailable"
 msgstr "Time unavailable"
 
-#: src/components/HowToUse.tsx:24
+#: src/components/HowToUse.tsx:23
 msgid "Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only — not tickets or official service information."
 msgstr "Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only — not tickets or official service information."
 
-#: src/components/JourneyResults.tsx:248
+#: src/components/JourneyResults.tsx:234
 msgid "To {toName}"
 msgstr "To {toName}"
 
-#: src/components/TripForm.tsx:53
+#: src/components/TripForm.tsx:52
 msgid "Today"
 msgstr "Today"
 
-#: src/components/TripForm.tsx:54
+#: src/components/TripForm.tsx:53
 msgid "Tomorrow"
 msgstr "Tomorrow"
 
-#: src/i18n.ts:19
+#: src/i18n.ts:20
 msgid "Towards {place}"
 msgstr "Towards {place}"
 
-#: src/components/JourneyResults.tsx:309
+#: src/components/JourneyResults.tsx:294
 msgid "Track my trip"
 msgstr "Track my trip"
 
@@ -998,24 +998,24 @@ msgstr "Tracked bus"
 msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
 msgstr "Transit map. Use arrow keys to move and plus or minus to zoom."
 
-#: src/components/TripForm.tsx:67
-#: src/components/TripForm.tsx:91
-#: src/components/TripForm.tsx:96
+#: src/components/TripForm.tsx:66
+#: src/components/TripForm.tsx:90
+#: src/components/TripForm.tsx:95
 msgid "Travel date"
 msgstr "Travel date"
 
-#: src/components/StopCard.tsx:107
+#: src/components/StopCard.tsx:98
 msgid "Trip from {start} to this stop"
 msgstr "Trip from {start} to this stop"
 
-#: src/components/StopCard.tsx:113
+#: src/components/StopCard.tsx:104
 msgid "Trip from this stop to {end}"
 msgstr "Trip from this stop to {end}"
 
-#: src/App.tsx:763
-#: src/App.tsx:958
-#: src/components/JourneyResults.tsx:796
-#: src/components/RoutesPanel.tsx:242
+#: src/App.tsx:756
+#: src/App.tsx:950
+#: src/components/JourneyResults.tsx:774
+#: src/components/RoutesPanel.tsx:238
 msgid "Try again"
 msgstr "Try again"
 
@@ -1024,28 +1024,28 @@ msgstr "Try again"
 msgid "Try map again"
 msgstr "Try map again"
 
-#: src/components/JourneyResults.tsx:833
+#: src/components/JourneyResults.tsx:811
 msgid "Try the next day or different stops."
 msgstr "Try the next day or different stops."
 
-#: src/i18n.ts:43
+#: src/i18n.ts:41
 msgctxt "weekday"
 msgid "Tue"
 msgstr "Tue"
 
-#: src/components/TripForm.tsx:184
+#: src/components/TripForm.tsx:175
 msgid "Type a stop or a place"
 msgstr "Type a stop or a place"
 
-#: src/components/HowToUse.tsx:17
+#: src/components/HowToUse.tsx:16
 msgid "Type your starting stop and choose a result."
 msgstr "Type your starting stop and choose a result."
 
-#: src/components/TripForm.tsx:229
+#: src/components/TripForm.tsx:220
 msgid "Use my location for the nearest stop"
 msgstr "Use my location for the nearest stop"
 
-#: src/components/JourneyResults.tsx:224
+#: src/components/JourneyResults.tsx:210
 msgid "Wait about {waitLabel}"
 msgstr "Wait about {waitLabel}"
 
@@ -1053,11 +1053,11 @@ msgstr "Wait about {waitLabel}"
 msgid "Waiting for signal…"
 msgstr "Waiting for signal…"
 
-#: src/components/JourneyResults.tsx:243
+#: src/components/JourneyResults.tsx:229
 msgid "Walk"
 msgstr "Walk"
 
-#: src/App.tsx:767
+#: src/App.tsx:760
 msgid "We can’t connect to Metro right now."
 msgstr "We can’t connect to Metro right now."
 
@@ -1065,56 +1065,56 @@ msgstr "We can’t connect to Metro right now."
 msgid "We can’t tell where this bus is heading"
 msgstr "We can’t tell where this bus is heading"
 
-#: src/i18n.ts:44
+#: src/i18n.ts:42
 msgctxt "weekday"
 msgid "Wed"
 msgstr "Wed"
 
-#: src/components/ConsentPrompt.tsx:48
+#: src/components/ConsentPrompt.tsx:44
 msgid "What we collect"
 msgstr "What we collect"
 
-#: src/App.tsx:525
-#: src/components/TripForm.tsx:183
+#: src/App.tsx:521
+#: src/components/TripForm.tsx:174
 msgid "Where to?"
 msgstr "Where to?"
 
-#: src/App.tsx:609
-#: src/components/JourneyResults.tsx:809
+#: src/App.tsx:602
+#: src/components/JourneyResults.tsx:787
 msgid "Where would you like to go?"
 msgstr "Where would you like to go?"
 
-#: src/components/ConsentPrompt.tsx:36
+#: src/components/ConsentPrompt.tsx:32
 msgid "With your OK, we count how the app is used, like which trips people search and which features they use, so we know what to improve next."
 msgstr "With your OK, we count how the app is used, like which trips people search and which features they use, so we know what to improve next."
 
-#: src/components/ConsentPrompt.tsx:74
+#: src/components/ConsentPrompt.tsx:70
 msgid "You can change this any time from “Privacy choices” at the bottom of the page."
 msgstr "You can change this any time from “Privacy choices” at the bottom of the page."
 
-#: src/components/TrackingPanel.tsx:214
+#: src/components/TrackingPanel.tsx:205
 msgid "You’re at {alight}."
 msgstr "You’re at {alight}."
 
-#: src/components/TrackingPanel.tsx:213
-#: src/components/TrackingPanel.tsx:221
+#: src/components/TrackingPanel.tsx:204
+#: src/components/TrackingPanel.tsx:212
 msgid "You’ve arrived"
 msgstr "You’ve arrived"
 
-#: src/state/useTrip.ts:289
+#: src/state/useTrip.ts:282
 msgid "Your browser cannot find your location. Please choose a stop."
 msgstr "Your browser cannot find your location. Please choose a stop."
 
-#: src/components/TrackingPanel.tsx:60
-#: src/components/TrackingPanel.tsx:166
+#: src/components/TrackingPanel.tsx:56
+#: src/components/TrackingPanel.tsx:157
 msgid "Your bus"
 msgstr "Your bus"
 
-#: src/components/TrackingPanel.tsx:123
+#: src/components/TrackingPanel.tsx:119
 msgid "Your bus changed to {plate}"
 msgstr "Your bus changed to {plate}"
 
-#: src/components/StopCard.tsx:149
+#: src/components/StopCard.tsx:140
 msgid "Your destination"
 msgstr "Your destination"
 
@@ -1122,12 +1122,12 @@ msgstr "Your destination"
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "Your location could not be found. Choose your stops instead."
 
-#: src/components/StopCard.tsx:149
+#: src/components/StopCard.tsx:140
 msgid "Your start"
 msgstr "Your start"
 
 #: src/components/BusCard.tsx:248
-#: src/components/TrackingPanel.tsx:337
+#: src/components/TrackingPanel.tsx:328
 msgid "Your stop"
 msgstr "Your stop"
 

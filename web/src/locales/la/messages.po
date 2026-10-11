@@ -1,0 +1,1140 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-10-11 18:26+0530\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: la\n"
+
+#: src/components/TripForm.tsx:189
+msgid "(nearest)"
+msgstr "(proxima)"
+
+#: src/components/StopCard.tsx:151
+msgid "(opens in a new tab)"
+msgstr "(in nova tabella aperitur)"
+
+#. placeholder {0}: option.transfers
+#: src/components/JourneyResults.tsx:594
+msgid "{0, plural, =0 {Direct · no bus change} =1 {Change bus once} other {Change bus # times}}"
+msgstr "{0, plural, =0 {Recta via · omnibus non mutatur} =1 {Omnibus semel mutatur} other {Omnibus # vicibus mutatur}}"
+
+#. placeholder {0}: foldedIndexes.size
+#: src/components/JourneyResults.tsx:837
+msgid "{0, plural, one {# departure without a bus yet} other {# departures without a bus yet}}"
+msgstr "{0, plural, one {# profectio adhuc sine omnibo} other {# profectiones adhuc sine omnibo}}"
+
+#. placeholder {0}: item.count
+#. placeholder {0}: row.count
+#: src/components/BusCard.tsx:313
+#: src/components/TrackingPanel.tsx:69
+msgid "{0, plural, one {# more stop} other {# more stops}}"
+msgstr "{0, plural, one {# statio amplius} other {# stationes amplius}}"
+
+#. placeholder {0}: options.length
+#: src/components/JourneyResults.tsx:823
+msgid "{0, plural, one {# option} other {# options}}"
+msgstr "{0, plural, one {# optio} other {# optiones}}"
+
+#. placeholder {0}: value.minutes
+#: src/i18n.ts:113
+msgid "{0, plural, one {Leaves in # min} other {Leaves in # min}}"
+msgstr "{0, plural, one {Proficiscitur intra # min.} other {Proficiscitur intra # min.}}"
+
+#. placeholder {0}: value.minutes
+#: src/i18n.ts:120
+msgid "{0, plural, one {Left # min ago} other {Left # min ago}}"
+msgstr "{0, plural, one {Profectum est ante # min.} other {Profectum est ante # min.}}"
+
+#: src/components/TrackingPanel.tsx:193
+msgid "{alightLeft, plural, one {# stop to {alight}} other {# stops to {alight}}}"
+msgstr "{alightLeft, plural, one {# statio ad {alight}} other {# stationes ad {alight}}}"
+
+#: src/components/JourneyResults.tsx:484
+msgid "{away, plural, one {# stop away} other {# stops away}}"
+msgstr "{away, plural, one {# statione abest} other {# stationibus abest}}"
+
+#: src/components/RoutesPanel.tsx:75
+msgid "{count, plural, one {# stop} other {# stops}}"
+msgstr "{count, plural, one {# statio} other {# stationes}}"
+
+#: src/components/OccupancyBadge.tsx:27
+msgid "{current} of {total} places taken"
+msgstr "Loca occupata: {current} ex {total}"
+
+#: src/components/StopPicker.tsx:39
+msgid "{distance} walk"
+msgstr "{distance} pedibus"
+
+#. Clock time; period is AM or PM
+#: src/i18n.ts:79
+msgid "{hour}:{minute} {period}"
+msgstr "{hour}:{minute} {period}"
+
+#: src/i18n.ts:29
+msgid "{km} km"
+msgstr "{km} km"
+
+#: src/components/TrackingPanel.tsx:169
+msgid "{left, plural, one {{plate} is # stop from {board}} other {{plate} is # stops from {board}}}"
+msgstr "{left, plural, one {{plate} # statione abest ab {board}} other {{plate} # stationibus abest ab {board}}}"
+
+#: src/components/RoutesPanel.tsx:83
+msgid "{live} live"
+msgstr "{live} in vivo"
+
+#: src/i18n.ts:26
+msgid "{metres} m"
+msgstr "{metres} m"
+
+#: src/i18n.ts:34
+msgid "{minutes} min"
+msgstr "{minutes} min."
+
+#: src/components/TrackingPanel.tsx:168
+msgid "{plate} is at {board}"
+msgstr "{plate} est ad {board}"
+
+#: src/components/TrackingPanel.tsx:166
+msgid "{plate} is on its way to {board}"
+msgstr "{plate} ad {board} iter facit"
+
+#: src/components/LiveBusList.tsx:110
+msgid "{selectedLabel} is selected. Tap it again to stop following."
+msgstr "{selectedLabel} electum est. Iterum tange ut sequi desinas."
+
+#: src/components/StopPicker.tsx:216
+msgid "{stopCount, plural, one {# stop. Tap one to select.} other {# stops. Tap one to select.}}"
+msgstr "{stopCount, plural, one {# statio. Unam tange ut eligas.} other {# stationes. Unam tange ut eligas.}}"
+
+#: src/components/StopPicker.tsx:222
+msgid "{stopCount, plural, one {# stop. Use the arrow keys to choose, then press Enter.} other {# stops. Use the arrow keys to choose, then press Enter.}}"
+msgstr "{stopCount, plural, one {# statio. Clavibus sagittarum elige, deinde Enter preme.} other {# stationes. Clavibus sagittarum elige, deinde Enter preme.}}"
+
+#. placeholder {0}: stopName(board.stop, language)
+#. placeholder {1}: stopName(board.stop, language)
+#: src/components/BusCard.tsx:222
+msgid "{toBoard, plural, one {# stop to {0}} other {# stops to {1}}}"
+msgstr "{toBoard, plural, one {# statio ad {0}} other {# stationes ad {1}}}"
+
+#. Short travel date, e.g. Sat, 10 Oct
+#: src/i18n.ts:67
+msgid "{weekday}, {day} {month}"
+msgstr "{weekday}, {day} {month}"
+
+#: src/components/JourneyResults.tsx:402
+msgid "<0>Get off at</0> {alightName}"
+msgstr "<0>Descende ad</0> {alightName}"
+
+#: src/components/JourneyResults.tsx:391
+msgid "<0>Get on at</0> {boardName}"
+msgstr "<0>Conscende ad</0> {boardName}"
+
+#: src/components/MapView.tsx:1433
+msgid "A: Start · B: Destination"
+msgstr "A: Initium · B: Meta"
+
+#: src/components/TrackingPanel.tsx:297
+msgid "About {minutesText}"
+msgstr "Circiter {minutesText}"
+
+#: src/components/RoutesPanel.tsx:171
+msgid "All bus routes"
+msgstr "Omnes lineae omnibus"
+
+#: src/components/StopPicker.tsx:110
+msgid "All stops"
+msgstr "Omnes stationes"
+
+#: src/components/JourneyResults.tsx:889
+msgid "All times are Sri Lanka time."
+msgstr "Omnes horae Taprobanae (Sri Lanka) sunt."
+
+#: src/components/ConsentPrompt.tsx:66
+msgid "Allow"
+msgstr "Permitte"
+
+#: src/i18n.ts:78
+msgid "AM"
+msgstr "a.m."
+
+#: src/i18n.ts:51
+msgctxt "month"
+msgid "Apr"
+msgstr "Apr"
+
+#: src/components/JourneyResults.tsx:375
+msgid "Assigned bus"
+msgstr "Omnibus assignatum"
+
+#: src/components/JourneyResults.tsx:482
+msgid "At your stop"
+msgstr "Ad stationem tuam"
+
+#: src/i18n.ts:55
+msgctxt "month"
+msgid "Aug"
+msgstr "Aug"
+
+#: src/routes/__root.tsx:18
+msgid "Back to the map"
+msgstr "Ad tabulam redi"
+
+#: src/components/TripSummary.tsx:24
+msgid "Back to the trip form"
+msgstr "Ad formulam itineris redi"
+
+#: src/components/BusCard.tsx:310
+#: src/components/BusCard.tsx:397
+#: src/components/LiveBusList.tsx:50
+#: src/components/LiveBusList.tsx:88
+#: src/components/RoutesPanel.tsx:340
+msgid "Bus"
+msgstr "Omnibus"
+
+#: src/components/BusCard.tsx:430
+#: src/components/TrackingPanel.tsx:88
+msgid "Bus is here"
+msgstr "Omnibus adest"
+
+#: src/components/JourneyResults.tsx:477
+msgid "Bus live"
+msgstr "Omnibus in vivo"
+
+#: src/App.tsx:879
+msgid "Bus route map"
+msgstr "Tabula linearum omnibus"
+
+#: src/App.tsx:469
+msgid "Bus routes"
+msgstr "Lineae omnibus"
+
+#: src/App.tsx:548
+msgctxt "tab"
+msgid "Bus routes"
+msgstr "Lineae"
+
+#: src/components/MapLegend.tsx:27
+msgid "Bus stop"
+msgstr "Statio omnibus"
+
+#: src/components/JourneyResults.tsx:820
+msgid "Buses for your trip"
+msgstr "Omnibus itineri tuo"
+
+#: src/components/JourneyResults.tsx:208
+msgid "Change bus at {changeName}"
+msgstr "Ad {changeName} omnibus muta"
+
+#: src/components/JourneyResults.tsx:759
+msgid "Check both stops and choose today or a later date."
+msgstr "Utramque stationem inspice et hodie aut diem posteriorem elige."
+
+#: src/components/JourneyResults.tsx:778
+msgid "Check your connection and try again."
+msgstr "Conexum tuum inspice et iterum tempta."
+
+#: src/components/TripForm.tsx:230
+msgid "Choose a different destination from your starting stop."
+msgstr "Metam elige quae ab initio differat."
+
+#: src/components/TripForm.tsx:190
+msgid "Choose a start stop"
+msgstr "Stationem initii elige"
+
+#: src/components/HowToUse.tsx:17
+msgid "Choose where you want to get off."
+msgstr "Elige ubi descendere velis."
+
+#: src/components/JourneyResults.tsx:789
+msgid "Choose your starting stop and destination to find a journey."
+msgstr "Stationem initii et metam elige ut iter invenias."
+
+#: src/App.tsx:642
+msgctxt "recent trips"
+msgid "Clear"
+msgstr "Dele"
+
+#: src/components/StopPicker.tsx:400
+#: src/components/StopPicker.tsx:474
+msgid "Clear {label}"
+msgstr "{label} dele"
+
+#: src/App.tsx:955
+#: src/components/StopPicker.tsx:435
+msgid "Close"
+msgstr "Claude"
+
+#: src/components/StopCard.tsx:116
+msgid "Close stop details"
+msgstr "Singula stationis claude"
+
+#: src/state/useTrip.ts:281
+msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
+msgstr "Statio proxima: {nearestName} · {nearestDistance} recta linea. Iter pedestre tuum inspice."
+
+#: src/App.tsx:933
+msgid "Colombo & beyond"
+msgstr "Colombo et plus ultra"
+
+#: src/components/JourneyResults.tsx:770
+msgid "Could not load journeys"
+msgstr "Itinera onerari non potuerunt"
+
+#: src/components/OccupancyBadge.tsx:9
+msgid "Crowded"
+msgstr "Refertum"
+
+#: src/i18n.ts:59
+msgctxt "month"
+msgid "Dec"
+msgstr "Dec"
+
+#: src/components/MapView.tsx:1333
+msgid "Destination: {stopLabel}"
+msgstr "Meta: {stopLabel}"
+
+#: src/components/RoutesPanel.tsx:192
+msgid "Direction"
+msgstr "Cursus"
+
+#: src/components/TrackingPanel.tsx:260
+#: src/components/TrackingPanel.tsx:343
+msgid "Done"
+msgstr "Factum"
+
+#: src/components/PhoneDrawer.tsx:118
+msgid "Drag to resize"
+msgstr "Trahe ut magnitudinem mutes"
+
+#: src/components/JourneyResults.tsx:618
+msgid "Duration unavailable"
+msgstr "Spatium temporis ignotum"
+
+#: src/components/TripSummary.tsx:47
+msgid "Edit"
+msgstr "Muta"
+
+#: src/components/TrackingPanel.tsx:260
+#: src/components/TrackingPanel.tsx:347
+msgid "End trip"
+msgstr "Iter conclude"
+
+#: src/App.tsx:536
+msgid "Explore Metro"
+msgstr "Metro explora"
+
+#: src/components/JourneyResults.tsx:182
+msgid "Fare · Rs. {fare}"
+msgstr "Naulum · Rs. {fare}"
+
+#: src/components/JourneyResults.tsx:181
+msgid "Fare · Rs. {fare} (estimate)"
+msgstr "Naulum · Rs. {fare} (aestimatum)"
+
+#: src/components/JourneyResults.tsx:178
+msgid "Fare unavailable"
+msgstr "Naulum ignotum"
+
+#: src/i18n.ts:49
+msgctxt "month"
+msgid "Feb"
+msgstr "Feb"
+
+#: src/components/OccupancyBadge.tsx:8
+msgid "Filling up"
+msgstr "Impletur"
+
+#: src/App.tsx:675
+msgid "Find buses for the way back, from {end} to {start}"
+msgstr "Omnibus ad reditum quaere, ab {end} ad {start}"
+
+#: src/App.tsx:661
+msgid "Find buses from {start} to {end}"
+msgstr "Omnibus ab {start} ad {end} quaere"
+
+#: src/components/TripForm.tsx:244
+msgid "Find my bus"
+msgstr "Omnibum meum quaere"
+
+#: src/components/MapView.tsx:414
+msgid "Find my location"
+msgstr "Ubi sum?"
+
+#: src/App.tsx:935
+msgid "Find your way around."
+msgstr "Aut viam invenies aut facies."
+
+#: src/components/JourneyResults.tsx:744
+msgid "Finding scheduled journeys…"
+msgstr "Itinera statuta quaeruntur…"
+
+#: src/components/BusCard.tsx:179
+msgid "Finding this bus’s stops…"
+msgstr "Stationes huius omnibus quaeruntur…"
+
+#: src/components/TripForm.tsx:244
+msgid "Finding your buses…"
+msgstr "Omnibus tua quaeruntur…"
+
+#: src/components/TripForm.tsx:219
+msgid "Finding your location…"
+msgstr "Locus tuus quaeritur…"
+
+#: src/components/BusCard.tsx:160
+#: src/components/RoutesPanel.tsx:346
+#: src/components/TrackingPanel.tsx:255
+msgid "Follow"
+msgstr "Sequere"
+
+#: src/components/JourneyResults.tsx:302
+msgid "Follow on map"
+msgstr "In tabula sequere"
+
+#: src/lib/followLabels.ts:8
+msgid "Following"
+msgstr "Sequeris"
+
+#: src/i18n.ts:44
+msgctxt "weekday"
+msgid "Fri"
+msgstr "Ven"
+
+#: src/components/TripForm.tsx:188
+msgid "From"
+msgstr "Ab"
+
+#: src/components/JourneyResults.tsx:231
+msgid "From {fromName}"
+msgstr "Ab {fromName}"
+
+#: src/components/TripSummary.tsx:31
+msgid "From {fromName} to {toName}"
+msgstr "Ab {fromName} ad {toName}"
+
+#: src/components/StopCard.tsx:97
+msgid "From {start} → here"
+msgstr "Ab {start} → huc"
+
+#: src/components/RoutesPanel.tsx:211
+msgid "from {startName}"
+msgstr "ab {startName}"
+
+#: src/components/TrackingPanel.tsx:200
+#: src/components/TrackingPanel.tsx:211
+msgid "Get off at the next stop"
+msgstr "Ad stationem proximam descende"
+
+#: src/components/BusCard.tsx:248
+#: src/components/TrackingPanel.tsx:335
+msgid "Get off here"
+msgstr "Hic descende"
+
+#: src/components/StopCard.tsx:64
+msgid "Go here"
+msgstr "Huc vade"
+
+#: src/components/TrackingPanel.tsx:184
+#: src/components/TrackingPanel.tsx:210
+msgid "Head to the stop now"
+msgstr "Ad stationem propera"
+
+#: src/components/ConsentPrompt.tsx:29
+msgid "Help us make Metro better?"
+msgstr "Visne nos adiuvare ut Metro melius fiat?"
+
+#: src/components/StopCard.tsx:103
+msgid "Here → {end}"
+msgstr "Hinc → {end}"
+
+#: src/components/JourneyResults.tsx:849
+msgid "Hide"
+msgstr "Cela"
+
+#: src/components/MapView.tsx:576
+msgid "Hide live buses"
+msgstr "Omnibus in vivo cela"
+
+#: src/components/BusCard.tsx:200
+msgid "Hide stops"
+msgstr "Stationes cela"
+
+#: src/components/HowToUse.tsx:13
+msgid "How do I use this?"
+msgstr "Quomodo hoc utor?"
+
+#: src/components/ConsentPrompt.tsx:59
+msgid "It's handled by Google Analytics."
+msgstr "Google Analytics id curat."
+
+#: src/i18n.ts:48
+msgctxt "month"
+msgid "Jan"
+msgstr "Ian"
+
+#: src/components/JourneyResults.tsx:426
+#: src/components/JourneyResults.tsx:626
+msgid "Journey steps"
+msgstr "Gradus itineris"
+
+#: src/components/MapView.tsx:1424
+msgid "Journey stops; rings show boarding and getting off"
+msgstr "Stationes itineris; circuli ascensum et descensum monstrant"
+
+#: src/i18n.ts:54
+msgctxt "month"
+msgid "Jul"
+msgstr "Iul"
+
+#: src/i18n.ts:53
+msgctxt "month"
+msgid "Jun"
+msgstr "Iun"
+
+#: src/components/ConsentPrompt.tsx:74
+msgid "Keep my current choice"
+msgstr "Electionem meam serva"
+
+#: src/components/LanguageSwitcher.tsx:28
+#: src/components/LanguageSwitcher.tsx:49
+msgid "Language"
+msgstr "Lingua"
+
+#: src/App.tsx:944
+msgid "Lanka Metro isn’t sending this route line right now."
+msgstr "Lanka Metro hanc lineam nunc non mittit."
+
+#: src/i18n.ts:111
+msgid "Leaves now"
+msgstr "Nunc proficiscitur"
+
+#: src/components/RoutesPanel.tsx:184
+msgid "live"
+msgstr "in vivo"
+
+#: src/components/JourneyResults.tsx:315
+msgid "Live · follow on map"
+msgstr "In vivo · in tabula sequere"
+
+#: src/components/JourneyResults.tsx:409
+msgid "Live arrival estimate"
+msgstr "Adventus in vivo aestimatus"
+
+#: src/components/MapLegend.tsx:36
+msgid "Live bus"
+msgstr "Omnibus in vivo"
+
+#: src/components/LiveBusList.tsx:64
+msgid "Live bus positions are unavailable right now. Timetables still work."
+msgstr "Loca omnibus in vivo nunc desunt. Horaria tamen valent."
+
+#: src/components/MapView.tsx:1430
+msgid "Live bus; tap to select and follow"
+msgstr "Omnibus in vivo; tange ut eligas et sequaris"
+
+#: src/components/LiveBusList.tsx:53
+msgid "Live buses on this route"
+msgstr "Omnibus in vivo in hac linea"
+
+#: src/components/JourneyResults.tsx:398
+msgid "Live departure estimate"
+msgstr "Profectio in vivo aestimata"
+
+#: src/components/JourneyResults.tsx:541
+msgid "Live estimate"
+msgstr "Aestimatio in vivo"
+
+#: src/components/LiveBusList.tsx:57
+msgid "Live on this direction"
+msgstr "In vivo hoc cursu"
+
+#: src/components/TrackingPanel.tsx:181
+#: src/components/TrackingPanel.tsx:213
+#: src/lib/followLabels.ts:14
+msgid "Live position lost; showing schedule"
+msgstr "Locus in vivo amissus; horarium monstratur"
+
+#: src/App.tsx:770
+msgid "Load missing stops"
+msgstr "Stationes deficientes onera"
+
+#: src/App.tsx:717
+msgid "Loading bus routes…"
+msgstr "Lineae omnibus onerantur…"
+
+#: src/App.tsx:884
+#: src/components/MapView.tsx:1370
+msgid "Loading map…"
+msgstr "Tabula oneratur…"
+
+#: src/components/StopPicker.tsx:212
+msgid "Loading stops…"
+msgstr "Stationes onerantur…"
+
+#: src/components/RoutesPanel.tsx:230
+msgid "Loading the stops…"
+msgstr "Stationes onerantur…"
+
+#: src/components/MapView.tsx:1350
+msgid "Location permission was not granted. You can still choose your stops."
+msgstr "Licentia loci non data est. Stationes tamen eligere potes."
+
+#: src/components/MapView.tsx:415
+msgid "Location unavailable"
+msgstr "Terra incognita"
+
+#: src/state/useTrip.ts:283
+msgid "Location was not available. You can still type your starting stop."
+msgstr "Locus praesto non erat. Stationem initii tamen scribere potes."
+
+#: src/lib/followLabels.ts:10
+msgid "Looking around"
+msgstr "Circumspicis"
+
+#: src/components/MapView.tsx:416
+msgid "Map credits"
+msgstr "Auctores tabulae"
+
+#: src/components/MapView.tsx:1416
+msgid "Map key"
+msgstr "Clavis tabulae"
+
+#: src/components/MapView.tsx:1354
+msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
+msgstr "Tesserae tabulae a provisore externo onerari non potuerunt. Conexum interretialem inspice. Iter tamen parare potes."
+
+#: src/components/MapView.tsx:1380
+msgid "Map unavailable"
+msgstr "Tabula deest"
+
+#: src/i18n.ts:50
+msgctxt "month"
+msgid "Mar"
+msgstr "Mar"
+
+#: src/i18n.ts:52
+msgctxt "month"
+msgid "May"
+msgstr "Mai"
+
+#: src/App.tsx:839
+msgid "Metro home"
+msgstr "Domus Metro"
+
+#: src/i18n.ts:40
+msgctxt "weekday"
+msgid "Mon"
+msgstr "Lun"
+
+#: src/components/RoutesPanel.tsx:342
+msgid "near {nearName}"
+msgstr "prope {nearName}"
+
+#: src/App.tsx:326
+msgid "Near you"
+msgstr "Prope te"
+
+#: src/components/StopPicker.tsx:282
+msgid "Nearest stop: {stopLabel} · {walk}"
+msgstr "Statio proxima: {stopLabel} · {walk}"
+
+#: src/components/ConsentPrompt.tsx:58
+msgid "Never your name, your location or anything you type."
+msgstr "Numquam nomen tuum, locum tuum, nec quidquam quod scribis."
+
+#: src/components/BusCard.tsx:425
+msgctxt "stop"
+msgid "Next"
+msgstr "Proxima"
+
+#: src/components/JourneyResults.tsx:556
+msgid "Next bus"
+msgstr "Omnibus proximum"
+
+#: src/components/TrackingPanel.tsx:201
+msgid "Next stop: {alight}"
+msgstr "Statio proxima: {alight}"
+
+#: src/components/JourneyResults.tsx:607
+msgid "No bus assigned yet"
+msgstr "Nullum omnibus adhuc assignatum"
+
+#: src/components/JourneyResults.tsx:369
+msgid "No bus assigned yet, so it can’t be followed live."
+msgstr "Nullum omnibus adhuc assignatum, itaque in vivo sequi non potes."
+
+#: src/components/LiveBusList.tsx:80
+msgid "No buses reporting here right now."
+msgstr "Nulla omnibus hic nunc se nuntiant."
+
+#: src/components/StopPicker.tsx:214
+msgid "No matching stops. Try another stop name or a place."
+msgstr "Nullae stationes congruunt. Aliud nomen stationis aut locum tempta."
+
+#: src/components/JourneyResults.tsx:801
+msgid "No more scheduled departures today"
+msgstr "Hodie nullae profectiones statutae restant"
+
+#: src/components/JourneyResults.tsx:802
+msgid "No scheduled journeys found"
+msgstr "Nulla itinera statuta inventa"
+
+#: src/components/ConsentPrompt.tsx:64
+msgid "No thanks"
+msgstr "Minime, gratias"
+
+#: src/components/LiveBusList.tsx:70
+msgid "None heading this way right now · {elsewhere} on the other direction"
+msgstr "Nullum nunc huc tendit · {elsewhere} in cursu altero"
+
+#: src/App.tsx:781
+msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
+msgstr "Non coniunctum cum <0>Lanka Metro Transit</0> neque cum <1>applicatione LMT GO</1> officiali."
+
+#: src/components/JourneyResults.tsx:608
+msgid "Not every bus assigned yet"
+msgstr "Nondum omnia omnibus assignata"
+
+#: src/i18n.ts:58
+msgctxt "month"
+msgid "Nov"
+msgstr "Nov"
+
+#: src/i18n.ts:57
+msgctxt "month"
+msgid "Oct"
+msgstr "Oct"
+
+#: src/components/TrackingPanel.tsx:122
+msgid "OK"
+msgstr "Fiat"
+
+#: src/components/JourneyResults.tsx:324
+msgid "On another trip · follow on map"
+msgstr "In alio itinere · in tabula sequere"
+
+#: src/components/RoutesPanel.tsx:346
+msgid "On map"
+msgstr "In tabula"
+
+#: src/components/TrackingPanel.tsx:192
+msgid "On your way to {alight}"
+msgstr "In itinere ad {alight}"
+
+#: src/App.tsx:714
+msgid "Open a route to see its stops and where its buses are now."
+msgstr "Lineam aperi ut stationes eius videas et ubi omnibus eius nunc sint."
+
+#: src/routes/__root.tsx:14
+msgid "Page not found :c"
+msgstr "Pagina non inventa :c"
+
+#: src/components/ConsentPrompt.tsx:56
+msgid "Pages you open, and actions like searching a trip, following or tracking a bus, opening a route or changing language."
+msgstr "Paginae quas aperis, et actiones ut iter quaerere, omnibus sequi vel observare, lineam aperire, linguam mutare."
+
+#: src/components/PhoneDrawer.tsx:54
+msgid "Panel: full height"
+msgstr "Tabella: tota altitudo"
+
+#: src/components/PhoneDrawer.tsx:53
+msgid "Panel: half height"
+msgstr "Tabella: dimidia altitudo"
+
+#: src/components/PhoneDrawer.tsx:52
+msgid "Panel: minimised"
+msgstr "Tabella: minima"
+
+#: src/components/TripForm.tsx:60
+msgid "Pick a date"
+msgstr "Diem elige"
+
+#: src/App.tsx:543
+msgid "Plan a trip"
+msgstr "Iter para"
+
+#: src/App.tsx:469
+msgid "Plan your bus trip"
+msgstr "Iter tuum para"
+
+#: src/components/JourneyResults.tsx:746
+msgid "Please wait a moment."
+msgstr "Paulisper exspecta."
+
+#: src/components/OccupancyBadge.tsx:7
+msgid "Plenty of room"
+msgstr "Spatii satis"
+
+#: src/i18n.ts:78
+msgid "PM"
+msgstr "p.m."
+
+#: src/components/MapView.tsx:413
+msgid "Point north"
+msgstr "Ad septentriones verte"
+
+#: src/App.tsx:327
+msgid "Popular"
+msgstr "Celebres"
+
+#: src/App.tsx:690
+msgid "Popular starting stops"
+msgstr "Stationes initii celebres"
+
+#: src/components/HowToUse.tsx:19
+msgid "Press “Find my bus”. Select a departure for boarding instructions."
+msgstr "Preme “Omnibum meum quaere”. Profectionem elige ut praecepta conscendendi accipias."
+
+#: src/components/ConsentPrompt.tsx:91
+msgid "Privacy choices"
+msgstr "Optiones secreti"
+
+#: src/App.tsx:325
+msgid "Recent"
+msgstr "Recentia"
+
+#: src/App.tsx:639
+msgid "Recent trips"
+msgstr "Itinera recentia"
+
+#: src/components/StopCard.tsx:205
+msgid "Route {route}"
+msgstr "Linea {route}"
+
+#: src/components/StopCard.tsx:204
+msgid "Route {route} towards {spokenPlaces}"
+msgstr "Linea {route} versus {spokenPlaces}"
+
+#: src/components/ConsentPrompt.tsx:57
+msgid "Route and stop codes and how many days ahead you search."
+msgstr "Notae linearum et stationum, et quot dies in futurum quaeras."
+
+#: src/components/StopPicker.tsx:294
+msgid "Routes"
+msgstr "Lineae"
+
+#: src/components/MapView.tsx:1359
+msgid "Routes and stops map"
+msgstr "Tabula linearum et stationum"
+
+#: src/i18n.ts:45
+msgctxt "weekday"
+msgid "Sat"
+msgstr "Sat"
+
+#: src/components/JourneyResults.tsx:541
+msgid "Scheduled"
+msgstr "Statutum"
+
+#: src/components/JourneyResults.tsx:408
+#: src/components/TrackingPanel.tsx:318
+msgid "Scheduled arrival"
+msgstr "Adventus statutus"
+
+#: src/components/JourneyResults.tsx:397
+#: src/components/TrackingPanel.tsx:311
+msgid "Scheduled departure"
+msgstr "Profectio statuta"
+
+#: src/components/BusCard.tsx:238
+msgid "See all stops"
+msgstr "Omnes stationes vide"
+
+#: src/components/StopCard.tsx:149
+msgid "See on Google Maps"
+msgstr "In Google Maps vide"
+
+#: src/i18n.ts:56
+msgctxt "month"
+msgid "Sep"
+msgstr "Sep"
+
+#: src/components/StopCard.tsx:182
+msgid "Served by"
+msgstr "Ministratur a"
+
+#: src/App.tsx:809
+msgid "Service status"
+msgstr "Status servitii"
+
+#: src/components/JourneyResults.tsx:849
+msgid "Show"
+msgstr "Monstra"
+
+#: src/components/MapView.tsx:568
+msgid "Show 3D map"
+msgstr "Tabulam 3D monstra"
+
+#: src/components/MapView.tsx:568
+msgid "Show flat map"
+msgstr "Tabulam planam monstra"
+
+#: src/components/MapView.tsx:576
+msgid "Show live buses"
+msgstr "Omnibus in vivo monstra"
+
+#: src/components/JourneyResults.tsx:886
+msgid "Show more journeys ({remaining} more)"
+msgstr "Plura itinera monstra ({remaining} amplius)"
+
+#: src/components/BusCard.tsx:200
+msgid "Show stops"
+msgstr "Stationes monstra"
+
+#: src/components/LiveBusList.tsx:76
+msgid "Show that direction"
+msgstr "Illum cursum monstra"
+
+#: src/components/JourneyResults.tsx:807
+msgid "Show the next day"
+msgstr "Diem sequentem monstra"
+
+#: src/components/JourneyResults.tsx:807
+msgid "Show tomorrow’s buses"
+msgstr "Omnibus crastina monstra"
+
+#: src/components/MapView.tsx:1355
+msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
+msgstr "Quaedam tabulae onerari non potuerunt. Tabula aut conexus fortasse deest. Iter tamen parare potes."
+
+#: src/App.tsx:774
+msgid "Some stops couldn’t be loaded. Search may be incomplete."
+msgstr "Quaedam stationes onerari non potuerunt. Quaestio fortasse imperfecta est."
+
+#: src/components/StopCard.tsx:64
+msgid "Start here"
+msgstr "Hinc incipe"
+
+#: src/components/MapView.tsx:1333
+msgid "Start: {stopLabel}"
+msgstr "Initium: {stopLabel}"
+
+#: src/components/MapView.tsx:1419
+msgid "Stop"
+msgstr "Statio"
+
+#: src/components/BusCard.tsx:166
+msgid "Stop following"
+msgstr "Sequi desine"
+
+#: src/components/BusCard.tsx:263
+#: src/components/BusCard.tsx:389
+msgid "Stops ahead"
+msgstr "Stationes futurae"
+
+#: src/components/TrackingPanel.tsx:46
+msgid "Stops to go"
+msgstr "Stationes reliquae"
+
+#: src/i18n.ts:39
+msgctxt "weekday"
+msgid "Sun"
+msgstr "Sol"
+
+#: src/components/TripForm.tsx:204
+msgid "Swap starting and destination stops"
+msgstr "Initium et metam permuta"
+
+#: src/components/MapLegend.tsx:41
+msgid "Tap a stop to plan · tap a bus to follow"
+msgstr "Stationem tange ut iter pares · omnibus tange ut sequaris"
+
+#: src/components/MapLegend.tsx:42
+msgid "Tap a stop to plan a trip"
+msgstr "Stationem tange ut iter pares"
+
+#: src/components/MapView.tsx:1383
+msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
+msgstr "Tabula conexum interretialem et WebGL in navigatro postulat. Stationes tamen eligere et iter parare potes."
+
+#: src/components/RoutesPanel.tsx:242
+msgid "The stops couldn’t be loaded."
+msgstr "Stationes onerari non potuerunt."
+
+#: src/components/JourneyResults.tsx:757
+msgid "This trip can’t be planned"
+msgstr "Hoc iter parari non potest"
+
+#: src/i18n.ts:43
+msgctxt "weekday"
+msgid "Thu"
+msgstr "Iov"
+
+#: src/components/JourneyResults.tsx:97
+#: src/components/TrackingPanel.tsx:218
+msgid "Time unavailable"
+msgstr "Tempus ignotum"
+
+#: src/components/HowToUse.tsx:23
+msgid "Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only — not tickets or official service information."
+msgstr "Horae Taprobanae (Sri Lanka) sunt. Aestimationes in vivo separatim ab horis statutis notantur. Non coniunctum cum Lanka Metro Transit, Smart Metro, neque cum applicatione LMT GO officiali. Ad itinera paranda tantum — non tesserae neque nuntii officiales."
+
+#: src/components/JourneyResults.tsx:234
+msgid "To {toName}"
+msgstr "Ad {toName}"
+
+#: src/components/TripForm.tsx:52
+msgid "Today"
+msgstr "Hodie"
+
+#: src/components/TripForm.tsx:53
+msgid "Tomorrow"
+msgstr "Cras"
+
+#: src/i18n.ts:20
+msgid "Towards {place}"
+msgstr "Versus {place}"
+
+#: src/components/JourneyResults.tsx:294
+msgid "Track my trip"
+msgstr "Iter meum observa"
+
+#: src/components/BusCard.tsx:105
+msgid "Tracked bus"
+msgstr "Omnibus observatum"
+
+#: src/components/MapView.tsx:446
+msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
+msgstr "Tabula vectionis. Clavibus sagittarum move, plus aut minus ut amplifices aut contrahas."
+
+#: src/components/TripForm.tsx:66
+#: src/components/TripForm.tsx:90
+#: src/components/TripForm.tsx:95
+msgid "Travel date"
+msgstr "Dies itineris"
+
+#: src/components/StopCard.tsx:98
+msgid "Trip from {start} to this stop"
+msgstr "Iter ab {start} ad hanc stationem"
+
+#: src/components/StopCard.tsx:104
+msgid "Trip from this stop to {end}"
+msgstr "Iter ab hac statione ad {end}"
+
+#: src/App.tsx:756
+#: src/App.tsx:950
+#: src/components/JourneyResults.tsx:774
+#: src/components/RoutesPanel.tsx:238
+msgid "Try again"
+msgstr "Iterum tempta"
+
+#: src/components/MapView.tsx:1391
+#: src/components/MapView.tsx:1408
+msgid "Try map again"
+msgstr "Tabulam iterum tempta"
+
+#: src/components/JourneyResults.tsx:811
+msgid "Try the next day or different stops."
+msgstr "Diem sequentem aut alias stationes tempta."
+
+#: src/i18n.ts:41
+msgctxt "weekday"
+msgid "Tue"
+msgstr "Mar"
+
+#: src/components/TripForm.tsx:175
+msgid "Type a stop or a place"
+msgstr "Stationem aut locum scribe"
+
+#: src/components/HowToUse.tsx:16
+msgid "Type your starting stop and choose a result."
+msgstr "Stationem initii scribe et eventum elige."
+
+#: src/components/TripForm.tsx:220
+msgid "Use my location for the nearest stop"
+msgstr "Loco meo utere ad stationem proximam"
+
+#: src/components/JourneyResults.tsx:210
+msgid "Wait about {waitLabel}"
+msgstr "Exspecta circiter {waitLabel}"
+
+#: src/lib/followLabels.ts:12
+msgid "Waiting for signal…"
+msgstr "Signum exspectatur…"
+
+#: src/components/JourneyResults.tsx:229
+msgid "Walk"
+msgstr "Pedibus"
+
+#: src/App.tsx:760
+msgid "We can’t connect to Metro right now."
+msgstr "Cum Metro nunc conecti non possumus."
+
+#: src/components/BusCard.tsx:180
+msgid "We can’t tell where this bus is heading"
+msgstr "Quo vadit hoc omnibus nescimus"
+
+#: src/i18n.ts:42
+msgctxt "weekday"
+msgid "Wed"
+msgstr "Mer"
+
+#: src/components/ConsentPrompt.tsx:44
+msgid "What we collect"
+msgstr "Quae colligimus"
+
+#: src/App.tsx:521
+#: src/components/TripForm.tsx:174
+msgid "Where to?"
+msgstr "Quo vadis?"
+
+#: src/App.tsx:602
+#: src/components/JourneyResults.tsx:787
+msgid "Where would you like to go?"
+msgstr "Quo ire vis?"
+
+#: src/components/ConsentPrompt.tsx:32
+msgid "With your OK, we count how the app is used, like which trips people search and which features they use, so we know what to improve next."
+msgstr "Si permittis, numeramus quomodo applicatio adhibeatur, ut quae itinera homines quaerant et quibus partibus utantur, ut sciamus quid deinde emendemus."
+
+#: src/components/ConsentPrompt.tsx:70
+msgid "You can change this any time from “Privacy choices” at the bottom of the page."
+msgstr "Hoc quovis tempore mutare potes ex “Optiones secreti” in ima pagina."
+
+#: src/components/TrackingPanel.tsx:205
+msgid "You’re at {alight}."
+msgstr "Ad {alight} es."
+
+#: src/components/TrackingPanel.tsx:204
+#: src/components/TrackingPanel.tsx:212
+msgid "You’ve arrived"
+msgstr "Pervenisti"
+
+#: src/state/useTrip.ts:282
+msgid "Your browser cannot find your location. Please choose a stop."
+msgstr "Navigatrum tuum locum tuum invenire non potest. Stationem elige, quaeso."
+
+#: src/components/TrackingPanel.tsx:56
+#: src/components/TrackingPanel.tsx:157
+msgid "Your bus"
+msgstr "Omnibus tuum"
+
+#: src/components/TrackingPanel.tsx:119
+msgid "Your bus changed to {plate}"
+msgstr "Omnibus tuum nunc est {plate}"
+
+#: src/components/StopCard.tsx:140
+msgid "Your destination"
+msgstr "Meta tua"
+
+#: src/components/MapView.tsx:1352
+msgid "Your location could not be found. Choose your stops instead."
+msgstr "Locus tuus inveniri non potuit. Stationes potius elige."
+
+#: src/components/StopCard.tsx:140
+msgid "Your start"
+msgstr "Initium tuum"
+
+#: src/components/BusCard.tsx:248
+#: src/components/TrackingPanel.tsx:328
+msgid "Your stop"
+msgstr "Statio tua"
+
+#: src/components/MapView.tsx:411
+msgid "Zoom in"
+msgstr "Amplifica"
+
+#: src/components/MapView.tsx:412
+msgid "Zoom out"
+msgstr "Contrahe"
