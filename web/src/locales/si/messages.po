@@ -190,7 +190,7 @@ msgstr "බසය මෙහි"
 msgid "Bus live"
 msgstr "බස් සජීවී"
 
-#: src/App.tsx:781
+#: src/App.tsx:796
 msgid "Bus route map"
 msgstr "බස් මාර්ග සිතියම"
 
@@ -261,7 +261,7 @@ msgstr "නැවතුම් විස්තර වසන්න"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "ළඟම නැවතුම: {nearestName} · සෘජු දුරින් {nearestDistance}. ඇවිදින මාර්ගය පරීක්ෂා කරන්න."
 
-#: src/App.tsx:823
+#: src/App.tsx:838
 msgid "Colombo & beyond"
 msgstr "කොළඹ සහ අවට"
 
@@ -343,7 +343,7 @@ msgstr "මගේ බස් රථය සොයන්න"
 msgid "Find my location"
 msgstr "මගේ ස්ථානය සොයන්න"
 
-#: src/App.tsx:825
+#: src/App.tsx:840
 msgid "Find your way around."
 msgstr "ඔබේ මාර්ගය සොයාගන්න."
 
@@ -522,7 +522,7 @@ msgstr "නොලැබුණු නැවතුම් ලබාගන්න"
 msgid "Loading bus routes…"
 msgstr "බස් මාර්ග ලබාගනිමින්…"
 
-#: src/App.tsx:786
+#: src/App.tsx:801
 #: src/components/MapView.tsx:1050
 msgid "Loading map…"
 msgstr "සිතියම ලබාගනිමින්…"
@@ -573,7 +573,7 @@ msgctxt "month"
 msgid "May"
 msgstr "මැයි"
 
-#: src/App.tsx:741
+#: src/App.tsx:756
 msgid "Metro home"
 msgstr "Metro මුල් පිටුව"
 
@@ -748,7 +748,7 @@ msgstr "මෑත"
 msgid "Recent trips"
 msgstr "මෑත ගමන්"
 
-#: src/App.tsx:838
+#: src/App.tsx:853
 msgid "Retry map route"
 msgstr "නැවත ලබාගන්න"
 
@@ -764,7 +764,7 @@ msgstr "{spokenPlaces} දෙසට යන මාර්ගය {route}"
 msgid "Route and stop codes and how many days ahead you search."
 msgstr "මාර්ග සහ නැවතුම් කේත, සහ ඔබ කොපමණ දින ඉදිරියට සොයන්නේද යන්න."
 
-#: src/App.tsx:842
+#: src/App.tsx:857
 msgid "Route line unavailable. Stops and trip planning still work."
 msgstr "මාර්ග රේඛාව ලබාගත නොහැක. නැවතුම් සහ සැලසුම් තවමත් වැඩ කරයි."
 
@@ -807,6 +807,10 @@ msgstr "සැප්"
 #: src/components/StopCard.tsx:185
 msgid "Served by"
 msgstr "මෙහි නවතින මාර්ග"
+
+#: src/App.tsx:725
+msgid "Service status"
+msgstr "සේවා තත්ත්වය"
 
 #: src/components/MapView.tsx:407
 msgid "Show live buses"

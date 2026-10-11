@@ -700,7 +700,10 @@ function Home() {
               Lanka Metro Transit
             </a>{" "}
             or the official{" "}
-            <a className={FOOTER_LINK} href="https://lmtgo.eimsky.com">
+            <a
+              className={FOOTER_LINK}
+              href="https://play.google.com/store/apps/details?id=com.lankametrotransit.lmtgo"
+            >
               LMT GO app
             </a>
             .
@@ -715,6 +718,18 @@ function Home() {
             API
           </Link>
           <PrivacyChoicesLink className="min-h-9 max-md:inline-flex max-md:items-center md:min-h-0" />
+          <a
+            className={`${FOOTER_LINK} min-h-9 max-md:inline-flex max-md:items-center md:min-h-0`}
+            href="https://stats.uptimerobot.com/uqLc9XQ7vz"
+          >
+            {t`Service status`}
+          </a>
+          <a
+            className={`${FOOTER_LINK} min-h-9 max-md:inline-flex max-md:items-center md:min-h-0`}
+            href="https://github.com/ishan-marikar/metro-colombo"
+          >
+            GitHub
+          </a>
         </div>
       </footer>
     </>
