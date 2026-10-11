@@ -2,6 +2,7 @@ import {
   type CustomLayerInterface,
   type CustomRenderMethodInput,
   type Map as LibreMap,
+  type LngLatBounds,
   type PointLike,
 } from "maplibre-gl";
 import * as THREE from "three";
@@ -10,7 +11,14 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import busModelUrl from "../assets/bus.glb?url";
 import { BusMotion } from "../busMotion";
 import { palette } from "../theme";
-import { busKey, type LiveBus, type MapRoute, type Route } from "../types";
+import { bounceOffset, busBounce } from "../lib/busBounce";
+import {
+  busKey,
+  occupancy,
+  type LiveBus,
+  type MapRoute,
+  type Route,
+} from "../types";
 import {
   disposeObject,
   LocalFrame,
@@ -55,8 +63,15 @@ const HALO_RADIUS = 8;
 
 type BusInstance = {
   group: THREE.Group;
+  bouncer: THREE.Group;
+  shadow: THREE.Mesh;
   halo: THREE.Mesh;
+  offset: number;
 };
+
+const BOUNCE_FRAME_MS = 33;
+// How much smaller the shadow gets per metre the bus is off the road.
+const SHADOW_SHRINK_PER_METER = 0.15;
 
 function discMaterial(color: number, opacity: number): THREE.MeshBasicMaterial {
   return new THREE.MeshBasicMaterial({
@@ -167,6 +182,7 @@ export class BusModelLayer implements CustomLayerInterface {
   private reducedMotion = false;
   // Set once removed, so a model that finishes loading late is thrown away.
   private disposed = false;
+  private nextBounce?: ReturnType<typeof setTimeout>;
 
   private readonly discGeometry = new THREE.CircleGeometry(1, DISC_SEGMENTS);
   private readonly shadowMaterial = discMaterial(SHADOW_COLOR, SHADOW_OPACITY);
@@ -220,13 +236,23 @@ export class BusModelLayer implements CustomLayerInterface {
     const map = this.map;
     const template = this.template;
     if (!this.renderer || !map || !template) return;
-    const moving = this.placeBuses(template, busScaleAtZoom(map.getZoom()));
+    const { moving, bouncing } = this.placeBuses(
+      template,
+      busScaleAtZoom(map.getZoom()),
+      map.getBounds(),
+    );
     if (!this.vehicles.size) return;
     this.frame.updateCamera(this.camera, args);
     renderInto(this.renderer, this.scene, this.camera);
+    if (this.reducedMotion) return;
     // Keep sampling while any bus is still moving; new fixes, selection and
     // camera changes trigger a repaint again once they settle.
-    if (moving && !this.reducedMotion) map.triggerRepaint();
+    if (moving) map.triggerRepaint();
+    else if (bouncing && this.nextBounce === undefined)
+      this.nextBounce = setTimeout(() => {
+        this.nextBounce = undefined;
+        map.triggerRepaint();
+      }, BOUNCE_FRAME_MS);
   }
 
   pick(point: PointLike): string | null {
@@ -252,6 +278,7 @@ export class BusModelLayer implements CustomLayerInterface {
 
   onRemove(): void {
     this.disposed = true;
+    clearTimeout(this.nextBounce);
     this.vehicles.clear();
     this.positions.clear();
     this.scene.clear();
@@ -295,21 +322,46 @@ export class BusModelLayer implements CustomLayerInterface {
       });
   }
 
-  private placeBuses(template: THREE.Group, scale: number): boolean {
+  private placeBuses(
+    template: THREE.Group,
+    scale: number,
+    bounds: LngLatBounds,
+  ): { moving: boolean; bouncing: boolean } {
     const present = new Set<string>();
     let moving = false;
-    for (const bus of this.motion.sample(
-      performance.now(),
-      this.reducedMotion,
-    )) {
+    let bouncing = false;
+    const now = performance.now();
+    for (const bus of this.motion.sample(now, this.reducedMotion)) {
       const key = busKey(bus);
       present.add(key);
       const previous = this.positions.get(key);
       if (!previous || previous[0] !== bus.lng || previous[1] !== bus.lat)
         moving = true;
       this.positions.set(key, [bus.lng, bus.lat]);
-      const { group, halo } = this.instanceFor(key, template);
+      const { group, bouncer, shadow, halo, offset } = this.instanceFor(
+        key,
+        template,
+      );
       this.frame.toLocal(bus.lng, bus.lat, group.position);
+      const crowding = occupancy(bus)?.crowding ?? null;
+      const bounce = this.reducedMotion
+        ? busBounce(null, now, offset)
+        : busBounce(crowding, now, offset);
+      bouncer.position.y = bounce.lift;
+      bouncer.scale.set(
+        bounce.grow * (1 + bounce.squash / 2),
+        bounce.grow * (1 - bounce.squash),
+        bounce.grow * (1 + bounce.squash / 2),
+      );
+      bouncer.rotation.set(0, bounce.wiggle, bounce.rock);
+      const shrink = 1 - SHADOW_SHRINK_PER_METER * bounce.lift;
+      shadow.scale.set(SHADOW_SIZE[0] * shrink, SHADOW_SIZE[1] * shrink, 1);
+      if (
+        !this.reducedMotion &&
+        (crowding === "filling" || crowding === "crowded") &&
+        bounds.contains([bus.lng, bus.lat])
+      )
+        bouncing = true;
       // Headings are clockwise from north; three.js turns anticlockwise.
       group.rotation.y = -THREE.MathUtils.degToRad(bus.heading ?? 0);
       const selected = key === this.selected;
@@ -322,7 +374,7 @@ export class BusModelLayer implements CustomLayerInterface {
       this.vehicles.delete(key);
       this.positions.delete(key);
     }
-    return moving;
+    return { moving, bouncing };
   }
 
   private instanceFor(key: string, template: THREE.Group): BusInstance {
@@ -331,7 +383,9 @@ export class BusModelLayer implements CustomLayerInterface {
     const group = new THREE.Group();
     // pick() walks up from whatever was hit to find this.
     group.userData.busId = key;
-    group.add(template.clone(true));
+    const bouncer = new THREE.Group();
+    bouncer.add(template.clone(true));
+    group.add(bouncer);
     const shadow = groundDisc(
       this.discGeometry,
       this.shadowMaterial,
@@ -342,7 +396,13 @@ export class BusModelLayer implements CustomLayerInterface {
     const halo = groundDisc(this.discGeometry, this.haloMaterial, HALO_HEIGHT);
     halo.scale.setScalar(HALO_RADIUS);
     group.add(halo);
-    const instance = { group, halo };
+    const instance = {
+      group,
+      bouncer,
+      shadow,
+      halo,
+      offset: bounceOffset(key),
+    };
     this.vehicles.set(key, instance);
     this.scene.add(group);
     return instance;
