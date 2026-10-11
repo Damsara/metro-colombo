@@ -917,7 +917,6 @@ function Home() {
                 selectedJourney={tab === "plan" ? selectedJourney : null}
                 selectedBus={selectedBus}
                 followBus={selection.followBus}
-                followState={selection.followState}
                 frameRide={tab === "plan" ? frameRide : null}
                 busOverlay={phone ? null : busCard}
                 busLine={busLine}

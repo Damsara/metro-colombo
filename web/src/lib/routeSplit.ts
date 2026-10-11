@@ -2,9 +2,11 @@ import type { Position } from "geojson";
 import {
   LAT_METERS,
   LNG_METERS,
-  buildPath,
-  lines,
+  pathPoint,
   project,
+  routePaths,
+  toXY,
+  type Path,
   type XY,
 } from "../busMotion";
 import type { MapRoute } from "../types";
@@ -12,6 +14,17 @@ import type { MapRoute } from "../types";
 export const SPLIT_MAX_METERS = 300;
 
 export type RouteSplit = { behind: Position[][]; ahead: Position[][] };
+
+const pathsByRoute = new WeakMap<MapRoute, Path[]>();
+
+function pathsOf(route: MapRoute): Path[] {
+  let paths = pathsByRoute.get(route);
+  if (!paths) {
+    paths = routePaths(route);
+    pathsByRoute.set(route, paths);
+  }
+  return paths;
+}
 
 const toPosition = (point: XY): Position => [
   point.x / LNG_METERS,
@@ -31,16 +44,12 @@ export function splitRoute(
   route: MapRoute,
   bus: { lat: number; lng: number },
 ): RouteSplit | null {
-  const paths = route.geometry.features.flatMap((feature) =>
-    feature.geometry
-      ? lines(feature.geometry).flatMap((line) => buildPath(route, line) ?? [])
-      : [],
-  );
-  const fix = { x: bus.lng * LNG_METERS, y: bus.lat * LAT_METERS };
+  const paths = pathsOf(route);
+  const fix = toXY(bus);
 
   let best: { path: number; segment: number; fraction: number } | undefined;
   let bestError = Infinity;
-  paths.forEach((path, index) => {
+  for (const [index, path] of paths.entries()) {
     for (let i = 1; i < path.points.length; i++) {
       const { fraction, error } = project(
         fix,
@@ -51,24 +60,24 @@ export function splitRoute(
       bestError = error;
       best = { path: index, segment: i, fraction };
     }
-  });
+  }
   if (!best || bestError > SPLIT_MAX_METERS) return null;
+  const match = best;
 
   const behind: Position[][] = [];
   const ahead: Position[][] = [];
   paths.forEach((path, index) => {
     const points = path.points.map(toPosition);
-    if (index < best!.path) behind.push(points);
-    else if (index > best!.path) ahead.push(points);
+    if (index < match.path) behind.push(points);
+    else if (index > match.path) ahead.push(points);
     else {
-      const start = path.points[best!.segment - 1];
-      const end = path.points[best!.segment];
-      const cut = toPosition({
-        x: start.x + (end.x - start.x) * best!.fraction,
-        y: start.y + (end.y - start.y) * best!.fraction,
-      });
-      behind.push([...points.slice(0, best!.segment), cut]);
-      ahead.push([cut, ...points.slice(best!.segment)]);
+      const from = path.distances[match.segment - 1];
+      const to = path.distances[match.segment];
+      const cut = toPosition(
+        pathPoint(path, from + (to - from) * match.fraction),
+      );
+      behind.push([...points.slice(0, match.segment), cut]);
+      ahead.push([cut, ...points.slice(match.segment)]);
     }
   });
   return {

@@ -127,11 +127,11 @@ type Track = {
   lastTimestamp?: number;
 };
 
-function toXY(bus: LiveBus): XY {
+export function toXY(bus: Pick<LiveBus, "lat" | "lng">): XY {
   return { x: bus.lng * LNG_METERS, y: bus.lat * LAT_METERS };
 }
 
-export function lines(geometry: Geometry): Position[][] {
+function lines(geometry: Geometry): Position[][] {
   if (geometry.type === "LineString") return [geometry.coordinates];
   if (geometry.type === "MultiLineString") return geometry.coordinates;
   if (geometry.type === "GeometryCollection")
@@ -139,7 +139,7 @@ export function lines(geometry: Geometry): Position[][] {
   return [];
 }
 
-export function buildPath(route: MapRoute, line: Position[]): Path | undefined {
+function buildPath(route: MapRoute, line: Position[]): Path | undefined {
   const points: XY[] = [];
   const distances: number[] = [];
   let length = 0;
@@ -176,8 +176,16 @@ export function buildPath(route: MapRoute, line: Position[]): Path | undefined {
   };
 }
 
+export function routePaths(route: MapRoute): Path[] {
+  return route.geometry.features.flatMap((feature) =>
+    feature.geometry
+      ? lines(feature.geometry).flatMap((line) => buildPath(route, line) ?? [])
+      : [],
+  );
+}
+
 /** The point `distance` metres along a path (wrapping round on a loop). */
-function pathPoint(path: Path, distance: number): XY {
+export function pathPoint(path: Path, distance: number): XY {
   const along = path.loop
     ? ((distance % path.length) + path.length) % path.length
     : clamp(distance, 0, path.length);
@@ -345,11 +353,7 @@ export class BusMotion {
     if (this.geometries === geometries) return;
     this.geometries = geometries;
     this.rematch = true;
-    this.paths = geometries.flatMap((route) =>
-      route.geometry.features.flatMap((feature) =>
-        lines(feature.geometry).flatMap((line) => buildPath(route, line) ?? []),
-      ),
-    );
+    this.paths = geometries.flatMap(routePaths);
   }
 
   /** Takes in the latest fixes; buses missing from the list are dropped. */
