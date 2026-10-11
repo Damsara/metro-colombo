@@ -31,7 +31,7 @@ class LiveFeedClosed extends Data.TaggedError("LiveFeedClosed")<{
 type Fix = S.LiveBus & { readonly receivedAt: number };
 
 // About an hour of fixes; the archive takes them every few minutes.
-const MAX_RECORDED_FIXES = 200_000;
+const MAX_RECORDED_FIXES = 100_000;
 
 const finite = (value: unknown): number | undefined =>
   Predicate.isNumber(value) && Number.isFinite(value) ? value : undefined;

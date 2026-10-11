@@ -15,7 +15,7 @@ import {
 
 const FLUSH_EVERY = Duration.minutes(5);
 // About an hour of fixes at a busy time; older ones go if storage stays down longer.
-const MAX_PENDING_ROWS = 200_000;
+const MAX_PENDING_ROWS = 100_000;
 const CHUNK_CACHE = "public, max-age=31536000, immutable";
 
 const chunks = Metric.counter("archive.chunks", { incremental: true });
