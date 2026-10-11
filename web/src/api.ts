@@ -17,6 +17,7 @@ import type {
   Stop,
 } from "./types";
 import { routeColor } from "./lib/routeColor";
+import type { Occasion } from "./occasions/types";
 
 const base = "/api";
 const MINUTE_MS = 60_000;
@@ -154,6 +155,16 @@ export function usePlaces() {
     queryFn: async ({ signal }) =>
       (await get<{ places: Place[] }>("/places", signal)).places,
     staleTime: 60 * MINUTE_MS,
+  });
+}
+
+export function useOccasions() {
+  return useQuery({
+    queryKey: ["occasions"],
+    queryFn: async ({ signal }) =>
+      (await get<{ occasions: Occasion[] }>("/occasions", signal)).occasions,
+    staleTime: 60 * MINUTE_MS,
+    retry: 1,
   });
 }
 

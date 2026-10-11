@@ -40,6 +40,8 @@ import { routeColor as colorForRoute } from "../lib/routeColor";
 import { splitRoute } from "../lib/routeSplit";
 import type { BusLine } from "../state/useBusJourney";
 import { palette } from "../theme";
+import { decorationSvg } from "../occasions/decorations";
+import type { DecorationId } from "../occasions/types";
 import { BusModelLayer } from "./BusModelLayer";
 import { MapModeControl } from "./MapModeControl";
 import { Button } from "./ui/Button";
@@ -59,6 +61,7 @@ const ROUTES = "metro-routes";
 const SPLIT = "metro-route-split";
 const STOPS = "metro-stops";
 const STOP_HIT = "metro-stop-hit";
+const FESTIVE = "metro-festive";
 const ROUTE_LINES = "metro-route-lines";
 const BUILDINGS = "metro-buildings-3d";
 const BASEMAP_BUILDINGS = "building";
@@ -86,6 +89,8 @@ type Props = Omit<MapViewProps, "onFollowChange"> & {
   onFollowEvent: (event: FollowEvent) => void;
   frameRide?: Ride | null;
   busLine?: BusLine | null;
+  festive?: { stopMark?: DecorationId; busGlow?: string; stops: Stop[] } | null;
+  onCapabilities?: (rich: boolean) => void;
 };
 
 type Insets = Props["insets"];
@@ -339,6 +344,23 @@ function addTransitLayers(map: LibreMap): void {
       "circle-pitch-alignment": "map",
     },
   });
+  map.addSource(FESTIVE, { type: "geojson", data: empty });
+  map.addLayer(
+    {
+      id: FESTIVE,
+      type: "symbol",
+      source: FESTIVE,
+      layout: {
+        "icon-image": ["get", "mark"],
+        "icon-anchor": "bottom",
+        "icon-offset": [0, -6],
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.35, 15, 0.6],
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
+      },
+    },
+    "metro-stop-halo",
+  );
   map.addLayer({
     id: "metro-stop-dots",
     type: "circle",
@@ -644,6 +666,7 @@ export default function MapView(props: Props) {
     emphasizeRoutes = NO_ROUTES,
     busOverlay,
     busLine = null,
+    festive = null,
   } = props;
   const { t } = useLingui();
   const selectedBusKey = selectedBus ? busKey(selectedBus) : "";
@@ -1038,9 +1061,10 @@ export default function MapView(props: Props) {
         if (disposed || failed) return;
         try {
           addTransitLayers(activeMap);
+          let rich = false;
           try {
-            buildingsReady.current =
-              canShowBuildings(deviceFacts(canvas!)) && addBuildings(activeMap);
+            rich = canShowBuildings(deviceFacts(canvas!));
+            buildingsReady.current = rich && addBuildings(activeMap);
             showBuildings(
               activeMap,
               buildingsReady.current && shownMode.current === "3d",
@@ -1048,8 +1072,10 @@ export default function MapView(props: Props) {
           } catch {
             buildingsReady.current = false;
           }
+          latest.current.props.onCapabilities?.(rich);
           const vehicles = new BusModelLayer();
           busLayerRef.current = vehicles;
+          vehicles.setHaloColor(latest.current.props.festive?.busGlow ?? null);
           activeMap.addLayer(vehicles);
           ready.current = true;
           syncBuses();
@@ -1232,6 +1258,50 @@ export default function MapView(props: Props) {
   useEffect(() => {
     busLayerRef.current?.setSelected(selectedBusKey);
   }, [selectedBusKey, attempt, status]);
+
+  const busGlow = festive?.busGlow;
+  useEffect(() => {
+    busLayerRef.current?.setHaloColor(busGlow ?? null);
+  }, [busGlow, attempt, status]);
+
+  const stopMark = festive?.stopMark;
+  const markedStops = festive?.stops;
+  useEffect(() => {
+    const map = mapRef.current;
+    const source = ready.current
+      ? (map?.getSource(FESTIVE) as GeoJSONSource | undefined)
+      : undefined;
+    if (!map || !source) return;
+    const marks: Points = {
+      type: "FeatureCollection",
+      features: stopMark
+        ? (markedStops ?? []).map((stop) => ({
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [stop.longitude, stop.latitude],
+            },
+            properties: { mark: stopMark },
+          }))
+        : [],
+    };
+    if (!stopMark || map.hasImage(stopMark)) {
+      source.setData(marks);
+      return;
+    }
+    let cancelled = false;
+    const image = new Image();
+    image.onload = () => {
+      if (cancelled) return;
+      if (!map.hasImage(stopMark))
+        map.addImage(stopMark, image, { pixelRatio: 2 });
+      source.setData(marks);
+    };
+    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(decorationSvg(stopMark))}`;
+    return () => {
+      cancelled = true;
+    };
+  }, [stopMark, markedStops, attempt, status]);
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");

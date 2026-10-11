@@ -44,10 +44,14 @@ import { Tabs } from "./components/ui/Tabs";
 import { intentSnap, snapHeights, type Snap } from "./lib/drawerSnap";
 import type { FollowState } from "./lib/follow";
 import { useLanguage } from "./lib/language";
+import { festiveStops } from "./lib/occasions";
 import { findStop, type RecentStop } from "./lib/recentTrips";
 import { routeColor } from "./lib/routeColor";
 import { sameStop } from "./lib/stopCard";
 import { useMediaQuery } from "./lib/useMediaQuery";
+import { OccasionGreeting } from "./occasions/OccasionGreeting";
+import { OccasionLayers } from "./occasions/OccasionLayers";
+import { useOccasion } from "./occasions/useOccasion";
 import {
   useElementHeight,
   useSafeAreaBottom,
@@ -93,7 +97,8 @@ export default function App() {
 
 function Home() {
   const { language } = useLanguage();
-  const { t } = useLingui();
+  const { i18n, t } = useLingui();
+  const festive = useOccasion();
   const { routesQuery, routes, catalog, places, routeColors, routeCodeById } =
     useTransitData();
   const [tab, setTab] = useState<"plan" | "routes">("plan");
@@ -171,6 +176,26 @@ function Home() {
   const geometry = useGeometry(activeRoute?.code, direction);
   const lineKey = `${activeRoute?.code}|${direction}`;
   const [closedLineNotice, setClosedLineNotice] = useState<string | null>(null);
+  const lineNoticeShown = geometry.isError && closedLineNotice !== lineKey;
+  const [richDevice, setRichDevice] = useState(false);
+  const openRouteStops =
+    tab === "routes" && browser.routeCode ? routeStops.data?.stops : undefined;
+  const festiveMap = useMemo(() => {
+    if (!festive.theme) return null;
+    const journeyStops =
+      tab === "plan" && selectedJourney
+        ? selectedJourney.legs.flatMap((leg) =>
+            leg.kind === "ride"
+              ? [leg.ride.board, ...(leg.ride.stops ?? []), leg.ride.alight]
+              : [],
+          )
+        : [];
+    return {
+      stopMark: festive.theme.stopMark,
+      busGlow: festive.theme.busGlow,
+      stops: festiveStops(journeyStops, openRouteStops ?? []),
+    };
+  }, [festive.theme, tab, selectedJourney, openRouteStops]);
   const { mapRoutes: networkMapRoutes } = useAllRouteGeometries(routes);
   const mapLayers = useMapLayers({
     tab,
@@ -901,6 +926,8 @@ function Home() {
                 frameRide={tab === "plan" ? frameRide : null}
                 busOverlay={phone ? null : busCard}
                 busLine={busLine}
+                festive={festiveMap}
+                onCapabilities={setRichDevice}
                 language={language}
                 onStopSelect={(stop) => (stop ? openStop(stop) : closeStop())}
                 onBusSelect={handleBusSelect}
@@ -922,6 +949,13 @@ function Home() {
                 }
               />
             </Suspense>
+            {festive.theme && (
+              <OccasionLayers
+                theme={festive.theme}
+                playMoment={festive.playMoment && richDevice}
+                onMomentDone={festive.momentDone}
+              />
+            )}
             <div
               className={`pointer-events-none absolute top-7.5 right-19 left-7.5 max-md:hidden ${
                 selectedBus ? "hidden" : ""
@@ -930,13 +964,38 @@ function Home() {
               <div
                 className={`inline-flex max-w-full flex-col gap-1 px-4.5 py-3 shadow-float ${cardClass()}`}
               >
-                <Eyebrow>{t`Colombo & beyond`}</Eyebrow>
-                <strong className="text-2xl font-semibold tracking-tight">
-                  {activeRoute ? activeRoute.name : t`Find your way around.`}
-                </strong>
+                {festive.theme && !activeRoute ? (
+                  <OccasionGreeting
+                    theme={festive.theme}
+                    onTurnOff={festive.turnOff}
+                    variant="card"
+                  />
+                ) : (
+                  <>
+                    <Eyebrow>
+                      {festive.theme
+                        ? festive.theme.greeting(i18n)
+                        : t`Colombo & beyond`}
+                    </Eyebrow>
+                    <strong className="text-2xl font-semibold tracking-tight">
+                      {activeRoute
+                        ? activeRoute.name
+                        : t`Find your way around.`}
+                    </strong>
+                  </>
+                )}
               </div>
             </div>
-            {geometry.isError && closedLineNotice !== lineKey && (
+            {festive.theme && !lineNoticeShown && !selectedBus && (
+              <div className="pointer-events-none absolute top-[calc(var(--header-height,60px)+8px)] left-3 max-w-[calc(100%-1.5rem)] md:hidden">
+                <OccasionGreeting
+                  theme={festive.theme}
+                  onTurnOff={festive.turnOff}
+                  variant="strip"
+                />
+              </div>
+            )}
+            {lineNoticeShown && (
               <div
                 role="status"
                 className="absolute top-31 left-7.5 flex max-w-82 items-center gap-2 rounded-xl border border-warning-200 bg-warning-50 py-1 pr-1 pl-3 text-xs leading-snug text-ink shadow-float max-md:top-[calc(var(--header-height,60px)+8px)] max-md:left-3 max-md:max-w-[calc(100%-1.5rem)]"
