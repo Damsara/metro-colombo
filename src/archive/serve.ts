@@ -51,23 +51,3 @@ export function catalogResponse(
       }),
     );
 }
-
-export const readme = (publicUrl: string) => `Lanka Metro fleet archive
-
-Every live bus position, as a DuckDB database you can attach:
-
-  ATTACH 'https://metro.manasa.ai/' AS metro;
-  SHOW ALL TABLES;
-
-Tables and views:
-  fixes        every position, one Parquet file per day
-  fixes_today  today so far, at most about five minutes old
-  all_fixes    both together
-  routes, stops
-  load_by_route_hour, buses_per_hour, silences
-
-The Parquet files are public too, for Polars, pandas or Spark:
-  ${publicUrl}/fixes/date=YYYY-MM-DD/fixes.parquet
-
-Bus positions and load counts only; no passenger data.
-`;

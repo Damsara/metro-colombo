@@ -64,7 +64,7 @@ def run(root, live_file, hour=0):
 def test_compacts_finished_days_and_builds_a_working_catalog():
     with tempfile.TemporaryDirectory() as root:
         write_chunk(root, "2026-10-11", "120000-a.ndjson.gz",
-                    [row("b2", 2000, passengers=10, capacity=40), row("b1", 3000), row("b1", 1000)])
+                    [row("b2", 2000, passengers=10, capacity=40, route_id="r1"), row("b1", 3000), row("b1", 1000)])
         write_chunk(root, "2026-10-11", "120500-a.ndjson.gz",
                     [row("b1", 1000, received=9999), row("b1", 600_000)])
         write_chunk(root, "2026-10-12", "000500-a.ndjson.gz", [row("today", TODAY_MS + 5000)])
@@ -97,6 +97,7 @@ def test_compacts_finished_days_and_builds_a_working_catalog():
         assert con.execute("SELECT count(*) FROM metro.silences").fetchone()[0] == 1
         assert con.execute("SELECT name FROM metro.stops").fetchone()[0] == "Kottawa"
         assert con.execute("SELECT route_code, end_location FROM metro.routes").fetchone() == ("CM01", "Fort")
+        assert con.execute("SELECT route_code FROM metro.fixes WHERE bus_id = 'b2'").fetchone()[0] == "CM01"
         con.close()
 
         rerun = run(root, today_file)

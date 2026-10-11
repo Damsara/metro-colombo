@@ -33,9 +33,10 @@ COLUMNS = {
     "received_at": "BIGINT",
 }
 COLUMNS_SQL = "{" + ", ".join(f"'{k}': '{v}'" for k, v in COLUMNS.items()) + "}"
+# Colombo wall-clock time without time-zone functions, which DuckDB in the browser lacks; Sri Lanka has no daylight saving.
+COLOMBO_OFFSET_MS = 19_800_000
 DERIVED = (
-    "make_timestamp(coalesce(reported_at, received_at) * 1000) "
-    "AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Colombo' AS ts, "
+    f"make_timestamp((coalesce(reported_at, received_at) + {COLOMBO_OFFSET_MS}) * 1000) AS ts, "
     "CASE WHEN capacity > 0 THEN passengers / capacity END AS load"
 )
 
@@ -164,6 +165,20 @@ def build_catalog(path, public_url, live_url, today_file, today_start_ms, days, 
     if os.path.exists(path):
         os.remove(path)
     con = duckdb.connect(path)
+    if has_reference:
+        con.execute(f"CREATE VIEW routes AS SELECT * FROM read_parquet({quote(public_url + '/reference/routes.parquet')})")
+        con.execute(f"CREATE VIEW stops AS SELECT * FROM read_parquet({quote(public_url + '/reference/stops.parquet')})")
+
+    # Live fixes name the route by id only, so the code is filled in from the route list.
+    def with_route_codes(select):
+        if not has_reference:
+            return select
+        return (
+            "SELECT f.* REPLACE (coalesce(f.route_code, codes.route_code) AS route_code) "
+            f"FROM ({select}) f LEFT JOIN (SELECT DISTINCT route_id, route_code FROM routes) codes "
+            "ON f.route_id = codes.route_id"
+        )
+
     urls = [f"{public_url}/fixes/date={day}/fixes.parquet" for day in sorted(days)]
     empty = "SELECT " + ", ".join(f"NULL::{t} AS {k}" for k, t in COLUMNS.items()) + " WHERE false"
     source = (
@@ -171,7 +186,7 @@ def build_catalog(path, public_url, live_url, today_file, today_start_ms, days, 
         if urls
         else f"({empty})"
     )
-    con.execute(f"CREATE VIEW fixes AS SELECT *, {DERIVED} FROM {source}")
+    con.execute(f"CREATE VIEW fixes AS {with_route_codes(f'SELECT *, {DERIVED} FROM {source}')}")
     live = f"SELECT * FROM read_json({quote(live_url)}, format = 'newline_delimited', columns = {COLUMNS_SQL})"
     sources = (
         f"SELECT * FROM read_parquet({quote(today_file)}, hive_partitioning = false) UNION ALL BY NAME {live}"
@@ -180,16 +195,16 @@ def build_catalog(path, public_url, live_url, today_file, today_start_ms, days, 
     )
     # The live file overlaps the hourly file by up to an hour, so repeats are dropped here.
     con.execute(
-        f"""CREATE VIEW fixes_today AS SELECT *, {DERIVED}
+        "CREATE VIEW fixes_today AS "
+        + with_route_codes(
+            f"""SELECT *, {DERIVED}
             FROM ({sources})
             WHERE received_at >= {today_start_ms}
             QUALIFY row_number() OVER (
               PARTITION BY bus_id, coalesce(reported_at, -received_at) ORDER BY received_at) = 1"""
+        )
     )
     con.execute("CREATE VIEW all_fixes AS SELECT * FROM fixes UNION ALL BY NAME SELECT * FROM fixes_today")
-    if has_reference:
-        con.execute(f"CREATE VIEW routes AS SELECT * FROM read_parquet({quote(public_url + '/reference/routes.parquet')})")
-        con.execute(f"CREATE VIEW stops AS SELECT * FROM read_parquet({quote(public_url + '/reference/stops.parquet')})")
     con.execute(
         """CREATE VIEW load_by_route_hour AS
            SELECT route_code, hour(ts) AS hour, count(*) AS fixes,

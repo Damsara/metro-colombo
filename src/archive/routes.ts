@@ -3,7 +3,7 @@ import { Effect, Layer } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
 import { ServerConfig } from "../config.js";
 import { ArchiveStore } from "./r2.js";
-import { catalogResponse, isDuckDbAgent, readme } from "./serve.js";
+import { catalogResponse, isDuckDbAgent } from "./serve.js";
 
 const unavailable = HttpServerResponse.text(
   "The fleet archive is unavailable right now.",
@@ -43,14 +43,6 @@ export const ArchiveRoutes = Layer.unwrap(
       );
     });
 
-    const about = Effect.gen(function* () {
-      const store = yield* ArchiveStore;
-      if (!store.enabled) return notConfigured;
-      return HttpServerResponse.text(readme(store.publicUrl), {
-        headers: { "cache-control": "public, max-age=3600" },
-      });
-    });
-
     // DuckDB looks for a write-ahead log next to any database it attaches.
     const noLog = Effect.succeed(
       HttpServerResponse.empty({
@@ -64,7 +56,6 @@ export const ArchiveRoutes = Layer.unwrap(
       HttpRouter.route("HEAD", "/", root),
       HttpRouter.route("GET", "/.wal", noLog),
       HttpRouter.route("HEAD", "/.wal", noLog),
-      HttpRouter.route("GET", "/data", about),
     ]);
   }),
 );
