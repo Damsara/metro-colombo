@@ -12,7 +12,6 @@ import {
   Route,
   TriangleAlert,
   Footprints,
-  LocateFixed,
 } from "lucide-react";
 import { ApiError, useRouteStops } from "../api";
 import type { I18n } from "@lingui/core";
@@ -316,7 +315,7 @@ function LiveBusButton({
           onClick={() => onShowBus(bus)}
         >
           {t`Follow on map`}
-          <LocateFixed size={14} aria-hidden="true" />
+          <BusFront size={14} aria-hidden="true" />
         </Button>
       </>
     );
@@ -329,7 +328,7 @@ function LiveBusButton({
           aria-hidden="true"
         />
         {t`Live · follow on map`}
-        <LocateFixed size={14} aria-hidden="true" />
+        <BusFront size={14} aria-hidden="true" />
       </Button>
     );
   }
