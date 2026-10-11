@@ -23,8 +23,8 @@ import { useGeometry, useAllRouteGeometries, useRouteStops } from "./api";
 import { track } from "./lib/analytics";
 import { MAP_STATUS } from "./classNames";
 import { AppHeader } from "./components/AppHeader";
+import { BusCard } from "./components/BusCard";
 import { PrivacyChoicesLink } from "./components/ConsentPrompt";
-import { FollowBusPill } from "./components/FollowBusPill";
 import { HowToUse } from "./components/HowToUse";
 import JourneyResults, { journeyKey } from "./components/JourneyResults";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
@@ -45,6 +45,7 @@ import { intentSnap, snapHeights, type Snap } from "./lib/drawerSnap";
 import type { FollowState } from "./lib/follow";
 import { useLanguage } from "./lib/language";
 import { findStop, type RecentStop } from "./lib/recentTrips";
+import { routeColor } from "./lib/routeColor";
 import { sameStop } from "./lib/stopCard";
 import { useMediaQuery } from "./lib/useMediaQuery";
 import {
@@ -53,6 +54,7 @@ import {
   useViewportHeight,
 } from "./lib/useViewport";
 import { TransitDataProvider, useTransitData } from "./state/TransitData";
+import { useBusJourney } from "./state/useBusJourney";
 import { useBusSelection } from "./state/useBusSelection";
 import { useLiveBuses } from "./state/useLiveBuses";
 import { useMapLayers } from "./state/useMapLayers";
@@ -61,6 +63,7 @@ import { useTracking } from "./state/useTracking";
 import { useTrip } from "./state/useTrip";
 import {
   busKey,
+  isOnRide,
   type CatalogStop,
   type JourneyOption,
   type LiveBus,
@@ -75,9 +78,6 @@ const MapView = lazy(() => import("./components/MapView"));
 
 const NO_BUSES: LiveBus[] = [];
 const POPULAR_STOPS = ["makumbura", "colombo fort", "kottawa"];
-// On phones the map controls climb above the tracked-bus pill sitting on the
-// drawer, so it doesn't cover them.
-const PILL_ROOM_PX = 92;
 // The control column and the attribution under it, so the column stops short
 // of the header.
 const CONTROLS_PX = 210;
@@ -140,9 +140,10 @@ function Home() {
   const { selectedBus, release: releaseBus } = selection;
   const trackedSelected =
     tracking.active && !!selectedBus && busKey(selectedBus) === trackedKey;
-  // The tracked bus's identity lives in the panel, so the map's pill only
+  // The tracked bus's identity lives in the panel, so the bus card only
   // shows for some other bus picked on the map.
   const showBusPill = !(trackingPlan && trackedSelected);
+  const cardBus = selectedBus && showBusPill ? selectedBus : null;
   const trackedFollow: FollowState = tracking.lost
     ? "lost"
     : trackedSelected && selection.followState
@@ -156,6 +157,17 @@ function Home() {
   // the route the user opened.
   const firstRide = selectedJourney?.legs.find((leg) => leg.kind === "ride");
   const firstRideTrip = firstRide?.kind === "ride" ? firstRide.ride : undefined;
+  // The rider's stops show on the bus card only when that bus runs their ride.
+  const markRide = tracking.active ? tracking.ride : firstRideTrip;
+  const onRide =
+    !!cardBus && !!markRide && isOnRide(cardBus, markRide, Date.now());
+  const boardId = onRide ? markRide?.board.id : undefined;
+  const alightId = onRide ? markRide?.alight.id : undefined;
+  const marks = useMemo(
+    () => (boardId || alightId ? { boardId, alightId } : undefined),
+    [boardId, alightId],
+  );
+  const busJourney = useBusJourney(cardBus, marks);
   const activeRouteCode =
     tab === "plan" ? firstRideTrip?.route.code : browser.routeCode;
   const activeRoute = routes.find((route) => route.code === activeRouteCode);
@@ -189,12 +201,17 @@ function Home() {
     (bus: LiveBus | null) => {
       selectBus(bus);
       if (bus) setFrameRide(null);
+      // On phones the bus's card takes the drawer, so a stop's card gives way.
+      if (bus && phone) {
+        setSelectedStop(null);
+        snapBeforeStop.current = null;
+      }
       if (bus) track("follow_bus", { route: routeCodeOf(bus) ?? "unknown" });
       if (!bus || tab !== "routes") return;
       const code = routeCodeOf(bus);
       if (code) showRouteOf(code, bus.direction_id);
     },
-    [selectBus, tab, routeCodeOf, showRouteOf],
+    [selectBus, tab, routeCodeOf, showRouteOf, phone],
   );
   const setShowLive = selection.setShowLive;
   const handleShowLiveChange = useCallback(
@@ -271,6 +288,43 @@ function Home() {
     viewStop,
     trackingPlan,
   ]);
+
+  // On phones the bus card is a mode of the drawer, like the stop card.
+  // "See all stops" sets it aside for the route view underneath.
+  const [cardAsideFor, setCardAsideFor] = useState<string | null>(null);
+  const busInDrawer = phone && !!cardBus && cardAsideFor !== viewBus;
+  const snapNow = useRef(snap);
+  snapNow.current = snap;
+  // Letting go of the bus puts the drawer back where it was before.
+  const snapBeforeBus = useRef<Snap | null>(null);
+  const wasBusInDrawer = useRef(false);
+  useEffect(() => {
+    if (busInDrawer && !wasBusInDrawer.current)
+      snapBeforeBus.current = snapNow.current;
+    if (!busInDrawer && wasBusInDrawer.current) {
+      if (!viewBus && snapBeforeBus.current) setSnap(snapBeforeBus.current);
+      snapBeforeBus.current = null;
+    }
+    wasBusInDrawer.current = busInDrawer;
+  }, [busInDrawer, viewBus]);
+  const [cardOpenFor, setCardOpenFor] = useState<string | null>(null);
+  // The same bus picked again later starts with a fresh card.
+  useEffect(() => {
+    if (viewBus) return;
+    setCardAsideFor(null);
+    setCardOpenFor(null);
+  }, [viewBus]);
+  const cardExpanded = phone
+    ? busInDrawer && snap !== "peek"
+    : !!cardBus && cardOpenFor === viewBus;
+  const cardRoute = cardBus ? (routeCodeOf(cardBus) ?? "unknown") : "unknown";
+  // Once per opening, not per live update.
+  const expandedRoute = useRef(cardRoute);
+  expandedRoute.current = cardRoute;
+  useEffect(() => {
+    if (cardExpanded)
+      track("bus_card_expand", { route: expandedRoute.current });
+  }, [cardExpanded]);
 
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -394,10 +448,36 @@ function Home() {
 
   const controlsInset = !phone
     ? 0
-    : Math.min(
-        mapInset + (selectedBus && showBusPill ? PILL_ROOM_PX : 0),
-        viewport - headerHeight - CONTROLS_PX,
-      );
+    : Math.min(mapInset, viewport - headerHeight - CONTROLS_PX);
+
+  const expandCard = (expanded: boolean) => {
+    if (phone) setSnap(expanded ? "half" : "peek");
+    else setCardOpenFor(expanded ? viewBus : null);
+  };
+  const seeAllStops = () => {
+    if (!cardBus) return;
+    const code = routeCodeOf(cardBus);
+    track("bus_card_all_stops", { route: code ?? "unknown" });
+    if (!code) return;
+    changeTab("routes");
+    showRouteOf(code, cardBus.direction_id);
+    if (phone) setCardAsideFor(viewBus);
+  };
+  const busCard = cardBus && (
+    <BusCard
+      bus={cardBus}
+      state={selection.followState ?? "following"}
+      result={busJourney}
+      color={routeColor(routeColors.get(cardRoute))}
+      language={language}
+      expanded={cardExpanded}
+      inline={phone}
+      onFollow={() => selection.dispatch({ type: "follow" })}
+      onRelease={() => handleBusSelect(null)}
+      onExpand={expandCard}
+      onSeeAllStops={seeAllStops}
+    />
+  );
 
   const panelLabel = tab === "plan" ? t`Plan your bus trip` : t`Bus routes`;
   // On phones the panel scrolls only at full height; lower, a drag on it
@@ -425,19 +505,20 @@ function Home() {
   // On phones a selected stop's card stands in for the drawer's content,
   // which stays mounted underneath to come back as it was.
   const stopInDrawer = phone && !!selectedStop;
+  const cardInDrawer = stopInDrawer || busInDrawer;
   const panel = (
     <>
-      {stopInDrawer && (
+      {cardInDrawer && (
         <div
           className={`min-h-0 flex-1 overscroll-contain ${
             panelScrolls ? "touch-pan-y overflow-y-auto" : "overflow-hidden"
           }`}
           data-vaul-no-drag={panelScrolls ? "" : undefined}
         >
-          {stopCard}
+          {stopInDrawer ? stopCard : busCard}
         </div>
       )}
-      {whereToBar && !stopInDrawer && (
+      {whereToBar && !cardInDrawer && (
         <div className="px-4 pb-2">
           <button
             type="button"
@@ -465,7 +546,7 @@ function Home() {
       <Tabs
         // While tracking, a phone's drawer keeps to the bus.
         className={`border-b border-line px-6 pt-4.5 pb-3.5 max-md:px-4 max-md:pt-0 max-md:pb-2 ${
-          trackingPlan || stopInDrawer ? "max-md:hidden" : ""
+          trackingPlan || cardInDrawer ? "max-md:hidden" : ""
         }`}
         label={t`Explore Metro`}
         value={tab}
@@ -485,7 +566,7 @@ function Home() {
       />
       <div
         ref={panelRef}
-        hidden={stopInDrawer}
+        hidden={cardInDrawer}
         className={`min-h-0 flex-1 overscroll-contain px-7.5 pt-7.5 pb-5 max-lg:px-6 max-lg:py-6 max-md:px-4 max-md:pt-3 max-md:pb-6 2xl:px-10 2xl:py-9 ${
           panelScrolls ? "touch-pan-y overflow-y-auto" : "overflow-hidden"
         }`}
@@ -837,16 +918,7 @@ function Home() {
                 followBus={selection.followBus}
                 followState={selection.followState}
                 frameRide={tab === "plan" ? frameRide : null}
-                busOverlay={
-                  selectedBus && showBusPill ? (
-                    <FollowBusPill
-                      bus={selectedBus}
-                      state={selection.followState ?? "following"}
-                      onFollow={() => selection.dispatch({ type: "follow" })}
-                      onRelease={() => handleBusSelect(null)}
-                    />
-                  ) : null
-                }
+                busOverlay={phone ? null : busCard}
                 language={language}
                 onStopSelect={(stop) => (stop ? openStop(stop) : closeStop())}
                 onBusSelect={handleBusSelect}
