@@ -44,7 +44,7 @@ import { Tabs } from "./components/ui/Tabs";
 import { intentSnap, snapHeights, type Snap } from "./lib/drawerSnap";
 import type { FollowState } from "./lib/follow";
 import { useLanguage } from "./lib/language";
-import { festiveStops } from "./lib/occasions";
+import { festiveStops, hubStops } from "./lib/occasions";
 import { findStop, type RecentStop } from "./lib/recentTrips";
 import { routeColor } from "./lib/routeColor";
 import { sameStop } from "./lib/stopCard";
@@ -180,6 +180,14 @@ function Home() {
   const [richDevice, setRichDevice] = useState(false);
   const openRouteStops =
     tab === "routes" && browser.routeCode ? routeStops.data?.stops : undefined;
+  const hubs = useMemo(() => hubStops(catalog.stops), [catalog.stops]);
+  const followedStops = useMemo(
+    () =>
+      busJourney?.status === "ready"
+        ? busJourney.journey.ahead.map((item) => item.stop)
+        : [],
+    [busJourney],
+  );
   const festiveMap = useMemo(() => {
     if (!festive.theme) return null;
     const journeyStops =
@@ -193,9 +201,20 @@ function Home() {
     return {
       stopMark: festive.theme.stopMark,
       busGlow: festive.theme.busGlow,
-      stops: festiveStops(journeyStops, openRouteStops ?? []),
+      stops: festiveStops(
+        [journeyStops, followedStops, openRouteStops ?? [], hubs],
+        selectedStop ? [selectedStop] : [],
+      ),
     };
-  }, [festive.theme, tab, selectedJourney, openRouteStops]);
+  }, [
+    festive.theme,
+    tab,
+    selectedJourney,
+    followedStops,
+    openRouteStops,
+    hubs,
+    selectedStop,
+  ]);
   const { mapRoutes: networkMapRoutes } = useAllRouteGeometries(routes);
   const mapLayers = useMapLayers({
     tab,

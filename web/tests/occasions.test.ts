@@ -4,6 +4,7 @@ import {
   colomboDate,
   festiveOff,
   festiveStops,
+  hubStops,
   markMomentPlayed,
   parseOccasionKind,
   setFestiveOff,
@@ -106,20 +107,59 @@ const s = (id: string) => ({
   longitude: 79.9,
 });
 
-test("marks journey stops first, else the open route's, never the whole network", () => {
+test("marks the first non-empty source, never the whole network", () => {
   assert.deepEqual(
-    festiveStops([s("a"), s("a"), s("b")], [s("c")]).map((x) => x.id),
+    festiveStops([[s("a"), s("a"), s("b")], [s("c")]]).map((x) => x.id),
     ["a", "b"],
   );
   assert.deepEqual(
-    festiveStops([], [s("c")]).map((x) => x.id),
+    festiveStops([[], [], [s("c")]]).map((x) => x.id),
     ["c"],
   );
   assert.equal(
-    festiveStops(
-      [],
-      Array.from({ length: 200 }, (_, i) => s(`${i}`)),
-    ).length,
+    festiveStops([[], Array.from({ length: 200 }, (_, i) => s(`${i}`))]).length,
     80,
+  );
+});
+
+test("the selected stop always gets a lantern, once", () => {
+  assert.deepEqual(
+    festiveStops([[s("a"), s("b")]], [s("b")]).map((x) => x.id),
+    ["b", "a"],
+  );
+  assert.deepEqual(
+    festiveStops([[]], [s("z")]).map((x) => x.id),
+    ["z"],
+  );
+});
+
+test("hubs are the stops most routes share", () => {
+  const hub = (id: string, routes: string[], north = 0) => ({
+    ...s(id),
+    routes,
+    latitude: 6.9 + north,
+  });
+  const stops = [
+    hub("quiet", ["CM01"]),
+    hub("pair", ["CM01", "CM02"], 0.02),
+    hub("fort", ["CM01", "CM02", "CM03"]),
+    hub("other-pair", ["CM04", "CM05"], 0.04),
+  ];
+  assert.deepEqual(
+    hubStops(stops).map((x) => x.id),
+    ["fort", "other-pair", "pair"],
+  );
+  assert.deepEqual(
+    hubStops(stops, 1).map((x) => x.id),
+    ["fort"],
+  );
+});
+
+test("hubs keep their distance so lanterns don't pile up", () => {
+  const near = { ...s("near"), routes: ["CM01", "CM02"], latitude: 6.9031 };
+  const fort = { ...s("fort"), routes: ["CM01", "CM02", "CM03"] };
+  assert.deepEqual(
+    hubStops([near, fort]).map((x) => x.id),
+    ["fort"],
   );
 });

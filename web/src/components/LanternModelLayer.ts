@@ -15,14 +15,29 @@ const WORLD_PIXELS_AT_ZOOM_0 = 512;
 const LANTERN_METERS = 9;
 const MIN_LANTERN_PIXELS = 44;
 const HANG_ABOVE_GROUND = 1.35;
-const SWAY_RADIANS = 0.08;
-const SWAY_MS = 10_000;
+// The south-west monsoon: lanterns lean towards the north-east.
+const WIND_TOWARDS = new THREE.Vector2(1, -1).normalize();
+const LEAN_RADIANS = 0.07;
+const GUST_RADIANS = 0.09;
+const SWAY_RADIANS = 0.06;
+const GUST_WAVELENGTH_METERS = 900;
+const FRAME_MS = 33;
 
 function lanternScaleAtZoom(zoom: number): number {
   const metersPerPixel =
     (EARTH_CIRCUMFERENCE_METERS * Math.cos((ORIGIN[1] * Math.PI) / 180)) /
     (WORLD_PIXELS_AT_ZOOM_0 * 2 ** zoom);
   return Math.max(LANTERN_METERS, MIN_LANTERN_PIXELS * metersPerPixel);
+}
+
+// A steady lean, gusts that roll across the map, and each lantern's own swing.
+function windTilt(position: THREE.Vector3, index: number, now: number): number {
+  const along =
+    (position.x * WIND_TOWARDS.x - position.z * WIND_TOWARDS.y) /
+    GUST_WAVELENGTH_METERS;
+  const gust = 0.5 + 0.5 * Math.sin(now / 2600 - along * Math.PI * 2);
+  const swing = Math.sin(now / 620 + index * 1.7) * (0.5 + gust);
+  return LEAN_RADIANS + GUST_RADIANS * gust * gust + SWAY_RADIANS * swing;
 }
 
 function dispose(root: THREE.Object3D): void {
@@ -60,7 +75,7 @@ export class LanternModelLayer implements CustomLayerInterface {
   private stops: [number, number][] = [];
   private lanterns: THREE.Group[] = [];
   private reducedMotion = false;
-  private swayUntil = 0;
+  private nextFrame?: ReturnType<typeof setTimeout>;
 
   onAdd(
     map: LibreMap,
@@ -81,7 +96,6 @@ export class LanternModelLayer implements CustomLayerInterface {
 
   setStops(stops: [number, number][]): void {
     this.stops = stops;
-    this.swayUntil = performance.now() + SWAY_MS;
     if (stops.length) this.load();
     this.rebuild();
   }
@@ -98,14 +112,13 @@ export class LanternModelLayer implements CustomLayerInterface {
     const map = this.map;
     if (!this.renderer || !map || !this.lanterns.length) return;
     const now = performance.now();
-    const swaying = !this.reducedMotion && now < this.swayUntil;
+    const windy = !this.reducedMotion;
     const scale = lanternScaleAtZoom(map.getZoom());
     this.lanterns.forEach((lantern, index) => {
       lantern.scale.setScalar(scale);
       lantern.position.y = scale * (1 + HANG_ABOVE_GROUND);
-      const fade = swaying ? (this.swayUntil - now) / SWAY_MS : 0;
-      lantern.rotation.z =
-        Math.sin(now / 700 + index * 1.7) * SWAY_RADIANS * fade;
+      const tilt = windy ? windTilt(lantern.position, index, now) : 0;
+      lantern.rotation.set(-tilt * WIND_TOWARDS.y, 0, tilt * WIND_TOWARDS.x);
     });
     this.projection.fromArray(args.defaultProjectionData.mainMatrix);
     this.camera.projectionMatrix
@@ -114,11 +127,25 @@ export class LanternModelLayer implements CustomLayerInterface {
     this.renderer.resetState();
     this.renderer.render(this.scene, this.camera);
     this.renderer.resetState();
-    if (swaying) map.triggerRepaint();
+    if (windy && this.onScreen(map)) this.scheduleFrame(map);
+  }
+
+  private onScreen(map: LibreMap): boolean {
+    const bounds = map.getBounds();
+    return this.stops.some((stop) => bounds.contains(stop));
+  }
+
+  private scheduleFrame(map: LibreMap): void {
+    if (this.nextFrame !== undefined) return;
+    this.nextFrame = setTimeout(() => {
+      this.nextFrame = undefined;
+      map.triggerRepaint();
+    }, FRAME_MS);
   }
 
   onRemove(): void {
     this.disposed = true;
+    clearTimeout(this.nextFrame);
     this.scene.clear();
     this.templates.forEach(dispose);
     this.renderer?.dispose();
@@ -156,13 +183,14 @@ export class LanternModelLayer implements CustomLayerInterface {
       this.stops.forEach(([lng, lat], index) => {
         const coordinate = MercatorCoordinate.fromLngLat({ lng, lat });
         const lantern = new THREE.Group();
-        lantern.add(this.templates[index % this.templates.length].clone(true));
+        const model = this.templates[index % this.templates.length].clone(true);
+        model.rotation.y = index * 0.9;
+        lantern.add(model);
         lantern.position.set(
           (coordinate.x - this.origin.x) / this.meter,
           0,
           (coordinate.y - this.origin.y) / this.meter,
         );
-        lantern.rotation.y = index * 0.9;
         this.scene.add(lantern);
         this.lanterns.push(lantern);
       });

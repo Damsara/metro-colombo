@@ -83,12 +83,48 @@ export const setFestiveOff = (store: KeyValueStore | null, off: boolean) =>
 const MAX_MARKED_STOPS = 80;
 
 export function festiveStops<T extends { id: string }>(
-  journeyStops: readonly T[],
-  routeStops: readonly T[],
+  sources: readonly (readonly T[])[],
+  always: readonly T[] = [],
 ): T[] {
-  const source = journeyStops.length ? journeyStops : routeStops;
+  const source = sources.find((list) => list.length) ?? [];
   const seen = new Set<string>();
-  return source
+  return [...always, ...source]
     .filter((stop) => !seen.has(stop.id) && seen.add(stop.id))
     .slice(0, MAX_MARKED_STOPS);
+}
+
+const MAX_HUB_STOPS = 24;
+const HUB_SPACING_METERS = 800;
+const METERS_PER_DEGREE = 111_320;
+
+type HubStop = {
+  id: string;
+  routes: readonly string[];
+  latitude: number;
+  longitude: number;
+};
+
+function metersApart(a: HubStop, b: HubStop): number {
+  const x =
+    (a.longitude - b.longitude) *
+    Math.cos((((a.latitude + b.latitude) / 2) * Math.PI) / 180);
+  return Math.hypot(x, a.latitude - b.latitude) * METERS_PER_DEGREE;
+}
+
+export function hubStops<T extends HubStop>(
+  stops: readonly T[],
+  limit = MAX_HUB_STOPS,
+): T[] {
+  const picked: T[] = [];
+  const busiestFirst = stops
+    .filter((stop) => stop.routes.length >= 2)
+    .sort(
+      (a, b) => b.routes.length - a.routes.length || a.id.localeCompare(b.id),
+    );
+  for (const stop of busiestFirst) {
+    if (picked.length === limit) break;
+    if (picked.every((other) => metersApart(stop, other) >= HUB_SPACING_METERS))
+      picked.push(stop);
+  }
+  return picked;
 }
