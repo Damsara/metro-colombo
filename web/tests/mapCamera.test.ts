@@ -4,8 +4,10 @@ import {
   OVERVIEW_PITCH,
   STREET_PITCH,
   canShowBuildings,
+  initialTilt,
   parseMapMode,
   pitchForZoom,
+  tiltFor,
   zoomBand,
 } from "../src/lib/mapCamera";
 
@@ -77,4 +79,51 @@ test("a stored map mode is read back, anything else is ignored", () => {
     {},
   ])
     assert.equal(parseMapMode(garbage), null, String(garbage));
+});
+
+test("the zoom-led tilt drives every camera update in 3D", () => {
+  const state = initialTilt("3d");
+  assert.equal(tiltFor(state, 11, 0), OVERVIEW_PITCH);
+  assert.equal(tiltFor(state, 16, 10), STREET_PITCH);
+});
+
+test("2D keeps the map flat", () => {
+  const state = initialTilt("2d");
+  assert.equal(tiltFor(state, 16, 30), 0);
+  state.manualBand = 2;
+  assert.equal(tiltFor(state, 16, 30), 0);
+});
+
+test("the app's own pitch animations are left alone", () => {
+  const state = { ...initialTilt("3d"), directed: true };
+  assert.equal(tiltFor(state, 16, 12), undefined);
+  state.mode = "2d";
+  assert.equal(tiltFor(state, 16, 12), undefined);
+});
+
+test("a hand-set tilt holds inside its zoom band", () => {
+  const state = { ...initialTilt("3d"), manualBand: 1 as const };
+  assert.equal(tiltFor(state, 13, 60), undefined);
+  assert.equal(tiltFor(state, 14.9, 60), undefined);
+  assert.equal(state.manualBand, 1);
+});
+
+test("leaving the band blends the hand-set tilt back over half a zoom level", () => {
+  const state = { ...initialTilt("3d"), manualBand: 1 as const };
+  assert.equal(tiltFor(state, 15, 10), 10);
+  assert.equal(state.manualBand, null);
+  assert.equal(tiltFor(state, 15.25, 10), 10 + (STREET_PITCH - 10) / 2);
+  // Zooming back doesn't undo the blend.
+  assert.equal(tiltFor(state, 15.1, 99), 10 + (STREET_PITCH - 10) / 2);
+  assert.equal(tiltFor(state, 15.5, 99), STREET_PITCH);
+  assert.equal(state.blend, null);
+  assert.equal(tiltFor(state, 15.1, 99), STREET_PITCH);
+});
+
+test("with reduced motion the tilt is held during a move", () => {
+  const state = { ...initialTilt("3d"), reducedMotion: true };
+  assert.equal(tiltFor(state, 16, 25), undefined);
+  state.manualBand = 0;
+  assert.equal(tiltFor(state, 16, 40), undefined);
+  assert.equal(state.manualBand, null);
 });

@@ -46,3 +46,56 @@ export function canShowBuildings(facts: DeviceFacts): boolean {
 export function parseMapMode(stored: unknown): MapMode | null {
   return stored === "2d" || stored === "3d" ? stored : null;
 }
+
+// How many zoom levels a hand-set tilt takes to blend back into the zoom-led one.
+const TILT_BLEND_ZOOMS = 0.5;
+
+export type TiltState = {
+  mode: MapMode;
+  reducedMotion: boolean;
+  /** While the app itself animates the pitch, the camera is left alone. */
+  directed: boolean;
+  /** The zoom band the user tilted the map by hand in, if they did. */
+  manualBand: 0 | 1 | 2 | null;
+  blend: { pitch: number; zoom: number; progress: number } | null;
+};
+
+export function initialTilt(mode: MapMode): TiltState {
+  return {
+    mode,
+    reducedMotion: false,
+    directed: false,
+    manualBand: null,
+    blend: null,
+  };
+}
+
+/**
+ * The pitch a camera update at this zoom should take, or undefined to keep
+ * the pitch it asked for. A hand-set tilt holds until the zoom leaves its band,
+ * then blends back over half a zoom level; with reduced motion the zoom-led
+ * pitch is left to snap once the move ends.
+ */
+export function tiltFor(
+  state: TiltState,
+  zoom: number,
+  pitch: number,
+): number | undefined {
+  if (state.directed) return undefined;
+  if (state.mode === "2d") return 0;
+  if (state.manualBand !== null) {
+    if (zoomBand(zoom) === state.manualBand) return undefined;
+    state.manualBand = null;
+    state.blend = { pitch, zoom, progress: 0 };
+  }
+  if (state.reducedMotion) return undefined;
+  const target = pitchForZoom(zoom);
+  const blend = state.blend;
+  if (!blend) return target;
+  blend.progress = Math.max(
+    blend.progress,
+    Math.min(1, Math.abs(zoom - blend.zoom) / TILT_BLEND_ZOOMS),
+  );
+  if (blend.progress === 1) state.blend = null;
+  return blend.pitch + (target - blend.pitch) * blend.progress;
+}

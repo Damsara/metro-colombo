@@ -20,11 +20,28 @@ import { useLingui } from "@lingui/react/macro";
 import { i18n } from "../i18n";
 import { MAP_STATUS } from "../classNames";
 import { dragDistance, type FollowEvent } from "../lib/follow";
+import {
+  BUILDING_HEIGHT_SCALE,
+  BUILDINGS_FULL_ZOOM,
+  BUILDINGS_MIN_ZOOM,
+  ISOMETRIC_FOV,
+  MAP_MODE_KEY,
+  canShowBuildings,
+  initialTilt,
+  parseMapMode,
+  pitchForZoom,
+  tiltFor,
+  zoomBand,
+  type DeviceFacts,
+  type MapMode,
+  type TiltState,
+} from "../lib/mapCamera";
 import { routeColor as colorForRoute } from "../lib/routeColor";
 import { splitRoute } from "../lib/routeSplit";
 import type { BusLine } from "../state/useBusJourney";
 import { palette } from "../theme";
 import { BusModelLayer } from "./BusModelLayer";
+import { MapModeControl } from "./MapModeControl";
 import { Button } from "./ui/Button";
 import { Notice } from "./ui/Notice";
 import {
@@ -42,6 +59,10 @@ const ROUTES = "metro-routes";
 const SPLIT = "metro-route-split";
 const STOPS = "metro-stops";
 const STOP_HIT = "metro-stop-hit";
+const ROUTE_LINES = "metro-route-lines";
+const BUILDINGS = "metro-buildings-3d";
+const BASEMAP_BUILDINGS = "building";
+const BUILDINGS_OPACITY = 0.88;
 const STOP_COLOR = palette.ink;
 const WALK_COLOR = palette.muted;
 const FOLLOW_FOCUS = "bus-follow";
@@ -244,7 +265,7 @@ function addTransitLayers(map: LibreMap): void {
     .layers.find((layer) => layer.type === "symbol")?.id;
   map.addLayer(
     {
-      id: "metro-route-lines",
+      id: ROUTE_LINES,
       type: "line",
       source: ROUTES,
       layout: { "line-cap": "round", "line-join": "round" },
@@ -433,6 +454,129 @@ function labelControls(map: LibreMap): void {
     );
 }
 
+function storedMapMode(): MapMode {
+  try {
+    return parseMapMode(localStorage.getItem(MAP_MODE_KEY)) ?? "3d";
+  } catch {
+    return "3d";
+  }
+}
+
+function storeMapMode(mode: MapMode): void {
+  try {
+    localStorage.setItem(MAP_MODE_KEY, mode);
+  } catch {
+    // The choice just isn't remembered.
+  }
+}
+
+function deviceFacts(canvas: HTMLCanvasElement): DeviceFacts {
+  const device = navigator as Navigator & {
+    connection?: { saveData?: boolean };
+    deviceMemory?: number;
+  };
+  return {
+    // A canvas hands back the context it already has only when the type matches.
+    webgl2: canvas.getContext("webgl2") !== null,
+    saveData: device.connection?.saveData,
+    deviceMemory: device.deviceMemory,
+  };
+}
+
+// Flat layers depth-test against the buildings, so clearing depth after them
+// keeps route lines, stops and buses drawn over the buildings.
+const depthReset: maplibregl.CustomLayerInterface = {
+  id: "metro-depth-reset",
+  type: "custom",
+  renderingMode: "3d",
+  render(gl) {
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+  },
+};
+
+function addBuildings(map: LibreMap): boolean {
+  if (!map.getLayer(BASEMAP_BUILDINGS) || !map.getSource("openmaptiles"))
+    return false;
+  const height = (property: string): ExpressionSpecification => [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    BUILDINGS_MIN_ZOOM,
+    0,
+    BUILDINGS_FULL_ZOOM,
+    ["*", BUILDING_HEIGHT_SCALE, ["coalesce", ["get", property], 0]],
+  ];
+  map.addLayer(
+    {
+      id: BUILDINGS,
+      type: "fill-extrusion",
+      source: "openmaptiles",
+      "source-layer": "building",
+      minzoom: BUILDINGS_MIN_ZOOM,
+      layout: { visibility: "none" },
+      paint: {
+        "fill-extrusion-color": palette.field,
+        "fill-extrusion-height": height("render_height"),
+        "fill-extrusion-base": height("render_min_height"),
+        "fill-extrusion-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          BUILDINGS_MIN_ZOOM,
+          0,
+          BUILDINGS_FULL_ZOOM,
+          BUILDINGS_OPACITY,
+        ],
+      },
+    },
+    ROUTE_LINES,
+  );
+  map.addLayer(depthReset, ROUTE_LINES);
+  return true;
+}
+
+function showBuildings(map: LibreMap, show: boolean): void {
+  if (!map.getLayer(BUILDINGS)) return;
+  map.setLayoutProperty(BUILDINGS, "visibility", show ? "visible" : "none");
+  map.setPaintProperty(
+    BASEMAP_BUILDINGS,
+    "fill-opacity",
+    show
+      ? [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          BUILDINGS_MIN_ZOOM,
+          1,
+          BUILDINGS_FULL_ZOOM,
+          0,
+        ]
+      : 1,
+  );
+}
+
+// Animates the pitch itself; the zoom-led tilt resumes once the move ends.
+function steerPitch(
+  map: LibreMap,
+  tilt: TiltState,
+  pitch: number,
+  options: maplibregl.EaseToOptions = {},
+): void {
+  tilt.directed = true;
+  tilt.manualBand = null;
+  tilt.blend = null;
+  // MapLibre skips the animation when the user prefers reduced motion.
+  map.easeTo(
+    { duration: CAMERA_MS, ...options, pitch },
+    { steeredPitch: true },
+  );
+}
+
+function mapModeLabels(mode: MapMode): { aria: string; title: string } {
+  const label = mode === "3d" ? t(i18n)`Show flat map` : t(i18n)`Show 3D map`;
+  return { aria: label, title: label };
+}
+
 // Bus icon (lucide BusFront viewBox) used inside the native control button.
 const BUS_ICON_PATH =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6 2 7"/><path d="M10 6h4"/><path d="m22 7-2-1"/><rect width="16" height="16" x="4" y="3" rx="2"/><path d="M4 11h16"/><path d="M8 15h.01"/><path d="M16 15h.01"/><path d="M6 19v2"/><path d="M18 21v-2"/></svg>';
@@ -515,6 +659,13 @@ export default function MapView(props: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LibreMap | null>(null);
   const liveControlRef = useRef<LiveBusesControl | null>(null);
+  const modeControlRef = useRef<MapModeControl | null>(null);
+  const [mapMode, setMapMode] = useState<MapMode>(storedMapMode);
+  const tilt = useRef<TiltState>(initialTilt(mapMode));
+  const buildingsReady = useRef(false);
+  const flatFov = useRef<number | null>(null);
+  // The mode the map is drawn in, which trails the chosen one until it loads.
+  const shownMode = useRef<MapMode | null>(null);
   const busLayerRef = useRef<BusModelLayer | null>(null);
   const ready = useRef(false);
   const appliedScene = useRef<Scene | null>(null);
@@ -790,14 +941,22 @@ export default function MapView(props: Props) {
         container: container.current,
         center: COLOMBO,
         zoom: 11,
-        pitch: 40,
+        pitch: tilt.current.mode === "3d" ? pitchForZoom(11) : 0,
         bearing: 0,
         locale: controlLabels(),
         style: BASEMAP_STYLE,
         canvasContextAttributes: { antialias: true },
+        transformCameraUpdate: ({ zoom, pitch }) => {
+          const next = tiltFor(tilt.current, zoom, pitch);
+          return next === undefined ? {} : { pitch: next };
+        },
       });
       mapRef.current = map;
       const activeMap = map;
+      flatFov.current = activeMap.getVerticalFieldOfView();
+      shownMode.current = tilt.current.mode;
+      if (tilt.current.mode === "3d")
+        activeMap.setVerticalFieldOfView(ISOMETRIC_FOV);
       canvas = activeMap.getCanvas();
       canvas.addEventListener("webglcontextlost", contextLost);
       activeMap.addControl(
@@ -812,6 +971,17 @@ export default function MapView(props: Props) {
         fitBoundsOptions: { maxZoom: 16, duration: CAMERA_MS },
       });
       activeMap.addControl(geolocation, "top-right");
+      const modeControl = new MapModeControl(
+        tilt.current.mode,
+        mapModeLabels,
+        () => {
+          const mode = tilt.current.mode === "3d" ? "2d" : "3d";
+          storeMapMode(mode);
+          setMapMode(mode);
+        },
+      );
+      modeControlRef.current = modeControl;
+      activeMap.addControl(modeControl, "top-right");
       const liveControl = new LiveBusesControl(
         latest.current.props.showLive,
         liveBusLabels,
@@ -830,6 +1000,39 @@ export default function MapView(props: Props) {
           );
       });
       labelControls(activeMap);
+      activeMap.on("pitchstart", (event) => {
+        if (event.originalEvent && tilt.current.mode === "3d") {
+          tilt.current.manualBand = zoomBand(activeMap.getZoom());
+          tilt.current.blend = null;
+        }
+      });
+      activeMap.on("moveend", (event) => {
+        const state = tilt.current;
+        if ("steeredPitch" in event) {
+          state.directed = false;
+          // At pitch 0 the field of view doesn't show, so it changes there.
+          if (state.mode === "2d" && flatFov.current !== null)
+            activeMap.setVerticalFieldOfView(flatFov.current);
+        }
+        if (state.directed || state.mode !== "3d" || !state.reducedMotion)
+          return;
+        if (state.manualBand !== null) return;
+        const target = pitchForZoom(activeMap.getZoom());
+        if (Math.abs(activeMap.getPitch() - target) > 0.1)
+          steerPitch(activeMap, state, target, { duration: 0 });
+      });
+      // Pointing north also gives up a hand-set tilt.
+      activeMap
+        .getContainer()
+        .querySelector(".maplibregl-ctrl-compass")
+        ?.addEventListener("click", () => {
+          const state = tilt.current;
+          if (state.mode !== "3d") return;
+          if (state.manualBand === null && state.blend === null) return;
+          steerPitch(activeMap, state, pitchForZoom(activeMap.getZoom()), {
+            bearing: 0,
+          });
+        });
       activeMap.on("movestart", (event) => {
         // Gestures carry the event that started them; our own camera moves don't.
         if ("originalEvent" in event && event.originalEvent)
@@ -849,6 +1052,16 @@ export default function MapView(props: Props) {
         if (disposed || failed) return;
         try {
           addTransitLayers(activeMap);
+          try {
+            buildingsReady.current =
+              canShowBuildings(deviceFacts(canvas!)) && addBuildings(activeMap);
+            showBuildings(
+              activeMap,
+              buildingsReady.current && shownMode.current === "3d",
+            );
+          } catch {
+            buildingsReady.current = false;
+          }
           const vehicles = new BusModelLayer();
           busLayerRef.current = vehicles;
           activeMap.addLayer(vehicles);
@@ -963,6 +1176,8 @@ export default function MapView(props: Props) {
       canvas?.removeEventListener("webglcontextlost", contextLost);
       if (mapRef.current === map) mapRef.current = null;
       liveControlRef.current = null;
+      modeControlRef.current = null;
+      buildingsReady.current = false;
       busLayerRef.current = null;
       map?.remove();
     };
@@ -973,7 +1188,21 @@ export default function MapView(props: Props) {
   }, [showLive]);
 
   useEffect(() => {
+    const state = tilt.current;
+    state.mode = mapMode;
+    modeControlRef.current?.update(mapMode);
+    const map = mapRef.current;
+    if (!map || status !== "ready" || shownMode.current === mapMode) return;
+    shownMode.current = mapMode;
+    const threeD = mapMode === "3d";
+    showBuildings(map, threeD && buildingsReady.current);
+    if (threeD) map.setVerticalFieldOfView(ISOMETRIC_FOV);
+    steerPitch(map, state, threeD ? pitchForZoom(map.getZoom()) : 0);
+  }, [mapMode, status]);
+
+  useEffect(() => {
     liveControlRef.current?.setLabels(liveBusLabels);
+    modeControlRef.current?.setLabels(mapModeLabels);
   }, [language]);
 
   useEffect(() => {
@@ -1028,6 +1257,7 @@ export default function MapView(props: Props) {
     const update = () => {
       busLayerRef.current?.setReducedMotion(preference.matches);
       setReducedMotion(preference.matches);
+      tilt.current.reducedMotion = preference.matches;
     };
     update();
     preference.addEventListener("change", update);
