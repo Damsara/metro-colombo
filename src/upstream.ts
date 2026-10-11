@@ -283,26 +283,20 @@ export class UpstreamApi extends Context.Service<
           });
         });
 
-      const fetchRoutes = Effect.gen(function* () {
-        const [eimsky, lk] = yield* Effect.all(
-          [
-            getAuthed(EimskyRoutesResponse, `${fareApi}/routes/geo`),
-            getJson(
-              LkRoutesResponse,
-              `${config.lankametroBase}/api/routes`,
-            ).pipe(
-              Effect.map((r) => r.routes),
-              Effect.orElseSucceed(() => []),
-            ),
-          ],
-          { concurrency: 2 },
-        );
-        const byCode = new Map(lk.map((route) => [route.code, route]));
-        return eimsky.data.routes.map((route) => ({
-          ...route,
-          color_hex: byCode.get(route.code)?.color_hex,
-        }));
-      });
+      const fetchRoutes = getAuthed(
+        EimskyRoutesResponse,
+        `${fareApi}/routes/geo`,
+      ).pipe(Effect.map((r) => r.data.routes));
+
+      const fetchColours = getJson(
+        LkRoutesResponse,
+        `${config.lankametroBase}/api/routes`,
+      ).pipe(
+        Effect.map(
+          (r) =>
+            new Map(r.routes.map((route) => [route.code, route.color_hex])),
+        ),
+      );
 
       const fetchStops = (routeId: string, directionId: string) =>
         getAuthed(
@@ -371,6 +365,14 @@ export class UpstreamApi extends Context.Service<
         staleTtl: Duration.days(7),
         capacity: 1,
       });
+      // Kept apart from routes so one failed lookup doesn't leave every route
+      // uncoloured until the routes cache expires.
+      const colours = yield* staleCache(() => fetchColours, {
+        name: "colours",
+        freshTtl: Duration.hours(12),
+        staleTtl: Duration.days(7),
+        capacity: 1,
+      });
       const stops = yield* staleCache(
         (key) => {
           const [routeId, directionId] = key.split("|");
@@ -430,8 +432,23 @@ export class UpstreamApi extends Context.Service<
         return new Map(lists.flat().map((stop) => [stop.stop_code, stop.id]));
       });
 
+      const colouredRoutes = Effect.gen(function* () {
+        const list = yield* routes("all");
+        const byCode = yield* colours("all").pipe(
+          Effect.timeout(Duration.seconds(3)),
+          Effect.tapError((error) =>
+            Effect.logWarning("route colours unavailable", error),
+          ),
+          Effect.orElseSucceed(() => new Map<string, string>()),
+        );
+        return list.map((route) => ({
+          ...route,
+          color_hex: byCode.get(route.code) ?? route.color_hex,
+        }));
+      });
+
       return UpstreamApi.of({
-        routes: routes("all"),
+        routes: colouredRoutes,
         stopsFor,
         stopIdsByCode,
         journey: (from, to, date) => journey(`${from}|${to}|${date}`),
