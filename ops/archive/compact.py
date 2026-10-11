@@ -61,7 +61,11 @@ def connect(root):
 
 
 def files(con, pattern):
-    return [row[0] for row in con.execute(f"SELECT file FROM glob({quote(pattern)})").fetchall()]
+    if any(c in pattern for c in "*?["):
+        return [row[0] for row in con.execute(f"SELECT file FROM glob({quote(pattern)})").fetchall()]
+    # On object storage glob() echoes a plain path back whether or not it exists, so a single file is found by listing its folder.
+    folder = pattern.rsplit("/", 1)[0]
+    return [path for path in files(con, f"{folder}/*") if path == pattern]
 
 
 def raw_days(con, root):

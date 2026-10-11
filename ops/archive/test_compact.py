@@ -10,6 +10,7 @@ import tempfile
 
 import duckdb
 
+import compact
 from sigv4 import sign_put
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -141,6 +142,16 @@ def test_an_empty_archive_still_gets_a_catalog():
         con.execute(f"ATTACH '{root}/catalog/metro.duckdb' AS metro (READ_ONLY)")
         assert con.execute("SELECT count(*) FROM metro.fixes").fetchone()[0] == 0
 
+
+
+def test_a_plain_path_is_found_only_when_the_file_exists():
+    with tempfile.TemporaryDirectory() as root:
+        os.makedirs(f"{root}/a")
+        open(f"{root}/a/b.parquet", "w").close()
+        con = duckdb.connect()
+        assert compact.files(con, f"{root}/a/b.parquet") == [f"{root}/a/b.parquet"]
+        assert compact.files(con, f"{root}/a/missing.parquet") == []
+        assert compact.files(con, f"{root}/missing/c.parquet") == []
 
 if __name__ == "__main__":
     for name, test in list(globals().items()):
