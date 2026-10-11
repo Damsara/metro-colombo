@@ -1,4 +1,4 @@
-import { distanceMeters } from "../api";
+import { distanceMeters, type JourneyRequest } from "../api";
 import {
   findLiveBus,
   type JourneyPlan,
@@ -6,6 +6,110 @@ import {
   type Ride,
   type Stop,
 } from "../types";
+
+export interface SavedRide {
+  route: string;
+  direction: string;
+  board: string;
+  alight: string;
+  time: string;
+  slot: string;
+  plate: string;
+}
+
+export function encodeTripRequest(request: JourneyRequest): string {
+  return new URLSearchParams({ ...request }).toString();
+}
+
+export function decodeTripRequest(value: unknown): JourneyRequest | null {
+  if (typeof value !== "string") return null;
+  const params = new URLSearchParams(value);
+  const from = params.get("from");
+  const to = params.get("to");
+  const date = params.get("date");
+  if (!from || !to || from === to || !date || !/^\d{4}-\d{2}-\d{2}$/.test(date))
+    return null;
+  const parsed = new Date(date);
+  if (
+    !Number.isFinite(parsed.getTime()) ||
+    parsed.toISOString().slice(0, 10) !== date
+  )
+    return null;
+  return { from, to, date };
+}
+
+export function savedRide(ride: Ride, plate: string): SavedRide {
+  return {
+    route: ride.route.code,
+    direction: ride.direction_id,
+    board: ride.board.id,
+    alight: ride.alight.id,
+    time: ride.board.scheduled_time ?? "",
+    slot: ride.slot_id ?? "",
+    plate,
+  };
+}
+
+export function encodeTrackedRide(ride: SavedRide): string {
+  return new URLSearchParams({ ...ride }).toString();
+}
+
+export function decodeTrackedRide(value: unknown): SavedRide | null {
+  if (typeof value !== "string") return null;
+  const params = new URLSearchParams(value);
+  const route = params.get("route");
+  const direction = params.get("direction");
+  const board = params.get("board");
+  const alight = params.get("alight");
+  const time = params.get("time") ?? "";
+  const slot = params.get("slot") ?? "";
+  const plate = params.get("plate") ?? "";
+  if (!route || !direction || !board || !alight || (!slot && !time))
+    return null;
+  if (time && !Number.isFinite(Date.parse(time))) return null;
+  return { route, direction, board, alight, time, slot, plate };
+}
+
+export function matchingTrackedRide(plan: JourneyPlan, saved: SavedRide) {
+  for (const option of plan.options) {
+    for (const leg of option.legs) {
+      if (leg.kind !== "ride") continue;
+      const ride = leg.ride;
+      if (
+        ride.route.code === saved.route &&
+        ride.direction_id === saved.direction &&
+        ride.board.id === saved.board &&
+        ride.alight.id === saved.alight &&
+        (saved.slot
+          ? ride.slot_id === saved.slot
+          : Date.parse(ride.board.scheduled_time ?? "") ===
+            Date.parse(saved.time))
+      )
+        return { option, ride };
+    }
+  }
+  return null;
+}
+
+export function resumeTracking(
+  plan: JourneyPlan,
+  saved: SavedRide,
+  buses: readonly LiveBus[],
+) {
+  const match = matchingTrackedRide(plan, saved);
+  if (!match) return null;
+  const bus = findLiveBus(buses, match.ride.bus);
+  return bus ? { ...match, bus } : null;
+}
+
+export function busReassignment(
+  from: string | undefined,
+  to: string | undefined,
+) {
+  const normalize = (plate: string) =>
+    plate.replace(/[^\da-z]/gi, "").toUpperCase();
+  return from && to && normalize(from) !== normalize(to) ? { from, to } : null;
+}
 
 /** Within this of a stop, the bus counts as at it. */
 export const AT_STOP_METERS = 40;
@@ -99,7 +203,7 @@ export function advancePhase(
 }
 
 export function isLost(lastSeen: number, now: number): boolean {
-  return now - lastSeen > LOST_AFTER_MS;
+  return now - lastSeen >= LOST_AFTER_MS;
 }
 
 // Feed timestamps below this are in seconds rather than milliseconds.

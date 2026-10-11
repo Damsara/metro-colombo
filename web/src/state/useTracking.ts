@@ -3,6 +3,12 @@ import { track } from "../lib/analytics";
 import { useRouteStops } from "../api";
 import {
   advancePhase,
+  busReassignment,
+  decodeTrackedRide,
+  decodeTripRequest,
+  encodeTrackedRide,
+  resumeTracking,
+  savedRide,
   busPosition,
   isLost,
   nextLastSeen,
@@ -22,6 +28,7 @@ import {
   type Ride,
 } from "../types";
 import { useSearchFlag } from "../useSearchFlag";
+import { useSearchParam } from "../useSearchParam";
 
 const MILESTONE = {
   headOut: "head_out",
@@ -33,6 +40,7 @@ const MILESTONE = {
 const CLOCK_TICK_MS = 5_000;
 
 interface Target {
+  key: string;
   option: JourneyOption;
   ride: Ride;
   /** The bus as last seen, for its plate and route while it isn't reporting. */
@@ -68,20 +76,50 @@ export function useTracking({
 }) {
   const [target, setTarget] = useState<Target | null>(null);
   const [on, setOn] = useSearchFlag("track");
-  const active = on && target !== null;
+  const [searchRide, setSearchRide] = useSearchParam("ride");
+  const [searchRequest] = useSearchParam("journey");
+  const saved = useMemo(() => decodeTrackedRide(searchRide), [searchRide]);
+  const key = saved
+    ? `${searchRequest}|${encodeTrackedRide({ ...saved, plate: "" })}`
+    : "";
+  const active = on && target !== null && target.key === key;
 
-  // A reload forgets which bus it was, so it goes back to the results.
   useEffect(() => {
-    if (on && !target) setOn(false);
-  }, [on, target, setOn]);
+    if (!on || active) return;
+    const request = decodeTripRequest(searchRequest);
+    if (!saved || !request) {
+      setOn(false);
+      return;
+    }
+    if (!plan || !liveLoaded) return;
+    if (
+      plan.from_stop.id !== request.from ||
+      plan.to_stop.id !== request.to ||
+      plan.date !== request.date
+    )
+      return;
+    const restored = resumeTracking(plan, saved, buses);
+    if (restored) setTarget({ ...restored, key });
+    else setOn(false);
+  }, [on, active, saved, searchRequest, plan, liveLoaded, buses, key, setOn]);
 
   const start = useCallback(
-    (option: JourneyOption, ride: Ride, bus: LiveBus) => {
-      setTarget({ option, ride, bus });
+    async (option: JourneyOption, ride: Ride, bus: LiveBus) => {
+      const saved = savedRide(
+        ride,
+        bus.registration_number ?? ride.bus?.registration_number ?? "",
+      );
+      await setSearchRide(encodeTrackedRide(saved));
+      setTarget({
+        option,
+        ride,
+        bus,
+        key: `${searchRequest}|${encodeTrackedRide({ ...saved, plate: "" })}`,
+      });
       setOn(true);
       track("track_bus_start", { route: ride.route.code });
     },
-    [setOn],
+    [setOn, setSearchRide, searchRequest],
   );
   const stop = useCallback(() => setOn(false), [setOn]);
 
@@ -93,8 +131,9 @@ export function useTracking({
 
   const liveBus =
     active && target
-      ? (buses.find((bus) => busKey(bus) === busKey(target.bus)) ??
-        findLiveBus(buses, ride?.bus))
+      ? ride?.bus
+        ? findLiveBus(buses, ride.bus)
+        : buses.find((bus) => busKey(bus) === busKey(target.bus))
       : undefined;
   // While the bus is out of the feed, its last fix stands in, not where it
   // was when tracking began.
@@ -127,8 +166,16 @@ export function useTracking({
     setNow(Date.now());
   }, [liveBus, receivedAt, feedTimestamp]);
   const missing = active && liveLoaded && isLost(lastSeen, now);
-  const reassigned: Reassignment | null = null;
-  const acknowledgeReassigned = useCallback(() => {}, []);
+  const reassigned: Reassignment | null = active
+    ? busReassignment(
+        saved?.plate,
+        ride?.bus?.registration_number ?? liveBus?.registration_number,
+      )
+    : null;
+  const acknowledgeReassigned = useCallback(() => {
+    if (saved && reassigned)
+      void setSearchRide(encodeTrackedRide({ ...saved, plate: reassigned.to }));
+  }, [saved, reassigned, setSearchRide]);
 
   const stops = useRouteStops(
     active ? ride?.route.code : undefined,
