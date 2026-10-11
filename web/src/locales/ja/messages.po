@@ -202,15 +202,15 @@ msgstr "バスが到着"
 msgid "Bus live"
 msgstr "バス運行中"
 
-#: src/App.tsx:884
+#: src/App.tsx:887
 msgid "Bus route map"
 msgstr "バス路線図"
 
-#: src/App.tsx:469
+#: src/App.tsx:472
 msgid "Bus routes"
 msgstr "バス路線"
 
-#: src/App.tsx:550
+#: src/App.tsx:553
 msgctxt "tab"
 msgid "Bus routes"
 msgstr "バス路線"
@@ -251,7 +251,7 @@ msgstr "降りたい場所を選びます。"
 msgid "Choose your starting stop and destination to find a journey."
 msgstr "出発の停留所と目的地を選ぶと、行程が見つかります。"
 
-#: src/App.tsx:646
+#: src/App.tsx:649
 msgctxt "recent trips"
 msgid "Clear"
 msgstr "クリア"
@@ -261,7 +261,7 @@ msgstr "クリア"
 msgid "Clear {label}"
 msgstr "{label} をクリア"
 
-#: src/App.tsx:960
+#: src/App.tsx:963
 #: src/components/StopPicker.tsx:444
 msgid "Close"
 msgstr "閉じる"
@@ -274,7 +274,7 @@ msgstr "停留所の詳細を閉じる"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "最寄りの停留所:{nearestName} · 直線距離 {nearestDistance}。歩くルートを確認してください。"
 
-#: src/App.tsx:938
+#: src/App.tsx:941
 msgid "Colombo & beyond"
 msgstr "コロンボとその周辺"
 
@@ -321,7 +321,7 @@ msgstr "変更"
 msgid "End trip"
 msgstr "行程を終了"
 
-#: src/App.tsx:538
+#: src/App.tsx:541
 msgid "Explore Metro"
 msgstr "Metro を探す"
 
@@ -346,11 +346,11 @@ msgstr "2月"
 msgid "Filling up"
 msgstr "やや混雑"
 
-#: src/App.tsx:679
+#: src/App.tsx:682
 msgid "Find buses for the way back, from {end} to {start}"
 msgstr "帰りのバスを探す:{end} から {start} まで"
 
-#: src/App.tsx:665
+#: src/App.tsx:668
 msgid "Find buses from {start} to {end}"
 msgstr "バスを探す:{start} から {end} まで"
 
@@ -362,7 +362,7 @@ msgstr "バスを探す"
 msgid "Find my location"
 msgstr "現在地を探す"
 
-#: src/App.tsx:940
+#: src/App.tsx:943
 msgid "Find your way around."
 msgstr "行き方を調べましょう。"
 
@@ -501,7 +501,7 @@ msgstr "今の選択を維持"
 msgid "Language"
 msgstr "言語"
 
-#: src/App.tsx:949
+#: src/App.tsx:952
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro は現在、この路線の線を送信していません。"
 
@@ -555,15 +555,15 @@ msgstr "この方面はリアルタイム"
 msgid "Live position lost; showing schedule"
 msgstr "現在位置が取得できません。時刻表を表示します"
 
-#: src/App.tsx:774
+#: src/App.tsx:777
 msgid "Load missing stops"
 msgstr "不足している停留所を読み込む"
 
-#: src/App.tsx:721
+#: src/App.tsx:724
 msgid "Loading bus routes…"
 msgstr "バス路線を読み込み中…"
 
-#: src/App.tsx:889
+#: src/App.tsx:892
 #: src/components/MapView.tsx:1163
 msgid "Loading map…"
 msgstr "地図を読み込み中…"
@@ -618,7 +618,7 @@ msgctxt "month"
 msgid "May"
 msgstr "5月"
 
-#: src/App.tsx:844
+#: src/App.tsx:847
 msgid "Metro home"
 msgstr "Metro ホーム"
 
@@ -631,7 +631,7 @@ msgstr "月"
 msgid "near {nearName}"
 msgstr "{nearName} の近く"
 
-#: src/App.tsx:335
+#: src/App.tsx:338
 msgid "Near you"
 msgstr "近くの停留所"
 
@@ -688,7 +688,7 @@ msgstr "いいえ"
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "今この方面へ向かうバスはありません · 反対方面に {elsewhere} 台"
 
-#: src/App.tsx:785
+#: src/App.tsx:788
 msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
 msgstr "<0>Lanka Metro Transit</0> および公式の <1>LMT GO アプリ</1>とは関係ありません。"
 
@@ -722,7 +722,7 @@ msgstr "地図上"
 msgid "On your way to {alight}"
 msgstr "{alight} に向かっています"
 
-#: src/App.tsx:718
+#: src/App.tsx:721
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "路線を開くと、停留所とバスの現在位置が見られます。"
 
@@ -750,11 +750,11 @@ msgstr "パネル:最小"
 msgid "Pick a date"
 msgstr "日付を選択"
 
-#: src/App.tsx:545
+#: src/App.tsx:548
 msgid "Plan a trip"
 msgstr "行程を計画"
 
-#: src/App.tsx:469
+#: src/App.tsx:472
 msgid "Plan your bus trip"
 msgstr "バスの行程を計画"
 
@@ -774,11 +774,11 @@ msgstr "午後"
 msgid "Point north"
 msgstr "北を上にする"
 
-#: src/App.tsx:336
+#: src/App.tsx:339
 msgid "Popular"
 msgstr "人気"
 
-#: src/App.tsx:694
+#: src/App.tsx:697
 msgid "Popular starting stops"
 msgstr "人気の出発停留所"
 
@@ -790,11 +790,11 @@ msgstr "「バスを探す」を押し、出発便を選ぶと乗り方が表示
 msgid "Privacy choices"
 msgstr "プライバシーの選択"
 
-#: src/App.tsx:334
+#: src/App.tsx:337
 msgid "Recent"
 msgstr "最近"
 
-#: src/App.tsx:643
+#: src/App.tsx:646
 msgid "Recent trips"
 msgstr "最近の行程"
 
@@ -854,7 +854,7 @@ msgstr "9月"
 msgid "Served by"
 msgstr "運行路線"
 
-#: src/App.tsx:813
+#: src/App.tsx:816
 msgid "Service status"
 msgstr "運行状況"
 
@@ -890,7 +890,7 @@ msgstr "明日のバスを表示"
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "地図の一部を読み込めませんでした。地図またはネットワーク接続が使えない可能性があります。行程は引き続き計画できます。"
 
-#: src/App.tsx:778
+#: src/App.tsx:781
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
 msgstr "一部の停留所を読み込めませんでした。検索結果が不完全な場合があります。"
 
@@ -1004,8 +1004,8 @@ msgstr "{start} からこの停留所までの行程"
 msgid "Trip from this stop to {end}"
 msgstr "この停留所から {end} までの行程"
 
-#: src/App.tsx:760
-#: src/App.tsx:955
+#: src/App.tsx:763
+#: src/App.tsx:958
 #: src/components/JourneyResults.tsx:796
 #: src/components/RoutesPanel.tsx:242
 msgid "Try again"
@@ -1049,7 +1049,7 @@ msgstr "信号を待っています…"
 msgid "Walk"
 msgstr "徒歩"
 
-#: src/App.tsx:764
+#: src/App.tsx:767
 msgid "We can’t connect to Metro right now."
 msgstr "今は Metro に接続できません。"
 
@@ -1066,12 +1066,12 @@ msgstr "水"
 msgid "What we collect"
 msgstr "収集する情報"
 
-#: src/App.tsx:522
+#: src/App.tsx:525
 #: src/components/TripForm.tsx:183
 msgid "Where to?"
 msgstr "どこへ行く?"
 
-#: src/App.tsx:606
+#: src/App.tsx:609
 #: src/components/JourneyResults.tsx:809
 msgid "Where would you like to go?"
 msgstr "どこへ行きますか?"

@@ -202,15 +202,15 @@ msgstr "公交车已到"
 msgid "Bus live"
 msgstr "公交车实时"
 
-#: src/App.tsx:884
+#: src/App.tsx:887
 msgid "Bus route map"
 msgstr "公交线路地图"
 
-#: src/App.tsx:469
+#: src/App.tsx:472
 msgid "Bus routes"
 msgstr "公交线路"
 
-#: src/App.tsx:550
+#: src/App.tsx:553
 msgctxt "tab"
 msgid "Bus routes"
 msgstr "公交线路"
@@ -251,7 +251,7 @@ msgstr "选择你要下车的地方。"
 msgid "Choose your starting stop and destination to find a journey."
 msgstr "选择起点站和目的地,查找行程。"
 
-#: src/App.tsx:646
+#: src/App.tsx:649
 msgctxt "recent trips"
 msgid "Clear"
 msgstr "清除"
@@ -261,7 +261,7 @@ msgstr "清除"
 msgid "Clear {label}"
 msgstr "清除{label}"
 
-#: src/App.tsx:960
+#: src/App.tsx:963
 #: src/components/StopPicker.tsx:444
 msgid "Close"
 msgstr "关闭"
@@ -274,7 +274,7 @@ msgstr "关闭站点详情"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "最近的站点:{nearestName} · 直线距离 {nearestDistance}。请确认步行路线。"
 
-#: src/App.tsx:938
+#: src/App.tsx:941
 msgid "Colombo & beyond"
 msgstr "科伦坡及周边"
 
@@ -321,7 +321,7 @@ msgstr "修改"
 msgid "End trip"
 msgstr "结束行程"
 
-#: src/App.tsx:538
+#: src/App.tsx:541
 msgid "Explore Metro"
 msgstr "探索 Metro"
 
@@ -346,11 +346,11 @@ msgstr "2月"
 msgid "Filling up"
 msgstr "渐满"
 
-#: src/App.tsx:679
+#: src/App.tsx:682
 msgid "Find buses for the way back, from {end} to {start}"
 msgstr "查找返程公交车:{end} 至 {start}"
 
-#: src/App.tsx:665
+#: src/App.tsx:668
 msgid "Find buses from {start} to {end}"
 msgstr "查找公交车:{start} 至 {end}"
 
@@ -362,7 +362,7 @@ msgstr "查找公交车"
 msgid "Find my location"
 msgstr "定位我的位置"
 
-#: src/App.tsx:940
+#: src/App.tsx:943
 msgid "Find your way around."
 msgstr "轻松找到出行路线。"
 
@@ -501,7 +501,7 @@ msgstr "保持当前选择"
 msgid "Language"
 msgstr "语言"
 
-#: src/App.tsx:949
+#: src/App.tsx:952
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro 目前没有提供这条线路的路线图。"
 
@@ -555,15 +555,15 @@ msgstr "此方向有实时车辆"
 msgid "Live position lost; showing schedule"
 msgstr "已丢失实时位置;显示时刻表"
 
-#: src/App.tsx:774
+#: src/App.tsx:777
 msgid "Load missing stops"
 msgstr "加载缺失的站点"
 
-#: src/App.tsx:721
+#: src/App.tsx:724
 msgid "Loading bus routes…"
 msgstr "正在加载公交线路…"
 
-#: src/App.tsx:889
+#: src/App.tsx:892
 #: src/components/MapView.tsx:1163
 msgid "Loading map…"
 msgstr "正在加载地图…"
@@ -618,7 +618,7 @@ msgctxt "month"
 msgid "May"
 msgstr "5月"
 
-#: src/App.tsx:844
+#: src/App.tsx:847
 msgid "Metro home"
 msgstr "Metro 首页"
 
@@ -631,7 +631,7 @@ msgstr "周一"
 msgid "near {nearName}"
 msgstr "靠近 {nearName}"
 
-#: src/App.tsx:335
+#: src/App.tsx:338
 msgid "Near you"
 msgstr "你附近"
 
@@ -688,7 +688,7 @@ msgstr "不用了"
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "目前没有开往这个方向的车 · 另一方向有 {elsewhere} 辆"
 
-#: src/App.tsx:785
+#: src/App.tsx:788
 msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
 msgstr "与 <0>Lanka Metro Transit</0> 及官方 <1>LMT GO 应用</1>无关联。"
 
@@ -722,7 +722,7 @@ msgstr "已在地图上"
 msgid "On your way to {alight}"
 msgstr "正前往 {alight}"
 
-#: src/App.tsx:718
+#: src/App.tsx:721
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "打开一条线路,查看它的站点和公交车当前位置。"
 
@@ -750,11 +750,11 @@ msgstr "面板:已最小化"
 msgid "Pick a date"
 msgstr "选择日期"
 
-#: src/App.tsx:545
+#: src/App.tsx:548
 msgid "Plan a trip"
 msgstr "规划行程"
 
-#: src/App.tsx:469
+#: src/App.tsx:472
 msgid "Plan your bus trip"
 msgstr "规划你的公交行程"
 
@@ -774,11 +774,11 @@ msgstr "下午"
 msgid "Point north"
 msgstr "指向北方"
 
-#: src/App.tsx:336
+#: src/App.tsx:339
 msgid "Popular"
 msgstr "热门"
 
-#: src/App.tsx:694
+#: src/App.tsx:697
 msgid "Popular starting stops"
 msgstr "热门起点站"
 
@@ -790,11 +790,11 @@ msgstr "点按“查找公交车”,再选择一个班次,即可查看上车指�
 msgid "Privacy choices"
 msgstr "隐私选项"
 
-#: src/App.tsx:334
+#: src/App.tsx:337
 msgid "Recent"
 msgstr "最近"
 
-#: src/App.tsx:643
+#: src/App.tsx:646
 msgid "Recent trips"
 msgstr "最近行程"
 
@@ -854,7 +854,7 @@ msgstr "9月"
 msgid "Served by"
 msgstr "途经线路"
 
-#: src/App.tsx:813
+#: src/App.tsx:816
 msgid "Service status"
 msgstr "服务状态"
 
@@ -890,7 +890,7 @@ msgstr "显示明天的公交车"
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "部分地图内容无法加载。地图或网络连接可能不可用。你仍可规划行程。"
 
-#: src/App.tsx:778
+#: src/App.tsx:781
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
 msgstr "部分站点无法加载,搜索结果可能不完整。"
 
@@ -1004,8 +1004,8 @@ msgstr "从 {start} 到这个站点的行程"
 msgid "Trip from this stop to {end}"
 msgstr "从这个站点到 {end} 的行程"
 
-#: src/App.tsx:760
-#: src/App.tsx:955
+#: src/App.tsx:763
+#: src/App.tsx:958
 #: src/components/JourneyResults.tsx:796
 #: src/components/RoutesPanel.tsx:242
 msgid "Try again"
@@ -1049,7 +1049,7 @@ msgstr "等待信号…"
 msgid "Walk"
 msgstr "步行"
 
-#: src/App.tsx:764
+#: src/App.tsx:767
 msgid "We can’t connect to Metro right now."
 msgstr "目前无法连接到 Metro。"
 
@@ -1066,12 +1066,12 @@ msgstr "周三"
 msgid "What we collect"
 msgstr "我们收集什么"
 
-#: src/App.tsx:522
+#: src/App.tsx:525
 #: src/components/TripForm.tsx:183
 msgid "Where to?"
 msgstr "去哪里?"
 
-#: src/App.tsx:606
+#: src/App.tsx:609
 #: src/components/JourneyResults.tsx:809
 msgid "Where would you like to go?"
 msgstr "你想去哪里?"

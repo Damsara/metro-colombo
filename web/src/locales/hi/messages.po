@@ -202,15 +202,15 @@ msgstr "बस आ गई है"
 msgid "Bus live"
 msgstr "बस लाइव"
 
-#: src/App.tsx:884
+#: src/App.tsx:887
 msgid "Bus route map"
 msgstr "बस रूट का नक्शा"
 
-#: src/App.tsx:469
+#: src/App.tsx:472
 msgid "Bus routes"
 msgstr "बस रूट"
 
-#: src/App.tsx:550
+#: src/App.tsx:553
 msgctxt "tab"
 msgid "Bus routes"
 msgstr "बस रूट"
@@ -251,7 +251,7 @@ msgstr "चुनें कि आपको कहाँ उतरना है�
 msgid "Choose your starting stop and destination to find a journey."
 msgstr "यात्रा खोजने के लिए शुरुआती स्टॉप और मंज़िल चुनें।"
 
-#: src/App.tsx:646
+#: src/App.tsx:649
 msgctxt "recent trips"
 msgid "Clear"
 msgstr "मिटाएँ"
@@ -261,7 +261,7 @@ msgstr "मिटाएँ"
 msgid "Clear {label}"
 msgstr "{label} मिटाएँ"
 
-#: src/App.tsx:960
+#: src/App.tsx:963
 #: src/components/StopPicker.tsx:444
 msgid "Close"
 msgstr "बंद करें"
@@ -274,7 +274,7 @@ msgstr "स्टॉप की जानकारी बंद करें"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "सबसे नज़दीकी स्टॉप: {nearestName} · सीधी दूरी {nearestDistance}। अपना पैदल रास्ता जाँच लें।"
 
-#: src/App.tsx:938
+#: src/App.tsx:941
 msgid "Colombo & beyond"
 msgstr "कोलंबो और आगे"
 
@@ -321,7 +321,7 @@ msgstr "बदलें"
 msgid "End trip"
 msgstr "यात्रा समाप्त करें"
 
-#: src/App.tsx:538
+#: src/App.tsx:541
 msgid "Explore Metro"
 msgstr "Metro देखें"
 
@@ -346,11 +346,11 @@ msgstr "फ़र."
 msgid "Filling up"
 msgstr "भर रही है"
 
-#: src/App.tsx:679
+#: src/App.tsx:682
 msgid "Find buses for the way back, from {end} to {start}"
 msgstr "वापसी की बसें खोजें, {end} से {start} तक"
 
-#: src/App.tsx:665
+#: src/App.tsx:668
 msgid "Find buses from {start} to {end}"
 msgstr "{start} से {end} तक की बसें खोजें"
 
@@ -362,7 +362,7 @@ msgstr "मेरी बस खोजें"
 msgid "Find my location"
 msgstr "मेरी लोकेशन खोजें"
 
-#: src/App.tsx:940
+#: src/App.tsx:943
 msgid "Find your way around."
 msgstr "अपना रास्ता खोजें।"
 
@@ -501,7 +501,7 @@ msgstr "मेरा मौजूदा चुनाव रहने दें"
 msgid "Language"
 msgstr "भाषा"
 
-#: src/App.tsx:949
+#: src/App.tsx:952
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro अभी इस रूट की लाइन नहीं भेज रहा है।"
 
@@ -555,15 +555,15 @@ msgstr "इस दिशा में लाइव"
 msgid "Live position lost; showing schedule"
 msgstr "लाइव लोकेशन खो गई; समय-सारणी दिखा रहे हैं"
 
-#: src/App.tsx:774
+#: src/App.tsx:777
 msgid "Load missing stops"
 msgstr "छूटे हुए स्टॉप लोड करें"
 
-#: src/App.tsx:721
+#: src/App.tsx:724
 msgid "Loading bus routes…"
 msgstr "बस रूट लोड हो रहे हैं…"
 
-#: src/App.tsx:889
+#: src/App.tsx:892
 #: src/components/MapView.tsx:1163
 msgid "Loading map…"
 msgstr "नक्शा लोड हो रहा है…"
@@ -618,7 +618,7 @@ msgctxt "month"
 msgid "May"
 msgstr "मई"
 
-#: src/App.tsx:844
+#: src/App.tsx:847
 msgid "Metro home"
 msgstr "Metro होम"
 
@@ -631,7 +631,7 @@ msgstr "सोम"
 msgid "near {nearName}"
 msgstr "{nearName} के पास"
 
-#: src/App.tsx:335
+#: src/App.tsx:338
 msgid "Near you"
 msgstr "आपके पास"
 
@@ -688,7 +688,7 @@ msgstr "नहीं, धन्यवाद"
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "अभी इस दिशा में कोई नहीं · दूसरी दिशा में {elsewhere}"
 
-#: src/App.tsx:785
+#: src/App.tsx:788
 msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
 msgstr "<0>Lanka Metro Transit</0> या आधिकारिक <1>LMT GO ऐप</1> से कोई संबंध नहीं है।"
 
@@ -722,7 +722,7 @@ msgstr "नक्शे पर"
 msgid "On your way to {alight}"
 msgstr "आप {alight} की ओर जा रहे हैं"
 
-#: src/App.tsx:718
+#: src/App.tsx:721
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "किसी रूट को खोलकर उसके स्टॉप और बसों की मौजूदा जगह देखें।"
 
@@ -750,11 +750,11 @@ msgstr "पैनल: छोटा किया गया"
 msgid "Pick a date"
 msgstr "तारीख़ चुनें"
 
-#: src/App.tsx:545
+#: src/App.tsx:548
 msgid "Plan a trip"
 msgstr "यात्रा की योजना बनाएँ"
 
-#: src/App.tsx:469
+#: src/App.tsx:472
 msgid "Plan your bus trip"
 msgstr "अपनी बस यात्रा की योजना बनाएँ"
 
@@ -774,11 +774,11 @@ msgstr "PM"
 msgid "Point north"
 msgstr "उत्तर की ओर करें"
 
-#: src/App.tsx:336
+#: src/App.tsx:339
 msgid "Popular"
 msgstr "लोकप्रिय"
 
-#: src/App.tsx:694
+#: src/App.tsx:697
 msgid "Popular starting stops"
 msgstr "लोकप्रिय शुरुआती स्टॉप"
 
@@ -790,11 +790,11 @@ msgstr "“मेरी बस खोजें” दबाएँ। चढ़�
 msgid "Privacy choices"
 msgstr "निजता के विकल्प"
 
-#: src/App.tsx:334
+#: src/App.tsx:337
 msgid "Recent"
 msgstr "हाल की"
 
-#: src/App.tsx:643
+#: src/App.tsx:646
 msgid "Recent trips"
 msgstr "हाल की यात्राएँ"
 
@@ -854,7 +854,7 @@ msgstr "सित."
 msgid "Served by"
 msgstr "सेवा देने वाली"
 
-#: src/App.tsx:813
+#: src/App.tsx:816
 msgid "Service status"
 msgstr "सेवा की स्थिति"
 
@@ -890,7 +890,7 @@ msgstr "कल की बसें दिखाएँ"
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "नक्शे की कुछ सामग्री लोड नहीं हो सकी। नक्शा या नेटवर्क कनेक्शन उपलब्ध नहीं हो सकता। आप अब भी अपनी यात्रा की योजना बना सकते हैं।"
 
-#: src/App.tsx:778
+#: src/App.tsx:781
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
 msgstr "कुछ स्टॉप लोड नहीं हो सके। खोज अधूरी हो सकती है।"
 
@@ -1004,8 +1004,8 @@ msgstr "{start} से इस स्टॉप तक की यात्रा"
 msgid "Trip from this stop to {end}"
 msgstr "इस स्टॉप से {end} तक की यात्रा"
 
-#: src/App.tsx:760
-#: src/App.tsx:955
+#: src/App.tsx:763
+#: src/App.tsx:958
 #: src/components/JourneyResults.tsx:796
 #: src/components/RoutesPanel.tsx:242
 msgid "Try again"
@@ -1049,7 +1049,7 @@ msgstr "सिग्नल का इंतज़ार है…"
 msgid "Walk"
 msgstr "पैदल चलें"
 
-#: src/App.tsx:764
+#: src/App.tsx:767
 msgid "We can’t connect to Metro right now."
 msgstr "अभी हम Metro से जुड़ नहीं पा रहे हैं।"
 
@@ -1066,12 +1066,12 @@ msgstr "बुध"
 msgid "What we collect"
 msgstr "हम क्या इकट्ठा करते हैं"
 
-#: src/App.tsx:522
+#: src/App.tsx:525
 #: src/components/TripForm.tsx:183
 msgid "Where to?"
 msgstr "कहाँ जाना है?"
 
-#: src/App.tsx:606
+#: src/App.tsx:609
 #: src/components/JourneyResults.tsx:809
 msgid "Where would you like to go?"
 msgstr "आप कहाँ जाना चाहेंगे?"
