@@ -101,6 +101,36 @@ def compact_day(con, root, day):
     print(f"compacted {day}: {written} rows", flush=True)
 
 
+def compact_today(con, root, day, hour):
+    """Writes today's chunks from before this hour to an immutable `through=HH` file, so the live file only needs the last hour or two."""
+    if hour == 0:
+        return None
+    target = f"{root}/today/date={day}/through={hour:02d}.parquet"
+    if files(con, target):
+        return target
+    cutoff = f"{hour:02d}0000"
+    chunks = [
+        path
+        for path in files(con, f"{root}/raw/{day}/*.ndjson.gz")
+        if os.path.basename(path)[:6] < cutoff
+    ]
+    if not chunks:
+        return None
+    if not root.startswith("r2://"):
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+    con.execute(
+        f"""
+        COPY (
+          SELECT * FROM read_json([{", ".join(quote(path) for path in chunks)}],
+                                  format = 'newline_delimited', columns = {COLUMNS_SQL})
+          ORDER BY bus_id, coalesce(reported_at, received_at)
+        ) TO {quote(target)} (FORMAT parquet, COMPRESSION zstd)
+        """
+    )
+    print(f"today through {hour:02d}:00: {len(chunks)} chunks", flush=True)
+    return target
+
+
 def write_reference(con, root):
     routes = f"{root}/raw/reference/routes.json"
     stops = f"{root}/raw/reference/stops.json"
@@ -130,7 +160,7 @@ def write_reference(con, root):
     return True
 
 
-def build_catalog(path, public_url, today_url, days, has_reference):
+def build_catalog(path, public_url, live_url, today_file, today_start_ms, days, has_reference):
     if os.path.exists(path):
         os.remove(path)
     con = duckdb.connect(path)
@@ -142,9 +172,19 @@ def build_catalog(path, public_url, today_url, days, has_reference):
         else f"({empty})"
     )
     con.execute(f"CREATE VIEW fixes AS SELECT *, {DERIVED} FROM {source}")
+    live = f"SELECT * FROM read_json({quote(live_url)}, format = 'newline_delimited', columns = {COLUMNS_SQL})"
+    sources = (
+        f"SELECT * FROM read_parquet({quote(today_file)}, hive_partitioning = false) UNION ALL BY NAME {live}"
+        if today_file
+        else live
+    )
+    # The live file overlaps the hourly file by up to an hour, so repeats are dropped here.
     con.execute(
         f"""CREATE VIEW fixes_today AS SELECT *, {DERIVED}
-            FROM read_json({quote(today_url)}, format = 'newline_delimited', columns = {COLUMNS_SQL})"""
+            FROM ({sources})
+            WHERE received_at >= {today_start_ms}
+            QUALIFY row_number() OVER (
+              PARTITION BY bus_id, coalesce(reported_at, -received_at) ORDER BY received_at) = 1"""
     )
     con.execute("CREATE VIEW all_fixes AS SELECT * FROM fixes UNION ALL BY NAME SELECT * FROM fixes_today")
     if has_reference:
@@ -199,18 +239,25 @@ def upload_catalog(root, path):
 def main():
     root = os.environ.get("ARCHIVE_ROOT", "r2://metro-data").rstrip("/")
     public_url = os.environ.get("ARCHIVE_PUBLIC_URL", "https://data.metro.manasa.ai").rstrip("/")
-    today_url = os.environ.get("ARCHIVE_TODAY_URL", "https://metro.manasa.ai/data/today.ndjson.gz")
-    today = os.environ.get("ARCHIVE_TODAY") or datetime.datetime.now(COLOMBO).date().isoformat()
+    live_url = os.environ.get("ARCHIVE_LIVE_URL", f"{public_url}/today/live.ndjson.gz")
+    now = datetime.datetime.now(COLOMBO)
+    today = os.environ.get("ARCHIVE_TODAY") or now.date().isoformat()
+    hour = int(os.environ.get("ARCHIVE_HOUR", now.hour))
+    today_start_ms = int(
+        datetime.datetime.fromisoformat(today).replace(tzinfo=COLOMBO).timestamp() * 1000
+    )
     con = connect(root)
     done = parquet_days(con, root)
     for day in sorted(raw_days(con, root) - done):
         if day < today:
             compact_day(con, root, day)
             done.add(day)
+    today_target = compact_today(con, root, today, hour)
+    today_file = today_target and today_target.replace(root, public_url, 1)
     has_reference = write_reference(con, root)
     with tempfile.TemporaryDirectory() as folder:
         catalog = os.path.join(folder, "metro.duckdb")
-        build_catalog(catalog, public_url, today_url, done, has_reference)
+        build_catalog(catalog, public_url, live_url, today_file, today_start_ms, done, has_reference)
         upload_catalog(root, catalog)
     print(f"catalog: {len(done)} days, reference={has_reference}", flush=True)
 
