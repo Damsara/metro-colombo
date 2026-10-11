@@ -13,6 +13,7 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { Auth } from "./auth.js";
 import { ServerConfig } from "./config.js";
+import { UpstreamHttp } from "./http.js";
 import { LiveFleet } from "./live-fleet.js";
 import { directionMatches, isIsoDate, isStopUuid } from "./params.js";
 import type * as S from "./schemas.js";
@@ -274,10 +275,32 @@ const HttpLive = Layer.unwrap(
   }),
 );
 
-const App = LiveFleet.layer.pipe(
+// Loads reference data in the background so the first visitors don't wait on upstream.
+const WarmCaches = Layer.effectDiscard(
+  Effect.gen(function* () {
+    const api = yield* UpstreamApi;
+    const routes = yield* api.routes;
+    yield* Effect.forEach(
+      routes.flatMap((route) => route.directions),
+      (direction) => Effect.ignore(api.geometry(direction.geojson_url)),
+      { concurrency: 4, discard: true },
+    );
+    yield* Effect.ignore(api.stopIdsByCode);
+    yield* Effect.ignore(api.places);
+  }).pipe(
+    Effect.tapError((error) =>
+      Effect.logWarning("cache warm-up failed", error),
+    ),
+    Effect.ignore,
+    Effect.withSpan("cache.warm"),
+    Effect.forkScoped,
+  ),
+);
+
+const App = Layer.merge(LiveFleet.layer, WarmCaches).pipe(
   Layer.provideMerge(UpstreamApi.layer),
   Layer.provideMerge(Auth.layer),
-  Layer.provideMerge(FetchHttpClient.layer),
+  Layer.provideMerge(UpstreamHttp),
 );
 
 // Off unless the OTEL_* env vars are set.
