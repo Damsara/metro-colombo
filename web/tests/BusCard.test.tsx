@@ -8,7 +8,7 @@ import type { BusJourney, JourneyStop, StripItem } from "../src/lib/busCard";
 import type { FollowState } from "../src/lib/follow";
 import { LanguageProvider } from "../src/lib/language";
 import type { BusJourneyResult } from "../src/state/useBusJourney";
-import type { LiveBus, Route, Stop } from "../src/types";
+import type { LiveBus, Stop } from "../src/types";
 
 type ButtonProps = ComponentProps<
   typeof import("../src/components/ui/Button").Button
@@ -30,20 +30,6 @@ const strips = vi.hoisted(() => new Map<object, StripItem[]>());
 vi.mock("../src/lib/busCard", () => ({
   journeyStrip: (journey: object) => strips.get(journey) ?? [],
 }));
-
-const route: Route = {
-  id: "r1",
-  code: "100",
-  name: "Panadura – Pettah",
-  directions: [{ id: "d1", end_location: "Pettah" }] as Route["directions"],
-};
-vi.mock("../src/state/TransitData", async (original) => {
-  const actual = await original<typeof import("../src/state/TransitData")>();
-  return {
-    ...actual,
-    useTransitData: () => ({ routes: [route], routeColors: new Map() }),
-  };
-});
 
 function stopAt(id: string): Stop {
   return {
@@ -139,6 +125,8 @@ function render(
       children: createElement(LanguageProvider, {
         children: createElement(BusCard, {
           bus,
+          routeCode: "100",
+          destination: "Pettah",
           state,
           result,
           color: "#0a7d55",

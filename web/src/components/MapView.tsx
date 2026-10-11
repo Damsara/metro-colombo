@@ -26,12 +26,12 @@ import {
 } from "../lib/follow";
 import { routeColor as colorForRoute } from "../lib/routeColor";
 import { splitRoute } from "../lib/routeSplit";
+import type { BusLine } from "../state/useBusJourney";
 import { palette } from "../theme";
 import { BusModelLayer } from "./BusModelLayer";
 import { Button } from "./ui/Button";
 import { Notice } from "./ui/Notice";
 import {
-  busDirection,
   busKey,
   stopName,
   type MapViewProps,
@@ -70,6 +70,7 @@ type Props = Omit<MapViewProps, "onFollowChange"> & {
   followState: FollowState | null;
   onFollowEvent: (event: FollowEvent) => void;
   frameRide?: Ride | null;
+  busLine?: BusLine | null;
 };
 
 type Insets = Props["insets"];
@@ -511,6 +512,7 @@ export default function MapView(props: Props) {
     routeLock = null,
     emphasizeRoutes = NO_ROUTES,
     busOverlay,
+    busLine = null,
   } = props;
   const { t } = useLingui();
   const selectedBusKey = selectedBus ? busKey(selectedBus) : "";
@@ -568,20 +570,15 @@ export default function MapView(props: Props) {
 
   const busLat = selectedBus?.lat;
   const busLng = selectedBus?.lng;
-  const busRouteCode = selectedBus?.route_code;
-  const busDirectionId = selectedBus?.direction_id;
+  const busRouteCode = busLine?.routeCode;
+  const busDirectionId = busLine?.directionId;
   const busSplit = useMemo(() => {
-    if (busLat === undefined || busLng === undefined) return null;
-    const direction = busDirection(
-      routeCatalog.find((item) => item.code === busRouteCode),
-      busDirectionId,
+    if (busLat === undefined || busLng === undefined || !busDirectionId)
+      return null;
+    const route = routes.find(
+      (item) =>
+        item.code === busRouteCode && item.directionId === busDirectionId,
     );
-    const route = direction
-      ? routes.find(
-          (item) =>
-            item.code === busRouteCode && item.directionId === direction.id,
-        )
-      : undefined;
     const split = route && splitRoute(route, { lat: busLat, lng: busLng });
     if (!route || !split) return null;
     const color = colorForRoute(route.color);
@@ -601,7 +598,7 @@ export default function MapView(props: Props) {
         ],
       },
     };
-  }, [busLat, busLng, busRouteCode, busDirectionId, routes, routeCatalog]);
+  }, [busLat, busLng, busRouteCode, busDirectionId, routes]);
 
   const stopScene = useMemo(() => {
     const lookup = new Map<string, Stop>();

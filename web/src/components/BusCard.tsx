@@ -11,15 +11,8 @@ import {
 import { liveSignal, type FollowState } from "../lib/follow";
 import { followStatus } from "../lib/followLabels";
 import { usePlaceName } from "../lib/placeNames";
-import { useTransitData } from "../state/TransitData";
 import type { BusJourneyResult } from "../state/useBusJourney";
-import {
-  busDirection,
-  occupancy,
-  stopName,
-  type Language,
-  type LiveBus,
-} from "../types";
+import { occupancy, stopName, type Language, type LiveBus } from "../types";
 import { OccupancyMeter } from "./OccupancyBadge";
 import { RouteChip } from "./RouteChip";
 import { Button } from "./ui/Button";
@@ -33,6 +26,8 @@ const DOT = "grid size-5 shrink-0 place-items-center";
 
 export function BusCard({
   bus,
+  routeCode,
+  destination,
   state,
   result,
   color,
@@ -45,6 +40,8 @@ export function BusCard({
   onSeeAllStops,
 }: {
   bus: LiveBus;
+  routeCode?: string;
+  destination?: string;
   state: FollowState;
   result: BusJourneyResult | null;
   color: string;
@@ -57,11 +54,8 @@ export function BusCard({
   onSeeAllStops: () => void;
 }) {
   const { i18n, t } = useLingui();
-  const { routes, routeColors } = useTransitData();
   const place = usePlaceName();
   const stopsId = useId();
-  const route = routes.find((item) => item.code === bus.route_code);
-  const destination = busDirection(route, bus.direction_id)?.end_location;
   const journey = result?.status === "ready" ? result.journey : null;
   const board = journey?.board;
   const toBoard = journey?.stopsToBoard;
@@ -101,12 +95,8 @@ export function BusCard({
             <strong className="shrink-0 font-semibold">
               {bus.registration_number || "—"}
             </strong>
-            {bus.route_code && (
-              <RouteChip
-                code={bus.route_code}
-                color={routeColors.get(bus.route_code)}
-                size="xs"
-              />
+            {routeCode && (
+              <RouteChip code={routeCode} color={color} size="xs" />
             )}
           </p>
           {(destination || occupancy(bus)) && (

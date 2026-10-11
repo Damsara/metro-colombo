@@ -166,7 +166,7 @@ function Home() {
     () => (boardId || alightId ? { boardId, alightId } : undefined),
     [boardId, alightId],
   );
-  const busJourney = useBusJourney(cardBus, marks);
+  const busJourney = useBusJourney(selectedBus, marks);
   const activeRouteCode =
     tab === "plan" ? firstRideTrip?.route.code : browser.routeCode;
   const activeRoute = routes.find((route) => route.code === activeRouteCode);
@@ -311,7 +311,12 @@ function Home() {
   const cardExpanded = phone
     ? busInDrawer && snap !== "peek"
     : !!cardBus && cardOpenFor === viewBus;
-  const cardRoute = cardBus ? (routeCodeOf(cardBus) ?? "unknown") : "unknown";
+  const cardRouteCode = cardBus ? routeCodeOf(cardBus) : undefined;
+  const cardRoute = cardRouteCode ?? "unknown";
+  const busLine = busJourney?.line;
+  const cardDestination = routes
+    .find((route) => route.code === busLine?.routeCode)
+    ?.directions.find((item) => item.id === busLine?.directionId)?.end_location;
   // Once per opening, not per live update.
   const expandedRoute = useRef(cardRoute);
   expandedRoute.current = cardRoute;
@@ -460,6 +465,8 @@ function Home() {
   const busCard = cardBus && (
     <BusCard
       bus={cardBus}
+      routeCode={cardRouteCode}
+      destination={cardDestination}
       state={selection.followState ?? "following"}
       result={busJourney}
       color={routeColor(routeColors.get(cardRoute))}
@@ -913,6 +920,7 @@ function Home() {
                 followState={selection.followState}
                 frameRide={tab === "plan" ? frameRide : null}
                 busOverlay={phone ? null : busCard}
+                busLine={busLine}
                 language={language}
                 onStopSelect={(stop) => (stop ? openStop(stop) : closeStop())}
                 onBusSelect={handleBusSelect}
