@@ -1,5 +1,13 @@
 import { hostname } from "node:os";
-import { Duration, Effect, Layer, Metric, Schedule } from "effect";
+import {
+  Clock,
+  Duration,
+  Effect,
+  Layer,
+  Metric,
+  PubSub,
+  Schedule,
+} from "effect";
 import { LiveFleet } from "../live-fleet.js";
 import { UpstreamApi } from "../upstream.js";
 import { ArchiveStore, type ArchiveStoreShape } from "./r2.js";
@@ -8,15 +16,21 @@ import {
   colomboDay,
   dedupe,
   encodeChunk,
+  hourStartKey,
   toArchiveRow,
   type ArchiveRow,
   type RecordedFix,
 } from "./rows.js";
 
+export const LIVE_KEY = "today/live.ndjson.gz";
+
 const FLUSH_EVERY = Duration.minutes(5);
 // About an hour of fixes at a busy time; older ones go if storage stays down longer.
 const MAX_PENDING_ROWS = 100_000;
+const MAX_TAKE = 100_000;
+const HOUR_MS = 3_600_000;
 const CHUNK_CACHE = "public, max-age=31536000, immutable";
+const LIVE_CACHE = "public, max-age=60";
 
 const chunks = Metric.counter("archive.chunks", { incremental: true });
 const rowsWritten = Metric.counter("archive.rows", { incremental: true });
@@ -26,14 +40,30 @@ const rowsDropped = Metric.counter("archive.dropped_rows", {
 
 type Pending = { readonly key: string; rows: ArchiveRow[] };
 
+const concat = (parts: ReadonlyArray<Uint8Array>) => {
+  const joined = new Uint8Array(
+    parts.reduce((size, part) => size + part.length, 0),
+  );
+  let offset = 0;
+  for (const part of parts) {
+    joined.set(part, offset);
+    offset += part.length;
+  }
+  return joined;
+};
+
+const counted = (outcome: string) =>
+  Metric.update(Metric.withAttributes(chunks, { outcome }), 1);
+
 export function makeFlusher(options: {
   readonly take: Effect.Effect<ReadonlyArray<RecordedFix>>;
   readonly store: ArchiveStoreShape;
   readonly instance: string;
-  readonly now: () => number;
   readonly maxPendingRows?: number;
 }): Effect.Effect<void> {
   const pending: Pending[] = [];
+  // Recently uploaded chunks, kept to rebuild the live file without reading R2 back.
+  let recent: { readonly key: string; readonly bytes: Uint8Array }[] = [];
   const cap = options.maxPendingRows ?? MAX_PENDING_ROWS;
 
   const trim = Effect.gen(function* () {
@@ -50,38 +80,47 @@ export function makeFlusher(options: {
     if (dropped) yield* Metric.update(rowsDropped, dropped);
   });
 
+  const upload = (key: string, bytes: Uint8Array, cacheControl: string) =>
+    options.store
+      .put(key, bytes, { contentType: "application/x-ndjson", cacheControl })
+      .pipe(
+        Effect.as(true),
+        Effect.catch((error) =>
+          Effect.as(
+            Effect.andThen(
+              counted("failed"),
+              Effect.logWarning("archive upload failed", { key, error }),
+            ),
+            false,
+          ),
+        ),
+      );
+
   return Effect.gen(function* () {
+    const now = yield* Clock.currentTimeMillis;
     const rows = dedupe((yield* options.take).map(toArchiveRow));
     if (rows.length)
-      pending.push({ key: chunkKey(options.now(), options.instance), rows });
+      pending.push({ key: chunkKey(now, options.instance), rows });
     yield* trim;
+    let uploadedAny = false;
     while (pending.length) {
       const chunk = pending[0];
-      const uploaded = yield* options.store
-        .put(chunk.key, encodeChunk(chunk.rows), {
-          contentType: "application/x-ndjson",
-          cacheControl: CHUNK_CACHE,
-        })
-        .pipe(
-          Effect.as(true),
-          Effect.catch((error) =>
-            Effect.as(
-              Effect.andThen(
-                Metric.update(
-                  Metric.withAttributes(chunks, { outcome: "failed" }),
-                  1,
-                ),
-                Effect.logWarning("archive upload failed", error),
-              ),
-              false,
-            ),
-          ),
-        );
-      if (!uploaded) return;
+      const bytes = encodeChunk(chunk.rows);
+      if (!(yield* upload(chunk.key, bytes, CHUNK_CACHE))) break;
       pending.shift();
-      yield* Metric.update(Metric.withAttributes(chunks, { outcome: "ok" }), 1);
+      recent.push({ key: chunk.key, bytes });
+      uploadedAny = true;
+      yield* counted("ok");
       yield* Metric.update(rowsWritten, chunk.rows.length);
     }
+    if (!uploadedAny) return;
+    const since = hourStartKey(now - HOUR_MS);
+    recent = recent.filter((chunk) => chunk.key >= since);
+    yield* upload(
+      LIVE_KEY,
+      concat(recent.map((chunk) => chunk.bytes)),
+      LIVE_CACHE,
+    );
   });
 }
 
@@ -119,24 +158,23 @@ export const FleetRecorder = Layer.effectDiscard(
     const store = yield* ArchiveStore;
     if (!store.enabled) return;
     const fleet = yield* LiveFleet;
+    const subscription = yield* fleet.subscribeFixes;
     const flush = makeFlusher({
-      take: fleet.takeRecorded,
+      take: PubSub.takeUpTo(subscription, MAX_TAKE),
       store,
       instance: hostname(),
-      now: Date.now,
     });
     let referenceDay = "";
-    const reference = Effect.suspend(() => {
-      const day = colomboDay(Date.now());
-      if (day === referenceDay) return Effect.void;
-      return writeReference(store).pipe(
-        Effect.tap(() => Effect.sync(() => (referenceDay = day))),
-        Effect.catch((error) =>
-          Effect.logWarning("archive reference snapshot failed", error),
-        ),
-      );
-    });
-    yield* fleet.takeRecorded;
+    const reference = Effect.gen(function* () {
+      const day = colomboDay(yield* Clock.currentTimeMillis);
+      if (day === referenceDay) return;
+      yield* writeReference(store);
+      referenceDay = day;
+    }).pipe(
+      Effect.catch((error) =>
+        Effect.logWarning("archive reference snapshot failed", error),
+      ),
+    );
     yield* Effect.addFinalizer(() => flush);
     yield* Effect.andThen(reference, flush).pipe(
       Effect.withSpan("FleetRecorder.flush"),

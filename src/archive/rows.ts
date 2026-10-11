@@ -69,6 +69,9 @@ export const colomboDay = (ms: number) => colombo(ms).slice(0, 10);
 
 export const todayPrefix = (ms: number) => `raw/${colomboDay(ms)}/`;
 
+export const hourStartKey = (ms: number) =>
+  `${todayPrefix(ms)}${colombo(ms).slice(11, 13)}0000`;
+
 export function chunkKey(ms: number, instance: string): string {
   const time = colombo(ms).slice(11, 19).replaceAll(":", "");
   return `${todayPrefix(ms)}${time}-${instance}.ndjson.gz`;
@@ -76,29 +79,4 @@ export function chunkKey(ms: number, instance: string): string {
 
 export function encodeChunk(rows: ReadonlyArray<ArchiveRow>): Uint8Array {
   return gzipSync(rows.map((row) => `${JSON.stringify(row)}\n`).join(""));
-}
-
-// Collects only after the first take, so nothing piles up when no recorder is running.
-export class RecordBuffer<T> {
-  private items: T[] = [];
-  private recording = false;
-  dropped = 0;
-
-  constructor(private readonly cap: number) {}
-
-  push(item: T): void {
-    if (!this.recording) return;
-    this.items.push(item);
-    if (this.items.length > this.cap) {
-      this.items.shift();
-      this.dropped += 1;
-    }
-  }
-
-  take(): T[] {
-    this.recording = true;
-    const items = this.items;
-    this.items = [];
-    return items;
-  }
 }

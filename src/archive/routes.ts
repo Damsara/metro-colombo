@@ -1,14 +1,9 @@
 import path from "node:path";
-import { Clock, Effect, Layer } from "effect";
+import { Effect, Layer } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
 import { ServerConfig } from "../config.js";
 import { ArchiveStore } from "./r2.js";
-import {
-  catalogResponse,
-  isDuckDbAgent,
-  readme,
-  todayResponse,
-} from "./serve.js";
+import { catalogResponse, isDuckDbAgent, readme } from "./serve.js";
 
 const unavailable = HttpServerResponse.text(
   "The fleet archive is unavailable right now.",
@@ -39,24 +34,9 @@ export const ArchiveRoutes = Layer.unwrap(
         range: request.headers["range"],
         ifNoneMatch: request.headers["if-none-match"],
       }).pipe(
-        Effect.map(HttpServerResponse.fromWeb),
         Effect.catch((error) =>
           Effect.as(
             Effect.logWarning("archive catalog unavailable", error),
-            unavailable,
-          ),
-        ),
-      );
-    });
-
-    const today = Effect.gen(function* () {
-      const store = yield* ArchiveStore;
-      if (!store.enabled) return notConfigured;
-      return yield* todayResponse(store, yield* Clock.currentTimeMillis).pipe(
-        Effect.map(HttpServerResponse.fromWeb),
-        Effect.catch((error) =>
-          Effect.as(
-            Effect.logWarning("archive today feed unavailable", error),
             unavailable,
           ),
         ),
@@ -85,7 +65,6 @@ export const ArchiveRoutes = Layer.unwrap(
       HttpRouter.route("GET", "/.wal", noLog),
       HttpRouter.route("HEAD", "/.wal", noLog),
       HttpRouter.route("GET", "/data", about),
-      HttpRouter.route("GET", "/data/today.ndjson.gz", today),
     ]);
   }),
 );

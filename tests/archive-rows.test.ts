@@ -6,7 +6,6 @@ import {
   colomboDay,
   dedupe,
   encodeChunk,
-  RecordBuffer,
   toArchiveRow,
   todayPrefix,
 } from "../src/archive/rows.js";
@@ -72,14 +71,4 @@ test("a chunk is gzipped newline-delimited JSON", () => {
     lines.map((line) => JSON.parse(line).bus_id),
     ["bus-1", "bus-2"],
   );
-});
-
-test("the buffer only records once asked, and drops the oldest past its cap", () => {
-  const buffer = new RecordBuffer<number>(3);
-  buffer.push(0);
-  assert.deepEqual(buffer.take(), []);
-  for (const n of [1, 2, 3, 4]) buffer.push(n);
-  assert.deepEqual(buffer.take(), [2, 3, 4]);
-  assert.equal(buffer.dropped, 1);
-  assert.deepEqual(buffer.take(), []);
 });

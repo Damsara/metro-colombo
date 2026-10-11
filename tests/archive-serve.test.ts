@@ -1,14 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { gunzipSync } from "node:zlib";
 import { Effect } from "effect";
-import type { ArchiveStoreShape } from "../src/archive/r2.js";
-import { encodeChunk } from "../src/archive/rows.js";
 import {
-  catalogResponse,
-  isDuckDbAgent,
-  todayResponse,
-} from "../src/archive/serve.js";
+  HttpClientRequest,
+  HttpClientResponse,
+  HttpServerResponse,
+} from "effect/http";
+import type { ArchiveStoreShape } from "../src/archive/r2.js";
+import { catalogResponse, isDuckDbAgent } from "../src/archive/serve.js";
 
 test("DuckDB is recognised by its current and older user agents", () => {
   assert.equal(
@@ -25,38 +24,50 @@ test("DuckDB is recognised by its current and older user agents", () => {
   assert.equal(isDuckDbAgent(undefined), false);
 });
 
-const store = (overrides: Partial<ArchiveStoreShape>): ArchiveStoreShape => ({
+const storeServing = (
+  response: Response,
+  asked: Record<string, string> = {},
+): ArchiveStoreShape => ({
   enabled: true,
   publicUrl: "https://data.example.test",
   put: () => Effect.die("unused"),
   list: () => Effect.die("unused"),
-  get: () => Effect.die("unused"),
-  fetchPublic: () => Effect.die("unused"),
-  ...overrides,
+  fetchPublic: (path, headers) => {
+    Object.assign(asked, { path, ...headers });
+    return Effect.succeed(
+      HttpClientResponse.fromWeb(
+        HttpClientRequest.get(`https://data.example.test/${path}`),
+        response,
+      ),
+    );
+  },
 });
 
-test("the catalog is proxied with ranges and only safe headers", async () => {
-  let asked: Record<string, string> = {};
-  const response = await Effect.runPromise(
-    catalogResponse(
-      store({
-        fetchPublic: (path, headers) => {
-          asked = { path, ...headers };
-          return Effect.succeed(
-            new Response("0123456789", {
-              status: 206,
-              headers: {
-                "content-range": "bytes 0-9/100",
-                "content-length": "10",
-                etag: '"abc"',
-                "set-cookie": "nope=1",
-                "cf-ray": "x",
-              },
-            }),
-          );
-        },
+const asWeb = (response: HttpServerResponse.HttpServerResponse) =>
+  HttpServerResponse.toWeb(response);
+
+test("the catalog is proxied with ranges, only safe headers, and never shared-cached", async () => {
+  const asked: Record<string, string> = {};
+  const store = storeServing(
+    new Response("0123456789", {
+      status: 206,
+      headers: {
+        "content-range": "bytes 0-9/100",
+        "content-length": "10",
+        etag: '"abc"',
+        "set-cookie": "nope=1",
+        "cf-ray": "x",
+      },
+    }),
+    asked,
+  );
+  const response = asWeb(
+    await Effect.runPromise(
+      catalogResponse(store, {
+        method: "GET",
+        range: "bytes=0-9",
+        ifNoneMatch: undefined,
       }),
-      { method: "GET", range: "bytes=0-9", ifNoneMatch: undefined },
     ),
   );
   assert.deepEqual(asked, { path: "catalog/metro.duckdb", range: "bytes=0-9" });
@@ -72,53 +83,16 @@ test("the catalog is proxied with ranges and only safe headers", async () => {
 });
 
 test("HEAD gets the catalog's headers without a body", async () => {
-  const response = await Effect.runPromise(
-    catalogResponse(
-      store({
-        fetchPublic: () =>
-          Effect.succeed(
-            new Response("abc", { headers: { "content-length": "3" } }),
-          ),
-      }),
-      { method: "HEAD", range: undefined, ifNoneMatch: undefined },
+  const response = asWeb(
+    await Effect.runPromise(
+      catalogResponse(
+        storeServing(
+          new Response("abc", { headers: { "content-length": "3" } }),
+        ),
+        { method: "HEAD", range: undefined, ifNoneMatch: undefined },
+      ),
     ),
   );
   assert.equal(response.headers.get("content-length"), "3");
-  assert.equal(response.body, null);
-});
-
-test("today's chunks stream back as one gzip file, in order", async () => {
-  const chunks: Record<string, Uint8Array> = {
-    "raw/2026-10-12/000500-a.ndjson.gz": encodeChunk([
-      { bus_id: "first", lat: 1, lng: 1, received_at: 1 },
-    ]),
-    "raw/2026-10-12/001000-a.ndjson.gz": encodeChunk([
-      { bus_id: "second", lat: 2, lng: 2, received_at: 2 },
-    ]),
-  };
-  const response = await Effect.runPromise(
-    todayResponse(
-      store({
-        list: (prefix) =>
-          Effect.succeed(
-            Object.keys(chunks)
-              .filter((key) => key.startsWith(prefix))
-              .reverse(),
-          ),
-        get: (key) => Effect.succeed(new Response(chunks[key])),
-      }),
-      Date.UTC(2026, 9, 11, 18, 45),
-    ),
-  );
-  assert.equal(response.headers.get("content-type"), "application/gzip");
-  const text = gunzipSync(Buffer.from(await response.arrayBuffer())).toString(
-    "utf8",
-  );
-  assert.deepEqual(
-    text
-      .trim()
-      .split("\n")
-      .map((line) => JSON.parse(line).bus_id),
-    ["first", "second"],
-  );
+  assert.equal(await response.text(), "");
 });

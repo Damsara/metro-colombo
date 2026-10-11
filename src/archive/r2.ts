@@ -1,13 +1,22 @@
 import { AwsClient } from "aws4fetch";
 import {
+  Cause,
   Config,
   Context,
+  Duration,
   Effect,
   Layer,
   Option,
   Redacted,
+  Schedule,
   Schema,
 } from "effect";
+import {
+  FetchHttpClient,
+  HttpClient,
+  HttpClientRequest,
+  type HttpClientResponse,
+} from "effect/http";
 
 export class ArchiveError extends Schema.TaggedError<ArchiveError>()(
   "ArchiveError",
@@ -39,11 +48,6 @@ type Settings = {
   readonly publicUrl: string;
 };
 
-type Fetch = (
-  input: string | URL | Request,
-  init?: RequestInit,
-) => Promise<Response>;
-
 export type ArchiveStoreShape = {
   readonly enabled: boolean;
   readonly publicUrl: string;
@@ -53,12 +57,17 @@ export type ArchiveStoreShape = {
     options: { contentType: string; cacheControl?: string },
   ) => Effect.Effect<void, ArchiveError>;
   readonly list: (prefix: string) => Effect.Effect<string[], ArchiveError>;
-  readonly get: (key: string) => Effect.Effect<Response, ArchiveError>;
   readonly fetchPublic: (
     path: string,
     headers: Record<string, string>,
-  ) => Effect.Effect<Response, ArchiveError>;
+  ) => Effect.Effect<HttpClientResponse.HttpClientResponse, ArchiveError>;
 };
+
+const REQUEST_TIMEOUT = Duration.seconds(20);
+
+// Network failures, R2 hiccups and throttling are worth another try; a refused request isn't.
+const retryable = (error: ArchiveError) =>
+  error.status === undefined || error.status >= 500 || error.status === 429;
 
 const unescapeXml = (text: string) =>
   text
@@ -68,30 +77,9 @@ const unescapeXml = (text: string) =>
     .replaceAll("&apos;", "'")
     .replaceAll("&amp;", "&");
 
-const request = (
-  run: () => Promise<Response>,
-  what: string,
-): Effect.Effect<Response, ArchiveError> =>
-  Effect.tryPromise({
-    try: run,
-    catch: (cause) =>
-      new ArchiveError({ message: `${what} failed: ${String(cause)}` }),
-  }).pipe(
-    Effect.flatMap((response) =>
-      response.ok
-        ? Effect.succeed(response)
-        : Effect.fail(
-            new ArchiveError({
-              message: `${what} responded with HTTP ${response.status}`,
-              status: response.status,
-            }),
-          ),
-    ),
-  );
-
 export function makeR2Store(
   settings: Settings,
-  fetchImpl: Fetch = fetch,
+  http: HttpClient.HttpClient,
 ): ArchiveStoreShape {
   const aws = new AwsClient({
     accessKeyId: settings.accessKeyId,
@@ -100,18 +88,84 @@ export function makeR2Store(
     region: "auto",
   });
   const bucketUrl = `https://${settings.accountId}.r2.cloudflarestorage.com/${settings.bucket}`;
-  const signed = (url: string, init: RequestInit) => async () =>
-    fetchImpl(await aws.sign(url, init));
   const objectUrl = (key: string) =>
     `${bucketUrl}/${key.split("/").map(encodeURIComponent).join("/")}`;
+
+  const send = (
+    what: string,
+    request: Effect.Effect<HttpClientRequest.HttpClientRequest, ArchiveError>,
+  ) =>
+    request.pipe(
+      Effect.flatMap((built) =>
+        http.execute(built).pipe(
+          Effect.mapError(
+            (cause) =>
+              new ArchiveError({
+                message: `${what} failed: ${cause.message}`,
+              }),
+          ),
+        ),
+      ),
+      Effect.flatMap((response) =>
+        response.status >= 200 && response.status < 300
+          ? Effect.succeed(response)
+          : Effect.fail(
+              new ArchiveError({
+                message: `${what} responded with HTTP ${response.status}`,
+                status: response.status,
+              }),
+            ),
+      ),
+      Effect.timeout(REQUEST_TIMEOUT),
+      Effect.catchIf(Cause.isTimeoutError, () =>
+        Effect.fail(new ArchiveError({ message: `${what} timed out` })),
+      ),
+      Effect.retry({
+        schedule: Schedule.exponential(Duration.millis(250)),
+        times: 3,
+        while: retryable,
+      }),
+      Effect.withSpan("ArchiveStore.request", { attributes: { what } }),
+    );
+
+  // Signed per attempt, so a retry never reuses a stale signature.
+  const signed = (url: string, init: RequestInit, body?: Uint8Array) =>
+    Effect.tryPromise({
+      try: () => aws.sign(url, init),
+      catch: (cause) =>
+        new ArchiveError({ message: `signing failed: ${String(cause)}` }),
+    }).pipe(
+      Effect.map((request) => {
+        const headers = Object.fromEntries(request.headers);
+        const built = HttpClientRequest.make(request.method as "GET" | "PUT")(
+          request.url,
+        ).pipe(HttpClientRequest.setHeaders(headers));
+        return body
+          ? HttpClientRequest.bodyUint8Array(
+              built,
+              body,
+              headers["content-type"],
+            )
+          : built;
+      }),
+    );
 
   const listPage = (prefix: string, token?: string) => {
     const url = new URL(bucketUrl);
     url.searchParams.set("list-type", "2");
     url.searchParams.set("prefix", prefix);
     if (token) url.searchParams.set("continuation-token", token);
-    return request(signed(url.toString(), { method: "GET" }), "R2 list").pipe(
-      Effect.flatMap((response) => Effect.promise(() => response.text())),
+    return send("R2 list", signed(url.toString(), { method: "GET" })).pipe(
+      Effect.flatMap((response) =>
+        response.text.pipe(
+          Effect.mapError(
+            (cause) =>
+              new ArchiveError({
+                message: `R2 list unreadable: ${cause.message}`,
+              }),
+          ),
+        ),
+      ),
       Effect.map((xml) => ({
         keys: [...xml.matchAll(/<Key>(.*?)<\/Key>/g)].map((m) =>
           unescapeXml(m[1]),
@@ -129,16 +183,20 @@ export function makeR2Store(
     enabled: true,
     publicUrl: settings.publicUrl,
     put: (key, body, { contentType, cacheControl }) =>
-      request(
-        signed(objectUrl(key), {
-          method: "PUT",
-          body,
-          headers: {
-            "content-type": contentType,
-            ...(cacheControl && { "cache-control": cacheControl }),
-          },
-        }),
+      send(
         `R2 upload of ${key}`,
+        signed(
+          objectUrl(key),
+          {
+            method: "PUT",
+            body,
+            headers: {
+              "content-type": contentType,
+              ...(cacheControl && { "cache-control": cacheControl }),
+            },
+          },
+          body,
+        ),
       ).pipe(Effect.asVoid),
     list: (prefix) =>
       Effect.gen(function* () {
@@ -151,34 +209,41 @@ export function makeR2Store(
         } while (token);
         return keys;
       }),
-    get: (key) =>
-      request(signed(objectUrl(key), { method: "GET" }), `R2 read of ${key}`),
     fetchPublic: (path, headers) =>
-      Effect.tryPromise({
-        try: () => fetchImpl(`${settings.publicUrl}/${path}`, { headers }),
-        catch: (cause) =>
-          new ArchiveError({ message: `public read failed: ${String(cause)}` }),
-      }),
+      http
+        .execute(
+          HttpClientRequest.get(`${settings.publicUrl}/${path}`).pipe(
+            HttpClientRequest.setHeaders(headers),
+          ),
+        )
+        .pipe(
+          Effect.timeout(REQUEST_TIMEOUT),
+          Effect.mapError(
+            (cause) =>
+              new ArchiveError({
+                message: `public read of ${path} failed: ${cause.message}`,
+              }),
+          ),
+        ),
   };
 }
+
+const notConfigured = () =>
+  Effect.fail(new ArchiveError({ message: "archive not configured" }));
 
 const disabled: ArchiveStoreShape = {
   enabled: false,
   publicUrl: "",
-  put: () =>
-    Effect.fail(new ArchiveError({ message: "archive not configured" })),
-  list: () =>
-    Effect.fail(new ArchiveError({ message: "archive not configured" })),
-  get: () =>
-    Effect.fail(new ArchiveError({ message: "archive not configured" })),
-  fetchPublic: () =>
-    Effect.fail(new ArchiveError({ message: "archive not configured" })),
+  put: notConfigured,
+  list: notConfigured,
+  fetchPublic: notConfigured,
 };
 
 export class ArchiveStore extends Context.Service<
   ArchiveStore,
   ArchiveStoreShape
 >()("lmt-go/ArchiveStore") {
+  // Its own fetch client, so archive traffic never queues behind calls to Lanka Metro.
   static readonly layer = Layer.effect(
     ArchiveStore,
     Effect.gen(function* () {
@@ -193,13 +258,16 @@ export class ArchiveStore extends Context.Service<
         return ArchiveStore.of(disabled);
       }
       return ArchiveStore.of(
-        makeR2Store({
-          ...credentials.value,
-          secretAccessKey: Redacted.value(credentials.value.secretAccessKey),
-          bucket: config.bucket,
-          publicUrl: config.publicUrl.replace(/\/$/, ""),
-        }),
+        makeR2Store(
+          {
+            ...credentials.value,
+            secretAccessKey: Redacted.value(credentials.value.secretAccessKey),
+            bucket: config.bucket,
+            publicUrl: config.publicUrl.replace(/\/$/, ""),
+          },
+          yield* HttpClient.HttpClient,
+        ),
       );
     }),
-  );
+  ).pipe(Layer.provide(FetchHttpClient.layer));
 }

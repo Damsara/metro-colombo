@@ -8,13 +8,14 @@ import {
   Predicate,
   Redacted,
   Schedule,
+  PubSub,
+  Scope,
 } from "effect";
 import { WebSocket } from "ws";
 import { Auth } from "./auth.js";
 import { UpstreamConfig } from "./config.js";
 import type * as S from "./schemas.js";
 import { UpstreamApi } from "./upstream.js";
-import { RecordBuffer } from "./archive/rows.js";
 
 const STALE_AFTER = Duration.seconds(60);
 // The feed chats every few seconds, so a longer silence means the line is dead.
@@ -105,7 +106,12 @@ export class LiveFleet extends Context.Service<
   LiveFleet,
   {
     readonly snapshot: Effect.Effect<S.LiveFeed>;
-    readonly takeRecorded: Effect.Effect<ReadonlyArray<Fix>>;
+    // Every accepted fix, for whoever subscribes; nothing is kept without a subscriber.
+    readonly subscribeFixes: Effect.Effect<
+      PubSub.Subscription<Fix>,
+      never,
+      Scope.Scope
+    >;
   }
 >()("lmt-go/LiveFleet") {
   static readonly layer = Layer.effect(
@@ -116,7 +122,7 @@ export class LiveFleet extends Context.Service<
       const upstream = yield* UpstreamApi;
       const auth = yield* Auth;
       const fixes = new Map<string, Fix>();
-      const recorded = new RecordBuffer<Fix>(MAX_RECORDED_FIXES);
+      const recorded = yield* PubSub.sliding<Fix>(MAX_RECORDED_FIXES);
       let lastUpdate = 0;
       let connected = false;
 
@@ -131,7 +137,7 @@ export class LiveFleet extends Context.Service<
           const fix = toFix(value, receivedAt);
           if (fix) {
             fixes.set(fix.id, fix);
-            recorded.push(fix);
+            PubSub.publishUnsafe(recorded, fix);
           }
         }
         lastUpdate = receivedAt;
@@ -231,7 +237,7 @@ export class LiveFleet extends Context.Service<
 
       return LiveFleet.of({
         snapshot,
-        takeRecorded: Effect.sync(() => recorded.take()),
+        subscribeFixes: PubSub.subscribe(recorded),
       });
     }),
   );
