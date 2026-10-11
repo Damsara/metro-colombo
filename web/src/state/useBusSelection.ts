@@ -8,17 +8,13 @@ import {
 } from "../lib/follow";
 import { busKey, type LiveBus } from "../types";
 
-/**
- * Which live bus is picked, how the map follows it, and whether buses show
- * at all. `keepKey` is a bus that stays selected even once it's lost.
- */
+/** Which live bus is picked, whether the map follows it, and whether buses show at all. */
 export function useBusSelection(
   buses: LiveBus[],
   liveLoaded: boolean,
   keepKey: string | null = null,
 ) {
   const [showLive, setShowLive] = useState(true);
-  // The bus as last seen in the feed, so it outlasts a gap in reporting.
   const [picked, setPicked] = useState<LiveBus | null>(null);
   const [mode, setMode] = useState<FollowMode>("following");
   const [missingSince, setMissingSince] = useState<number | null>(null);
@@ -72,7 +68,6 @@ export function useBusSelection(
     setShowLive,
     selectedBusId,
     selectedBus,
-    /** Whether the camera stays locked on the bus, gone quiet or not. */
     followBus: picked !== null && mode === "following",
     followState: state,
     select,

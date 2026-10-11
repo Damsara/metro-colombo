@@ -139,8 +139,8 @@ function Home() {
   const { selectedBus, release: releaseBus } = selection;
   const trackedSelected =
     tracking.active && !!selectedBus && busKey(selectedBus) === trackedKey;
-  // The tracked bus's identity lives in the panel, so on the Plan tab the
-  // map's pill only shows for some other bus picked on the map.
+  // The tracked bus's identity lives in the panel, so the map's pill only
+  // shows for some other bus picked on the map.
   const showBusPill = !(trackingPlan && trackedSelected);
   const trackedFollow: FollowState = tracking.lost
     ? "lost"
@@ -211,8 +211,7 @@ function Home() {
     if (trackingPlan && trackedLive && !selection.selectedBusId)
       selectBus(trackedLive);
   }, [trackingPlan, trackedLive, selection.selectedBusId, selectBus]);
-  // Ending tracking, by button or by Back, lets go of the bus and frames
-  // the ride it was on.
+  // Ending tracking, by button or by Back, lets go of the bus.
   const wasTracking = useRef(false);
   const trackedRide = useRef<Ride | null>(null);
   useEffect(() => {
@@ -373,8 +372,6 @@ function Home() {
     handleBusSelect(bus);
   };
   function changeTab(next: "plan" | "routes") {
-    // Coming back to plan lets go of a bus picked on the routes, but not the
-    // tracked one.
     if (next === "plan" && tab !== "plan" && !trackedSelected) releaseBus();
     setTab(next);
     setSelectedStop(null);

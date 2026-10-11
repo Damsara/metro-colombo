@@ -1,6 +1,6 @@
 import { plural } from "@lingui/core/macro";
 import { Plural, useLingui } from "@lingui/react/macro";
-import { BusFront, CircleCheck, MapPinOff } from "lucide-react";
+import { BusFront, CircleCheck, MapPinOff, X } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { minutesLabel, timeLabel, towards } from "../i18n";
 import { liveSignal, type FollowState } from "../lib/follow";
@@ -144,7 +144,7 @@ export function TrackingPanel({
   tracking: Tracking;
   language: Language;
   routeColors: ReadonlyMap<string, string>;
-  /** How the map is following the tracked bus. */
+  /** Whether the map is following the tracked bus. */
   followState: FollowState;
   onFollow: () => void;
   onStop: () => void;
@@ -262,6 +262,13 @@ export function TrackingPanel({
               {t`Follow`}
             </Button>
           )}
+        <Button
+          variant="quiet"
+          aria-label={phase === "arrived" && !lost ? t`Done` : t`End trip`}
+          onClick={onStop}
+        >
+          <X className="size-5" aria-hidden="true" />
+        </Button>
       </div>
 
       <BusChangeNotice

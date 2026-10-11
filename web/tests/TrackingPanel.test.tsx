@@ -1,14 +1,30 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { test } from "vitest";
+import { test, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ComponentProps } from "react";
 import { TrackingPanel } from "../src/components/TrackingPanel";
 import type { FollowState } from "../src/lib/follow";
 import { LanguageProvider } from "../src/lib/language";
 import type { Tracking } from "../src/state/useTracking";
 import type { JourneyOption, LiveBus, Stop } from "../src/types";
+
+type ButtonProps = ComponentProps<
+  typeof import("../src/components/ui/Button").Button
+>;
+const buttons = vi.hoisted(() => [] as ButtonProps[]);
+vi.mock("../src/components/ui/Button", async (original) => {
+  const actual = await original<typeof import("../src/components/ui/Button")>();
+  return {
+    ...actual,
+    Button: (props: Parameters<typeof actual.Button>[0]) => {
+      buttons.push(props);
+      return actual.Button(props);
+    },
+  };
+});
 
 const option: JourneyOption = JSON.parse(
   readFileSync(
@@ -53,6 +69,7 @@ const bus: LiveBus = {
 function render(
   overrides: Partial<Tracking> | Record<string, unknown>,
   followState: FollowState = "following",
+  onStop: () => void = () => {},
 ): string {
   const tracking = {
     active: true,
@@ -81,7 +98,7 @@ function render(
           routeColors: new Map(),
           followState,
           onFollow: () => {},
-          onStop: () => {},
+          onStop,
         }),
       }),
     }),
@@ -173,4 +190,15 @@ test("a changed bus is announced with an OK to dismiss it", () => {
     changed,
     /<div aria-live="polite">.*Your bus changed to WP-NB-1234.*>OK<\/button>/,
   );
+});
+
+test("the header has a button that ends the trip", () => {
+  let stopped = 0;
+  buttons.length = 0;
+  const html = render({}, "following", () => stopped++);
+  assert.match(html, /<button[^>]*aria-label="End trip"/);
+  buttons
+    .find((props) => props["aria-label"] === "End trip")
+    ?.onClick?.({} as never);
+  assert.equal(stopped, 1);
 });

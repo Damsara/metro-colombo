@@ -66,7 +66,6 @@ type Warning = "tiles" | "map" | "location" | "permission" | null;
 type Props = Omit<MapViewProps, "onFollowChange"> & {
   followState: FollowState | null;
   onFollowEvent: (event: FollowEvent) => void;
-  /** A ride to frame from boarding to getting off, e.g. once its trip ends. */
   frameRide?: Ride | null;
 };
 
@@ -680,8 +679,7 @@ export default function MapView(props: Props) {
     if (appliedFocus.current === next.key) return;
     // The first view is shown at once; later changes glide to the new view.
     const firstView = appliedFocus.current === null;
-    // Leaving follow mode keeps the camera where the user (or the bus) left
-    // it, unless it's to frame the ride that was being followed.
+    // Leaving follow mode keeps the camera where the user (or the bus) left it.
     const wasFollowing = appliedFocus.current === FOLLOW_FOCUS;
     appliedFocus.current = next.key;
     if (wasFollowing && !next.key.startsWith("ride:")) return;
@@ -863,9 +861,8 @@ export default function MapView(props: Props) {
       activeMap.on("mouseout", () => {
         if (ready.current) setHover(null);
       });
-      // Panning away from the bus (a real drag or arrow keys) stops
-      // following; zooming and rotating keep it. A two-finger pinch also
-      // reports a small drag, so only one-finger touch drags count.
+      // A two-finger pinch also reports a small drag, so only one-finger touch
+      // drags count.
       let dragStart: { x: number; y: number } | null = null;
       activeMap.on("dragstart", (event) => {
         dragStart = isMultiTouch(event.originalEvent)
@@ -980,7 +977,6 @@ export default function MapView(props: Props) {
     // in progress is left alone, then the camera glides back onto the bus.
     let phase: "start" | "gliding" | "tracking" = "start";
     let firstGlide = true;
-    // With reduced motion the camera moves once per new position, not every frame.
     let lastCentred = "";
     const settle = () => {
       phase = "tracking";

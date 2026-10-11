@@ -63,7 +63,6 @@ test("a bus out of the feed waits, then is lost", () => {
 test("a bus back in the feed returns to what the user had", () => {
   assert.equal(followState("following", null, 5_000), "following");
   assert.equal(followState("lookingAround", null, 5_000), "lookingAround");
-  // Looking around while it was gone is kept for its return.
   const mode = nextFollowMode("following", { type: "pan" });
   assert.equal(followState(mode, 1_000, 2_000), "waiting");
   assert.equal(followState(mode, null, 3_000), "lookingAround");
