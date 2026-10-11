@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useMediaQuery } from "../../lib/useMediaQuery";
-import { between, decorationUrl, REDUCED_MOTION } from "./shared";
+import { LANTERNS } from "../decorations";
+import { between, REDUCED_MOTION } from "./shared";
 
 export function LanternsRise() {
   const reduced = useMediaQuery(REDUCED_MOTION);
@@ -19,7 +20,7 @@ export function LanternsRise() {
       {lanterns.map((lantern, index) => (
         <img
           key={index}
-          src={decorationUrl("lantern", index)}
+          src={LANTERNS.images[index % LANTERNS.images.length]}
           alt=""
           width={30}
           height={60}

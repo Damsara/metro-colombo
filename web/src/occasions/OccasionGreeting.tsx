@@ -16,7 +16,6 @@ export function OccasionGreeting({
   const note = theme.note?.(i18n);
   return (
     <div
-      role="status"
       className={
         variant === "strip"
           ? "pointer-events-auto flex items-start gap-2 rounded-xl bg-paper/95 py-1.5 pr-1 pl-3 text-xs leading-snug text-ink shadow-float"

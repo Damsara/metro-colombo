@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useMediaQuery } from "../../lib/useMediaQuery";
-import { between, decorationUrl, REDUCED_MOTION } from "./shared";
+import { STARS } from "../decorations";
+import { between, REDUCED_MOTION } from "./shared";
 
 export function StarsTwinkle() {
   const reduced = useMediaQuery(REDUCED_MOTION);
@@ -15,7 +16,7 @@ export function StarsTwinkle() {
     [],
   );
   if (reduced) return null;
-  const src = decorationUrl("star");
+  const src = STARS.images[0];
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {stars.map((star, index) => (

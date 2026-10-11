@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useMediaQuery } from "../../lib/useMediaQuery";
-import { between, decorationUrl, REDUCED_MOTION } from "./shared";
+import { OIL_LAMPS } from "../decorations";
+import { between, REDUCED_MOTION } from "./shared";
 
 const LAMPS = 12;
 
@@ -11,7 +12,7 @@ export function LampsGlow() {
     [],
   );
   if (reduced) return null;
-  const src = decorationUrl("oilLamp");
+  const src = OIL_LAMPS.images[0];
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <div className="occasion-glow absolute inset-x-0 bottom-3 flex justify-around opacity-0">

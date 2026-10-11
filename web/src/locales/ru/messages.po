@@ -7,6 +7,12 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: ru\n"
 
+#. placeholder {0}: credit.title
+#. placeholder {1}: credit.author
+#: src/components/festiveMap.ts:48
+msgid "“{0}” by {1}"
+msgstr "«{0}», автор {1}"
+
 #: src/components/TripForm.tsx:189
 msgid "(nearest)"
 msgstr "(ближайшая)"
@@ -135,7 +141,7 @@ msgstr "<0>Садитесь на остановке</0> {boardName}"
 msgid "A peaceful Poya day"
 msgstr "Мирного дня Пойя"
 
-#: src/components/MapView.tsx:1503
+#: src/components/MapView.tsx:1488
 msgid "A: Start · B: Destination"
 msgstr "A: старт · B: пункт назначения"
 
@@ -214,15 +220,15 @@ msgstr "Автобус на остановке"
 msgid "Bus live"
 msgstr "Автобус в пути"
 
-#: src/App.tsx:904
+#: src/App.tsx:921
 msgid "Bus route map"
 msgstr "Карта маршрута автобуса"
 
-#: src/App.tsx:494
+#: src/App.tsx:511
 msgid "Bus routes"
 msgstr "Маршруты автобусов"
 
-#: src/App.tsx:573
+#: src/App.tsx:590
 msgctxt "tab"
 msgid "Bus routes"
 msgstr "Маршруты"
@@ -263,7 +269,7 @@ msgstr "Выберите, где вы хотите выйти."
 msgid "Choose your starting stop and destination to find a journey."
 msgstr "Выберите начальную остановку и пункт назначения, чтобы найти поездку."
 
-#: src/App.tsx:667
+#: src/App.tsx:684
 msgctxt "recent trips"
 msgid "Clear"
 msgstr "Очистить"
@@ -273,7 +279,7 @@ msgstr "Очистить"
 msgid "Clear {label}"
 msgstr "Очистить: {label}"
 
-#: src/App.tsx:1014
+#: src/App.tsx:1032
 #: src/components/StopPicker.tsx:435
 msgid "Close"
 msgstr "Закрыть"
@@ -286,7 +292,7 @@ msgstr "Закрыть сведения об остановке"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "Ближайшая остановка: {nearestName} · {nearestDistance} по прямой. Проверьте пешеходный маршрут."
 
-#: src/App.tsx:978
+#: src/App.tsx:996
 msgid "Colombo & beyond"
 msgstr "Коломбо и дальше"
 
@@ -303,7 +309,11 @@ msgctxt "month"
 msgid "Dec"
 msgstr "дек"
 
-#: src/components/MapView.tsx:1403
+#: src/components/festiveMap.ts:49
+msgid "Decorations"
+msgstr "Украшения"
+
+#: src/components/MapView.tsx:1388
 msgid "Destination: {stopLabel}"
 msgstr "Куда: {stopLabel}"
 
@@ -338,7 +348,7 @@ msgstr "Ид Мубарак"
 msgid "End trip"
 msgstr "Завершить поездку"
 
-#: src/App.tsx:561
+#: src/App.tsx:578
 msgid "Explore Metro"
 msgstr "Открыть Metro"
 
@@ -363,11 +373,11 @@ msgstr "фев"
 msgid "Filling up"
 msgstr "Заполняется"
 
-#: src/App.tsx:700
+#: src/App.tsx:717
 msgid "Find buses for the way back, from {end} to {start}"
 msgstr "Найти автобусы обратно, от {end} до {start}"
 
-#: src/App.tsx:686
+#: src/App.tsx:703
 msgid "Find buses from {start} to {end}"
 msgstr "Найти автобусы от {start} до {end}"
 
@@ -375,11 +385,11 @@ msgstr "Найти автобусы от {start} до {end}"
 msgid "Find my bus"
 msgstr "Найти автобус"
 
-#: src/components/MapView.tsx:436
+#: src/components/MapView.tsx:424
 msgid "Find my location"
 msgstr "Определить моё местоположение"
 
-#: src/App.tsx:983
+#: src/App.tsx:1001
 msgid "Find your way around."
 msgstr "Найдите дорогу."
 
@@ -509,7 +519,7 @@ msgstr "Отсюда → {end}"
 msgid "Hide"
 msgstr "Скрыть"
 
-#: src/components/MapView.tsx:598
+#: src/components/MapView.tsx:586
 msgid "Hide live buses"
 msgstr "Скрыть автобусы в пути"
 
@@ -535,7 +545,7 @@ msgstr "янв"
 msgid "Journey steps"
 msgstr "Шаги поездки"
 
-#: src/components/MapView.tsx:1494
+#: src/components/MapView.tsx:1479
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "Остановки поездки; кружки отмечают посадку и выход"
 
@@ -558,7 +568,7 @@ msgstr "Оставить мой текущий выбор"
 msgid "Language"
 msgstr "Язык"
 
-#: src/App.tsx:1003
+#: src/App.tsx:1021
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro сейчас не передаёт линию этого маршрута."
 
@@ -586,7 +596,7 @@ msgstr "Автобус в пути"
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "Положение автобусов сейчас недоступно. Расписание по-прежнему работает."
 
-#: src/components/MapView.tsx:1500
+#: src/components/MapView.tsx:1485
 msgid "Live bus; tap to select and follow"
 msgstr "Автобус в пути; коснитесь, чтобы выбрать и следить"
 
@@ -612,16 +622,16 @@ msgstr "В пути в этом направлении"
 msgid "Live position lost; showing schedule"
 msgstr "Положение потеряно; показано расписание"
 
-#: src/App.tsx:795
+#: src/App.tsx:812
 msgid "Load missing stops"
 msgstr "Загрузить недостающие остановки"
 
-#: src/App.tsx:742
+#: src/App.tsx:759
 msgid "Loading bus routes…"
 msgstr "Загружаем маршруты автобусов…"
 
-#: src/App.tsx:909
-#: src/components/MapView.tsx:1440
+#: src/App.tsx:926
+#: src/components/MapView.tsx:1425
 msgid "Loading map…"
 msgstr "Загружаем карту…"
 
@@ -633,11 +643,11 @@ msgstr "Загружаем остановки…"
 msgid "Loading the stops…"
 msgstr "Загружаем остановки…"
 
-#: src/components/MapView.tsx:1420
+#: src/components/MapView.tsx:1405
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "Доступ к местоположению не разрешён. Вы всё равно можете выбрать остановки."
 
-#: src/components/MapView.tsx:437
+#: src/components/MapView.tsx:425
 msgid "Location unavailable"
 msgstr "Местоположение недоступно"
 
@@ -649,19 +659,19 @@ msgstr "Местоположение определить не удалось. �
 msgid "Looking around"
 msgstr "Осматриваемся"
 
-#: src/components/MapView.tsx:438
+#: src/components/MapView.tsx:426
 msgid "Map credits"
 msgstr "Источники карты"
 
-#: src/components/MapView.tsx:1486
+#: src/components/MapView.tsx:1471
 msgid "Map key"
 msgstr "Условные обозначения"
 
-#: src/components/MapView.tsx:1424
+#: src/components/MapView.tsx:1409
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "Не удалось загрузить фрагменты карты у внешнего поставщика. Проверьте интернет-соединение. Вы всё равно можете спланировать поездку."
 
-#: src/components/MapView.tsx:1450
+#: src/components/MapView.tsx:1435
 msgid "Map unavailable"
 msgstr "Карта недоступна"
 
@@ -679,7 +689,7 @@ msgstr "мая"
 msgid "Merry Christmas"
 msgstr "С Рождеством!"
 
-#: src/App.tsx:864
+#: src/App.tsx:881
 msgid "Metro home"
 msgstr "Metro: главная"
 
@@ -692,7 +702,7 @@ msgstr "пн"
 msgid "near {nearName}"
 msgstr "рядом с {nearName}"
 
-#: src/App.tsx:351
+#: src/App.tsx:368
 msgid "Near you"
 msgstr "Рядом с вами"
 
@@ -749,7 +759,7 @@ msgstr "Нет, спасибо"
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "Сейчас в эту сторону никого · в обратную сторону: {elsewhere}"
 
-#: src/App.tsx:806
+#: src/App.tsx:823
 msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
 msgstr "Не связано с <0>Lanka Metro Transit</0> и официальным <1>приложением LMT GO</1>."
 
@@ -783,7 +793,7 @@ msgstr "На карте"
 msgid "On your way to {alight}"
 msgstr "Вы едете к остановке {alight}"
 
-#: src/App.tsx:739
+#: src/App.tsx:756
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "Откройте маршрут, чтобы увидеть его остановки и где сейчас автобусы."
 
@@ -811,11 +821,11 @@ msgstr "Панель: свёрнута"
 msgid "Pick a date"
 msgstr "Выберите дату"
 
-#: src/App.tsx:568
+#: src/App.tsx:585
 msgid "Plan a trip"
 msgstr "Спланировать поездку"
 
-#: src/App.tsx:494
+#: src/App.tsx:511
 msgid "Plan your bus trip"
 msgstr "Спланируйте поездку на автобусе"
 
@@ -831,15 +841,15 @@ msgstr "Много свободных мест"
 msgid "PM"
 msgstr "PM"
 
-#: src/components/MapView.tsx:435
+#: src/components/MapView.tsx:423
 msgid "Point north"
 msgstr "Север сверху"
 
-#: src/App.tsx:352
+#: src/App.tsx:369
 msgid "Popular"
 msgstr "Популярные"
 
-#: src/App.tsx:715
+#: src/App.tsx:732
 msgid "Popular starting stops"
 msgstr "Популярные начальные остановки"
 
@@ -855,11 +865,11 @@ msgstr "Настройки конфиденциальности"
 msgid "Public holiday: buses may run a holiday timetable."
 msgstr "Государственный праздник: автобусы могут ходить по праздничному расписанию."
 
-#: src/App.tsx:350
+#: src/App.tsx:367
 msgid "Recent"
 msgstr "Недавние"
 
-#: src/App.tsx:664
+#: src/App.tsx:681
 msgid "Recent trips"
 msgstr "Недавние поездки"
 
@@ -879,7 +889,7 @@ msgstr "Коды маршрутов и остановок и на сколько
 msgid "Routes"
 msgstr "Маршруты"
 
-#: src/components/MapView.tsx:1429
+#: src/components/MapView.tsx:1414
 msgid "Routes and stops map"
 msgstr "Карта маршрутов и остановок"
 
@@ -919,7 +929,7 @@ msgstr "сен"
 msgid "Served by"
 msgstr "Обслуживает"
 
-#: src/App.tsx:834
+#: src/App.tsx:851
 msgid "Service status"
 msgstr "Состояние сервиса"
 
@@ -927,15 +937,15 @@ msgstr "Состояние сервиса"
 msgid "Show"
 msgstr "Показать"
 
-#: src/components/MapView.tsx:590
+#: src/components/MapView.tsx:578
 msgid "Show 3D map"
 msgstr "Показать 3D-карту"
 
-#: src/components/MapView.tsx:590
+#: src/components/MapView.tsx:578
 msgid "Show flat map"
 msgstr "Показать плоскую карту"
 
-#: src/components/MapView.tsx:598
+#: src/components/MapView.tsx:586
 msgid "Show live buses"
 msgstr "Показать автобусы в пути"
 
@@ -959,11 +969,11 @@ msgstr "Показать следующий день"
 msgid "Show tomorrow’s buses"
 msgstr "Показать автобусы на завтра"
 
-#: src/components/MapView.tsx:1425
+#: src/components/MapView.tsx:1410
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "Часть карты не загрузилась. Карта или сеть могут быть недоступны. Вы всё равно можете спланировать поездку."
 
-#: src/App.tsx:799
+#: src/App.tsx:816
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
 msgstr "Не все остановки удалось загрузить. Поиск может быть неполным."
 
@@ -971,11 +981,11 @@ msgstr "Не все остановки удалось загрузить. Пои
 msgid "Start here"
 msgstr "Начать отсюда"
 
-#: src/components/MapView.tsx:1403
+#: src/components/MapView.tsx:1388
 msgid "Start: {stopLabel}"
 msgstr "Старт: {stopLabel}"
 
-#: src/components/MapView.tsx:1489
+#: src/components/MapView.tsx:1474
 msgid "Stop"
 msgstr "Остановка"
 
@@ -1009,7 +1019,7 @@ msgstr "Коснитесь остановки, чтобы спланироват
 msgid "Tap a stop to plan a trip"
 msgstr "Коснитесь остановки, чтобы спланировать поездку"
 
-#: src/components/MapView.tsx:1453
+#: src/components/MapView.tsx:1438
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "Для карты нужны интернет и поддержка WebGL в браузере. Вы всё равно можете выбрать остановки и спланировать поездку."
 
@@ -1059,7 +1069,7 @@ msgstr "Отслеживать мою поездку"
 msgid "Tracked bus"
 msgstr "Отслеживаемый автобус"
 
-#: src/components/MapView.tsx:468
+#: src/components/MapView.tsx:456
 msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
 msgstr "Карта транспорта. Стрелки перемещают карту, плюс и минус меняют масштаб."
 
@@ -1077,15 +1087,15 @@ msgstr "Поездка от {start} до этой остановки"
 msgid "Trip from this stop to {end}"
 msgstr "Поездка от этой остановки до {end}"
 
-#: src/App.tsx:781
-#: src/App.tsx:1009
+#: src/App.tsx:798
+#: src/App.tsx:1027
 #: src/components/JourneyResults.tsx:774
 #: src/components/RoutesPanel.tsx:238
 msgid "Try again"
 msgstr "Повторить"
 
-#: src/components/MapView.tsx:1461
-#: src/components/MapView.tsx:1478
+#: src/components/MapView.tsx:1446
+#: src/components/MapView.tsx:1463
 msgid "Try map again"
 msgstr "Загрузить карту снова"
 
@@ -1098,8 +1108,8 @@ msgctxt "weekday"
 msgid "Tue"
 msgstr "вт"
 
+#: src/occasions/OccasionGreeting.tsx:37
 #: src/occasions/OccasionGreeting.tsx:38
-#: src/occasions/OccasionGreeting.tsx:39
 msgid "Turn off festive touches"
 msgstr "Выключить праздничное оформление"
 
@@ -1127,7 +1137,7 @@ msgstr "Ждём сигнал…"
 msgid "Walk"
 msgstr "Идти пешком"
 
-#: src/App.tsx:785
+#: src/App.tsx:802
 msgid "We can’t connect to Metro right now."
 msgstr "Сейчас не удаётся подключиться к Metro."
 
@@ -1144,12 +1154,12 @@ msgstr "ср"
 msgid "What we collect"
 msgstr "Что мы собираем"
 
-#: src/App.tsx:546
+#: src/App.tsx:563
 #: src/components/TripForm.tsx:174
 msgid "Where to?"
 msgstr "Куда едем?"
 
-#: src/App.tsx:627
+#: src/App.tsx:644
 #: src/components/JourneyResults.tsx:787
 msgid "Where would you like to go?"
 msgstr "Куда вы хотите поехать?"
@@ -1188,7 +1198,7 @@ msgstr "Ваш автобус изменился на {plate}"
 msgid "Your destination"
 msgstr "Ваш пункт назначения"
 
-#: src/components/MapView.tsx:1422
+#: src/components/MapView.tsx:1407
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "Не удалось определить ваше местоположение. Выберите остановки вручную."
 
@@ -1201,10 +1211,10 @@ msgstr "Ваш старт"
 msgid "Your stop"
 msgstr "Ваша остановка"
 
-#: src/components/MapView.tsx:433
+#: src/components/MapView.tsx:421
 msgid "Zoom in"
 msgstr "Приблизить"
 
-#: src/components/MapView.tsx:434
+#: src/components/MapView.tsx:422
 msgid "Zoom out"
 msgstr "Отдалить"

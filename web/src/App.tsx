@@ -198,7 +198,7 @@ function Home() {
           )
         : [];
     return {
-      stopMark: festive.theme.stopMark,
+      decoration: festive.theme.stops,
       busGlow: festive.theme.busGlow,
       stops: festiveStops(
         [journeyStops, followedStops, openRouteStops ?? []],

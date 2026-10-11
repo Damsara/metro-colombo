@@ -102,7 +102,7 @@ const s = (id: string) => ({
   stop_name_en: id,
   stop_name_si: "",
   stop_name_tm: "",
-  latitude: 6.9,
+  latitude: 6.9 + Number.parseInt(id, 36) / 1000,
   longitude: 79.9,
 });
 
@@ -118,6 +118,14 @@ test("marks the first non-empty source, never the whole network", () => {
   assert.equal(
     festiveStops([[], Array.from({ length: 200 }, (_, i) => s(`${i}`))]).length,
     80,
+  );
+});
+
+test("two platforms at the same spot get one decoration", () => {
+  const platform = { ...s("b"), id: "b-2", longitude: 79.9002 };
+  assert.deepEqual(
+    festiveStops([[s("a"), s("b")]], [platform]).map((x) => x.id),
+    ["b-2", "a"],
   );
 });
 

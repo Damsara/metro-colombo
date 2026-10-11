@@ -82,13 +82,34 @@ export const setFestiveOff = (store: KeyValueStore | null, off: boolean) =>
 
 const MAX_MARKED_STOPS = 80;
 
-export function festiveStops<T extends { id: string }>(
-  sources: readonly (readonly T[])[],
-  always: readonly T[] = [],
-): T[] {
+// A stop's platforms sit either side of the road and share one decoration.
+const SAME_PLACE_METERS = 30;
+const METERS_PER_DEGREE = 111_320;
+
+function metersApart(
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number },
+): number {
+  const x =
+    (a.longitude - b.longitude) *
+    Math.cos((((a.latitude + b.latitude) / 2) * Math.PI) / 180);
+  return Math.hypot(x, a.latitude - b.latitude) * METERS_PER_DEGREE;
+}
+
+export function festiveStops<
+  T extends { id: string; latitude: number; longitude: number },
+>(sources: readonly (readonly T[])[], always: readonly T[] = []): T[] {
   const source = sources.find((list) => list.length) ?? [];
-  const seen = new Set<string>();
-  return [...always, ...source]
-    .filter((stop) => !seen.has(stop.id) && seen.add(stop.id))
-    .slice(0, MAX_MARKED_STOPS);
+  const kept: T[] = [];
+  for (const stop of [...always, ...source]) {
+    if (kept.length === MAX_MARKED_STOPS) break;
+    if (
+      kept.every(
+        (other) =>
+          other.id !== stop.id && metersApart(other, stop) > SAME_PLACE_METERS,
+      )
+    )
+      kept.push(stop);
+  }
+  return kept;
 }

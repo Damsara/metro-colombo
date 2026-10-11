@@ -7,6 +7,12 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: ta\n"
 
+#. placeholder {0}: credit.title
+#. placeholder {1}: credit.author
+#: src/components/festiveMap.ts:48
+msgid "“{0}” by {1}"
+msgstr "“{0}”, {1} உருவாக்கியது"
+
 #: src/components/TripForm.tsx:189
 msgid "(nearest)"
 msgstr "(அருகிலுள்ளது)"
@@ -135,7 +141,7 @@ msgstr "{boardName} <0>இல் ஏறவும்</0>"
 msgid "A peaceful Poya day"
 msgstr "அமைதியான போயா தினம்"
 
-#: src/components/MapView.tsx:1503
+#: src/components/MapView.tsx:1488
 msgid "A: Start · B: Destination"
 msgstr "A: தொடக்கம் · B: சேருமிடம்"
 
@@ -214,15 +220,15 @@ msgstr "பேருந்து இங்கே"
 msgid "Bus live"
 msgstr "பேருந்து நேரலை"
 
-#: src/App.tsx:904
+#: src/App.tsx:921
 msgid "Bus route map"
 msgstr "பேருந்து வழித்தட வரைபடம்"
 
-#: src/App.tsx:494
+#: src/App.tsx:511
 msgid "Bus routes"
 msgstr "பேருந்து வழித்தடங்கள்"
 
-#: src/App.tsx:573
+#: src/App.tsx:590
 msgctxt "tab"
 msgid "Bus routes"
 msgstr "வழித்தடங்கள்"
@@ -263,7 +269,7 @@ msgstr "இறங்க வேண்டிய நிறுத்தத்தை�
 msgid "Choose your starting stop and destination to find a journey."
 msgstr "பயணத்தைக் கண்டறிய தொடக்க நிறுத்தத்தையும் சேருமிடத்தையும் தேர்ந்தெடுக்கவும்."
 
-#: src/App.tsx:667
+#: src/App.tsx:684
 msgctxt "recent trips"
 msgid "Clear"
 msgstr "அழி"
@@ -273,7 +279,7 @@ msgstr "அழி"
 msgid "Clear {label}"
 msgstr "{label} நீக்கவும்"
 
-#: src/App.tsx:1014
+#: src/App.tsx:1032
 #: src/components/StopPicker.tsx:435
 msgid "Close"
 msgstr "மூடு"
@@ -286,7 +292,7 @@ msgstr "நிறுத்த விவரங்களை மூடுங்க�
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "அருகிலுள்ள நிறுத்தம்: {nearestName} · நேர்கோட்டுத் தூரம் {nearestDistance}. நடைப்பாதையைச் சரிபார்க்கவும்."
 
-#: src/App.tsx:978
+#: src/App.tsx:996
 msgid "Colombo & beyond"
 msgstr "கொழும்பும் சுற்றுப்புறமும்"
 
@@ -303,7 +309,11 @@ msgctxt "month"
 msgid "Dec"
 msgstr "டிச."
 
-#: src/components/MapView.tsx:1403
+#: src/components/festiveMap.ts:49
+msgid "Decorations"
+msgstr "அலங்காரங்கள்"
+
+#: src/components/MapView.tsx:1388
 msgid "Destination: {stopLabel}"
 msgstr "சேருமிடம்: {stopLabel}"
 
@@ -338,7 +348,7 @@ msgstr "ஈத் முபாரக்"
 msgid "End trip"
 msgstr "பயணத்தை முடி"
 
-#: src/App.tsx:561
+#: src/App.tsx:578
 msgid "Explore Metro"
 msgstr "Metro பார்க்கவும்"
 
@@ -363,11 +373,11 @@ msgstr "பிப்."
 msgid "Filling up"
 msgstr "நிரம்பி வருகிறது"
 
-#: src/App.tsx:700
+#: src/App.tsx:717
 msgid "Find buses for the way back, from {end} to {start}"
 msgstr "திரும்பும் பயணத்துக்கான பேருந்துகளைத் தேடு, {end} இலிருந்து {start} வரை"
 
-#: src/App.tsx:686
+#: src/App.tsx:703
 msgid "Find buses from {start} to {end}"
 msgstr "{start} இலிருந்து {end} வரை பேருந்துகளைத் தேடு"
 
@@ -375,11 +385,11 @@ msgstr "{start} இலிருந்து {end} வரை பேருந்�
 msgid "Find my bus"
 msgstr "என் பேருந்தைக் கண்டறியுங்கள்"
 
-#: src/components/MapView.tsx:436
+#: src/components/MapView.tsx:424
 msgid "Find my location"
 msgstr "எனது இருப்பிடத்தைக் கண்டறி"
 
-#: src/App.tsx:983
+#: src/App.tsx:1001
 msgid "Find your way around."
 msgstr "உங்கள் வழியைக் கண்டறியுங்கள்."
 
@@ -509,7 +519,7 @@ msgstr "இங்கிருந்து → {end}"
 msgid "Hide"
 msgstr "மறை"
 
-#: src/components/MapView.tsx:598
+#: src/components/MapView.tsx:586
 msgid "Hide live buses"
 msgstr "நேரலைப் பேருந்துகளை மறை"
 
@@ -535,7 +545,7 @@ msgstr "ஜன."
 msgid "Journey steps"
 msgstr "பயண வழிமுறைகள்"
 
-#: src/components/MapView.tsx:1494
+#: src/components/MapView.tsx:1479
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "பயண நிறுத்தங்கள்; வளையங்கள் ஏறும் மற்றும் இறங்கும் நிறுத்தங்களைக் காட்டுகின்றன"
 
@@ -558,7 +568,7 @@ msgstr "எனது தற்போதைய தேர்வை வைத்த
 msgid "Language"
 msgstr "மொழி"
 
-#: src/App.tsx:1003
+#: src/App.tsx:1021
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro தற்போது இந்த வழித்தடக் கோட்டை அனுப்பவில்லை."
 
@@ -586,7 +596,7 @@ msgstr "நேரலைப் பேருந்து"
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "நேரலைப் பேருந்து இருப்பிடங்கள் இப்போது கிடைக்கவில்லை. நேர அட்டவணைகள் இயங்கும்."
 
-#: src/components/MapView.tsx:1500
+#: src/components/MapView.tsx:1485
 msgid "Live bus; tap to select and follow"
 msgstr "நேரலைப் பேருந்து; தேர்ந்தெடுத்து பின்தொடர தட்டவும்"
 
@@ -612,16 +622,16 @@ msgstr "இந்த திசையில் நேரலையில்"
 msgid "Live position lost; showing schedule"
 msgstr "நேரலை இருப்பிடம் கிடைக்கவில்லை; கால அட்டவணை காட்டப்படுகிறது"
 
-#: src/App.tsx:795
+#: src/App.tsx:812
 msgid "Load missing stops"
 msgstr "மீதமுள்ள நிறுத்தங்களை ஏற்றுங்கள்"
 
-#: src/App.tsx:742
+#: src/App.tsx:759
 msgid "Loading bus routes…"
 msgstr "பேருந்து வழித்தடங்கள் ஏற்றப்படுகின்றன…"
 
-#: src/App.tsx:909
-#: src/components/MapView.tsx:1440
+#: src/App.tsx:926
+#: src/components/MapView.tsx:1425
 msgid "Loading map…"
 msgstr "வரைபடம் ஏற்றப்படுகிறது…"
 
@@ -633,11 +643,11 @@ msgstr "நிறுத்தங்கள் ஏற்றப்படுகி�
 msgid "Loading the stops…"
 msgstr "நிறுத்தங்கள் ஏற்றப்படுகின்றன…"
 
-#: src/components/MapView.tsx:1420
+#: src/components/MapView.tsx:1405
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "இருப்பிட அனுமதி வழங்கப்படவில்லை. நிறுத்தங்களைத் தேர்ந்தெடுக்கலாம்."
 
-#: src/components/MapView.tsx:437
+#: src/components/MapView.tsx:425
 msgid "Location unavailable"
 msgstr "இருப்பிடம் கிடைக்கவில்லை"
 
@@ -649,19 +659,19 @@ msgstr "இருப்பிடம் கிடைக்கவில்லை. 
 msgid "Looking around"
 msgstr "சுற்றிப் பார்க்கிறீர்கள்"
 
-#: src/components/MapView.tsx:438
+#: src/components/MapView.tsx:426
 msgid "Map credits"
 msgstr "வரைபடப் பங்களிப்புகள்"
 
-#: src/components/MapView.tsx:1486
+#: src/components/MapView.tsx:1471
 msgid "Map key"
 msgstr "வரைபடக் குறியீடுகள்"
 
-#: src/components/MapView.tsx:1424
+#: src/components/MapView.tsx:1409
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "வெளிப்புற வரைபட வழங்குநரிடமிருந்து வரைபடத்தை ஏற்ற முடியவில்லை. இணைய இணைப்பைச் சரிபார்க்கவும். பயணத்தைத் திட்டமிடலாம்."
 
-#: src/components/MapView.tsx:1450
+#: src/components/MapView.tsx:1435
 msgid "Map unavailable"
 msgstr "வரைபடம் கிடைக்கவில்லை"
 
@@ -679,7 +689,7 @@ msgstr "மே"
 msgid "Merry Christmas"
 msgstr "இனிய கிறிஸ்துமஸ் வாழ்த்துகள்"
 
-#: src/App.tsx:864
+#: src/App.tsx:881
 msgid "Metro home"
 msgstr "Metro முகப்பு"
 
@@ -692,7 +702,7 @@ msgstr "திங்."
 msgid "near {nearName}"
 msgstr "{nearName} அருகில்"
 
-#: src/App.tsx:351
+#: src/App.tsx:368
 msgid "Near you"
 msgstr "உங்கள் அருகில்"
 
@@ -749,7 +759,7 @@ msgstr "வேண்டாம், நன்றி"
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "இப்போது இந்தத் திசையில் இல்லை · மற்ற திசையில் {elsewhere}"
 
-#: src/App.tsx:806
+#: src/App.tsx:823
 msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
 msgstr "<0>Lanka Metro Transit</0> அல்லது அதிகாரப்பூர்வ <1>LMT GO பயன்பாட்டுடன்</1> தொடர்பில்லை."
 
@@ -783,7 +793,7 @@ msgstr "வரைபடத்தில்"
 msgid "On your way to {alight}"
 msgstr "{alight} நோக்கிப் பயணிக்கிறீர்கள்"
 
-#: src/App.tsx:739
+#: src/App.tsx:756
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "நிறுத்தங்களையும் பேருந்துகள் இப்போது இருக்கும் இடத்தையும் பார்க்க ஒரு வழித்தடத்தைத் திறக்கவும்."
 
@@ -811,11 +821,11 @@ msgstr "பலகம்: சிறிதாக்கப்பட்டது"
 msgid "Pick a date"
 msgstr "தேதியைத் தேர்ந்தெடுக்கவும்"
 
-#: src/App.tsx:568
+#: src/App.tsx:585
 msgid "Plan a trip"
 msgstr "பயணத் திட்டம்"
 
-#: src/App.tsx:494
+#: src/App.tsx:511
 msgid "Plan your bus trip"
 msgstr "உங்கள் பேருந்து பயணத்தைத் திட்டமிடுங்கள்"
 
@@ -831,15 +841,15 @@ msgstr "நிறைய இடம் உள்ளது"
 msgid "PM"
 msgstr "PM"
 
-#: src/components/MapView.tsx:435
+#: src/components/MapView.tsx:423
 msgid "Point north"
 msgstr "வடக்கு நோக்கித் திருப்பு"
 
-#: src/App.tsx:352
+#: src/App.tsx:369
 msgid "Popular"
 msgstr "பிரபலமானவை"
 
-#: src/App.tsx:715
+#: src/App.tsx:732
 msgid "Popular starting stops"
 msgstr "பிரபலமான புறப்படும் நிறுத்தங்கள்"
 
@@ -855,11 +865,11 @@ msgstr "தனியுரிமைத் தேர்வுகள்"
 msgid "Public holiday: buses may run a holiday timetable."
 msgstr "பொது விடுமுறை: பேருந்துகள் விடுமுறை நேர அட்டவணையில் இயங்கலாம்."
 
-#: src/App.tsx:350
+#: src/App.tsx:367
 msgid "Recent"
 msgstr "சமீபத்தியவை"
 
-#: src/App.tsx:664
+#: src/App.tsx:681
 msgid "Recent trips"
 msgstr "சமீபத்திய பயணங்கள்"
 
@@ -879,7 +889,7 @@ msgstr "வழித்தட மற்றும் நிறுத்தக் 
 msgid "Routes"
 msgstr "வழித்தடங்கள்"
 
-#: src/components/MapView.tsx:1429
+#: src/components/MapView.tsx:1414
 msgid "Routes and stops map"
 msgstr "வழித்தடங்கள் மற்றும் நிறுத்தங்களின் வரைபடம்"
 
@@ -919,7 +929,7 @@ msgstr "செப்."
 msgid "Served by"
 msgstr "இங்கு நிற்கும் வழிகள்"
 
-#: src/App.tsx:834
+#: src/App.tsx:851
 msgid "Service status"
 msgstr "சேவை நிலை"
 
@@ -927,15 +937,15 @@ msgstr "சேவை நிலை"
 msgid "Show"
 msgstr "காட்டு"
 
-#: src/components/MapView.tsx:590
+#: src/components/MapView.tsx:578
 msgid "Show 3D map"
 msgstr "3D வரைபடத்தைக் காட்டு"
 
-#: src/components/MapView.tsx:590
+#: src/components/MapView.tsx:578
 msgid "Show flat map"
 msgstr "தட்டையான வரைபடத்தைக் காட்டு"
 
-#: src/components/MapView.tsx:598
+#: src/components/MapView.tsx:586
 msgid "Show live buses"
 msgstr "நேரலைப் பேருந்துகளைக் காட்டு"
 
@@ -959,11 +969,11 @@ msgstr "அடுத்த நாளைக் காட்டு"
 msgid "Show tomorrow’s buses"
 msgstr "நாளைய பேருந்துகளைக் காட்டு"
 
-#: src/components/MapView.tsx:1425
+#: src/components/MapView.tsx:1410
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "சில வரைபடத் தகவல்களை ஏற்ற முடியவில்லை. வரைபடம் அல்லது இணைய இணைப்பு கிடைக்காமல் இருக்கலாம். பயணத்தைத் திட்டமிடலாம்."
 
-#: src/App.tsx:799
+#: src/App.tsx:816
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
 msgstr "சில நிறுத்தங்களை ஏற்ற முடியவில்லை. தேடல் முழுமையடையாமல் இருக்கலாம்."
 
@@ -971,11 +981,11 @@ msgstr "சில நிறுத்தங்களை ஏற்ற முடி
 msgid "Start here"
 msgstr "இங்கே புறப்படு"
 
-#: src/components/MapView.tsx:1403
+#: src/components/MapView.tsx:1388
 msgid "Start: {stopLabel}"
 msgstr "தொடக்கம்: {stopLabel}"
 
-#: src/components/MapView.tsx:1489
+#: src/components/MapView.tsx:1474
 msgid "Stop"
 msgstr "நிறுத்தம்"
 
@@ -1009,7 +1019,7 @@ msgstr "பயணம் திட்டமிட நிறுத்தத்த�
 msgid "Tap a stop to plan a trip"
 msgstr "பயணம் திட்டமிட நிறுத்தத்தைத் தட்டவும்"
 
-#: src/components/MapView.tsx:1453
+#: src/components/MapView.tsx:1438
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "வரைபடத்திற்கு இணைய இணைப்பும் உலாவியின் WebGL ஆதரவும் தேவை. நிறுத்தங்களைத் தேர்ந்தெடுத்து பயணத்தைத் திட்டமிடலாம்."
 
@@ -1059,7 +1069,7 @@ msgstr "என் பயணத்தைக் கண்காணி"
 msgid "Tracked bus"
 msgstr "பின்தொடரப்படும் பேருந்து"
 
-#: src/components/MapView.tsx:468
+#: src/components/MapView.tsx:456
 msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
 msgstr "போக்குவரத்து வரைபடம். நகர அம்புக்குறி விசைகளையும் பெரிதாக்க அல்லது சிறிதாக்க + அல்லது − விசைகளையும் பயன்படுத்தவும்."
 
@@ -1077,15 +1087,15 @@ msgstr "{start} இலிருந்து இந்த நிறுத்த�
 msgid "Trip from this stop to {end}"
 msgstr "இந்த நிறுத்தத்திலிருந்து {end} வரை பயணம்"
 
-#: src/App.tsx:781
-#: src/App.tsx:1009
+#: src/App.tsx:798
+#: src/App.tsx:1027
 #: src/components/JourneyResults.tsx:774
 #: src/components/RoutesPanel.tsx:238
 msgid "Try again"
 msgstr "மீண்டும் முயற்சிக்கவும்"
 
-#: src/components/MapView.tsx:1461
-#: src/components/MapView.tsx:1478
+#: src/components/MapView.tsx:1446
+#: src/components/MapView.tsx:1463
 msgid "Try map again"
 msgstr "வரைபடத்தை மீண்டும் முயற்சி செய்"
 
@@ -1098,8 +1108,8 @@ msgctxt "weekday"
 msgid "Tue"
 msgstr "செவ்."
 
+#: src/occasions/OccasionGreeting.tsx:37
 #: src/occasions/OccasionGreeting.tsx:38
-#: src/occasions/OccasionGreeting.tsx:39
 msgid "Turn off festive touches"
 msgstr "பண்டிகை அலங்காரங்களை அணை"
 
@@ -1127,7 +1137,7 @@ msgstr "சிக்னலுக்காகக் காத்திருக�
 msgid "Walk"
 msgstr "நடந்து செல்லவும்"
 
-#: src/App.tsx:785
+#: src/App.tsx:802
 msgid "We can’t connect to Metro right now."
 msgstr "இப்போது Metro-வை இணைக்க முடியவில்லை."
 
@@ -1144,12 +1154,12 @@ msgstr "புத."
 msgid "What we collect"
 msgstr "நாங்கள் சேகரிப்பவை"
 
-#: src/App.tsx:546
+#: src/App.tsx:563
 #: src/components/TripForm.tsx:174
 msgid "Where to?"
 msgstr "எங்கே போக வேண்டும்?"
 
-#: src/App.tsx:627
+#: src/App.tsx:644
 #: src/components/JourneyResults.tsx:787
 msgid "Where would you like to go?"
 msgstr "எங்கு செல்ல விரும்புகிறீர்கள்?"
@@ -1188,7 +1198,7 @@ msgstr "உங்கள் பேருந்து {plate} ஆக மாற்�
 msgid "Your destination"
 msgstr "உங்கள் சேருமிடம்"
 
-#: src/components/MapView.tsx:1422
+#: src/components/MapView.tsx:1407
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "உங்கள் இருப்பிடத்தைக் கண்டறிய முடியவில்லை. நிறுத்தங்களைத் தேர்ந்தெடுக்கவும்."
 
@@ -1201,10 +1211,10 @@ msgstr "உங்கள் புறப்பாடு"
 msgid "Your stop"
 msgstr "உங்கள் நிறுத்தம்"
 
-#: src/components/MapView.tsx:433
+#: src/components/MapView.tsx:421
 msgid "Zoom in"
 msgstr "பெரிதாக்கு"
 
-#: src/components/MapView.tsx:434
+#: src/components/MapView.tsx:422
 msgid "Zoom out"
 msgstr "சிறிதாக்கு"

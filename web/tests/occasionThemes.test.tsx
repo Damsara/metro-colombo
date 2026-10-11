@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
+import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeAll, test, vi } from "vitest";
+import { creditHtml } from "../src/components/festiveMap";
 import { i18n } from "../src/i18n";
-import { decorationImages, decorationSvg } from "../src/occasions/decorations";
-import { MOMENTS } from "../src/occasions/moments";
+import { LANTERNS, OIL_LAMPS, STARS } from "../src/occasions/decorations";
 import { themeFor } from "../src/occasions/themes";
 import { OCCASION_KINDS } from "../src/occasions/types";
 
@@ -11,25 +12,67 @@ beforeAll(() => {
   i18n.activate("en");
 });
 
-test("lamps and stars are standalone SVGs", () => {
-  for (const id of ["oilLamp", "star"] as const) {
-    const svg = decorationSvg(id);
-    assert.match(svg, /^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
-    assert.match(svg, /viewBox="0 0 36 44"/);
+const themes = OCCASION_KINDS.map(themeFor);
+const moments = [
+  ...new Set(
+    themes.flatMap((theme): ComponentType[] =>
+      theme.moment ? [theme.moment] : [],
+    ),
+  ),
+];
+const decorations = [
+  ...new Set(themes.flatMap((theme) => (theme.stops ? [theme.stops] : []))),
+];
+
+test("every decoration has pictures for the flat map and a unique id", () => {
+  for (const decoration of decorations) {
+    assert.ok(decoration.images.length > 0, decoration.id);
   }
-  assert.notEqual(decorationSvg("oilLamp"), decorationSvg("star"));
+  assert.equal(
+    new Set(decorations.map((decoration) => decoration.id)).size,
+    decorations.length,
+  );
 });
 
-test("Vesak has four lantern pictures, the others one each", () => {
-  assert.equal(decorationImages("lantern").length, 4);
-  assert.equal(new Set(decorationImages("lantern")).size, 4);
-  assert.equal(decorationImages("star").length, 1);
-  assert.match(decorationImages("oilLamp")[0], /^data:image\/svg\+xml/);
+test("Vesak hangs four different lanterns, the lamps and stars draw one SVG", () => {
+  assert.equal(new Set(LANTERNS.images).size, 4);
+  assert.ok(LANTERNS.stand?.pole);
+  for (const decoration of [OIL_LAMPS, STARS]) {
+    assert.equal(decoration.images.length, 1);
+    assert.match(decoration.images[0], /^data:image\/svg\+xml/);
+  }
+});
+
+test("every 3D stand is credited and sized sensibly", () => {
+  for (const decoration of decorations) {
+    const stand = decoration.stand;
+    if (!stand) continue;
+    assert.ok(decoration.credit, decoration.id);
+    assert.ok(stand.pixels.city <= stand.pixels.street, decoration.id);
+    assert.ok(stand.meters > 0, decoration.id);
+  }
+});
+
+test("the credit links the work and escapes its text", () => {
+  const html = creditHtml(
+    {
+      title: "A <b>",
+      author: "me",
+      href: "https://x.test/?a=1&b=2",
+      license: "CC BY 4.0",
+    },
+    i18n,
+  );
+  assert.match(
+    html,
+    /^Decorations: <a href="https:\/\/x\.test\/\?a=1&#38;b=2"/,
+  );
+  assert.match(html, /“A &#60;b&#62;” by me<\/a>, CC BY 4\.0$/);
 });
 
 test("every moment renders without taking taps", () => {
   vi.stubGlobal("window", { matchMedia: () => ({ matches: false }) });
-  for (const Moment of Object.values(MOMENTS)) {
+  for (const Moment of moments) {
     const html = renderToStaticMarkup(<Moment />).replace(
       /^(<link [^>]*>)*/,
       "",
@@ -41,7 +84,7 @@ test("every moment renders without taking taps", () => {
 
 test("moments render nothing when motion is reduced", () => {
   vi.stubGlobal("window", { matchMedia: () => ({ matches: true }) });
-  for (const Moment of Object.values(MOMENTS)) {
+  for (const Moment of moments) {
     assert.equal(renderToStaticMarkup(<Moment />), "");
   }
   vi.unstubAllGlobals();
@@ -64,12 +107,12 @@ test("the five first-release occasions are fully themed", () => {
     "christmas",
   ] as const) {
     const theme = themeFor(kind);
-    assert.ok(theme.stopMark && theme.moment && theme.ambient, kind);
+    assert.ok(theme.stops && theme.moment && theme.ambient, kind);
   }
 });
 
 test("Poson borrows the Poya look with its own greeting", () => {
-  assert.equal(themeFor("poson").stopMark, themeFor("poya").stopMark);
+  assert.equal(themeFor("poson").stops, themeFor("poya").stops);
   assert.notEqual(
     themeFor("poson").greeting(i18n),
     themeFor("poya").greeting(i18n),

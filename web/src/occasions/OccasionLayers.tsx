@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { MOMENTS } from "./moments";
 import type { OccasionTheme } from "./types";
 
 const MOMENT_MS = 5500;
@@ -20,7 +19,7 @@ export function OccasionLayers({
     const timer = setTimeout(onMomentDone, MOMENT_MS);
     return () => clearTimeout(timer);
   }, [playMoment, onMomentDone]);
-  const Moment = playMoment && theme.moment ? MOMENTS[theme.moment] : null;
+  const Moment = playMoment ? theme.moment : undefined;
   return (
     <div
       aria-hidden="true"

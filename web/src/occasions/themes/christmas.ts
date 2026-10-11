@@ -1,3 +1,5 @@
+import { STARS } from "../decorations";
+import { StarsTwinkle } from "../moments/StarsTwinkle";
 import type { OccasionTheme } from "../types";
 import { GREETINGS, holidayNote } from "./greetings";
 
@@ -6,7 +8,7 @@ export const christmas: OccasionTheme = {
   greeting: GREETINGS.christmas,
   note: holidayNote,
   ambient: { tint: "#d8f0e0", strength: 0.12 },
-  stopMark: "star",
+  stops: STARS,
   busGlow: "#f6c440",
-  moment: "starsTwinkle",
+  moment: StarsTwinkle,
 };

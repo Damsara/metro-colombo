@@ -40,11 +40,14 @@ import { routeColor as colorForRoute } from "../lib/routeColor";
 import { splitRoute } from "../lib/routeSplit";
 import type { BusLine } from "../state/useBusJourney";
 import { palette } from "../theme";
-import { decorationImages } from "../occasions/decorations";
-import type { DecorationId } from "../occasions/types";
 import { BusModelLayer } from "./BusModelLayer";
-import { LanternModelLayer } from "./LanternModelLayer";
-import { roadBearing } from "../lib/roadBearing";
+import {
+  addFestiveLayers,
+  useFestiveMap,
+  type FestiveMap,
+  type Road,
+} from "./festiveMap";
+import { StandModelLayer } from "./StandModelLayer";
 import { MapModeControl } from "./MapModeControl";
 import { Button } from "./ui/Button";
 import { Notice } from "./ui/Notice";
@@ -63,10 +66,6 @@ const ROUTES = "metro-routes";
 const SPLIT = "metro-route-split";
 const STOPS = "metro-stops";
 const STOP_HIT = "metro-stop-hit";
-const FESTIVE = "metro-festive";
-const FESTIVE_CREDIT = "metro-festive-credit";
-const LANTERN_CREDIT =
-  'Lanterns: <a href="https://sketchfab.com/3d-models/vesak-lanterns-46bc0c19982940939bcd73710b55ee36" target="_blank" rel="noopener">“Vesak Lanterns” by sadeesha</a>, CC BY 4.0';
 const ROUTE_LINES = "metro-route-lines";
 const BUILDINGS = "metro-buildings-3d";
 const BASEMAP_BUILDINGS = "building";
@@ -94,7 +93,7 @@ type Props = Omit<MapViewProps, "onFollowChange"> & {
   onFollowEvent: (event: FollowEvent) => void;
   frameRide?: Ride | null;
   busLine?: BusLine | null;
-  festive?: { stopMark?: DecorationId; busGlow?: string; stops: Stop[] } | null;
+  festive?: FestiveMap | null;
   onCapabilities?: (rich: boolean) => void;
 };
 
@@ -349,23 +348,7 @@ function addTransitLayers(map: LibreMap): void {
       "circle-pitch-alignment": "map",
     },
   });
-  map.addSource(FESTIVE, { type: "geojson", data: empty });
-  map.addLayer(
-    {
-      id: FESTIVE,
-      type: "symbol",
-      source: FESTIVE,
-      layout: {
-        "icon-image": ["get", "mark"],
-        "icon-anchor": "bottom",
-        "icon-offset": [0, -6],
-        "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.35, 15, 0.6],
-        "icon-allow-overlap": true,
-        "icon-ignore-placement": true,
-      },
-    },
-    "metro-stop-halo",
-  );
+  addFestiveLayers(map, "metro-stop-halo");
   map.addLayer({
     id: "metro-stop-dots",
     type: "circle",
@@ -685,7 +668,7 @@ export default function MapView(props: Props) {
   const flatFov = useRef<number | null>(null);
   const shownMode = useRef<MapMode | null>(null);
   const busLayerRef = useRef<BusModelLayer | null>(null);
-  const lanternLayerRef = useRef<LanternModelLayer | null>(null);
+  const standLayerRef = useRef<StandModelLayer | null>(null);
   const ready = useRef(false);
   const appliedScene = useRef<Scene | null>(null);
   const appliedFocus = useRef<string | null>(null);
@@ -1083,9 +1066,9 @@ export default function MapView(props: Props) {
           busLayerRef.current = vehicles;
           vehicles.setHaloColor(latest.current.props.festive?.busGlow ?? null);
           activeMap.addLayer(vehicles);
-          const lanterns = new LanternModelLayer();
-          lanternLayerRef.current = lanterns;
-          activeMap.addLayer(lanterns, "metro-stop-halo");
+          const stands = new StandModelLayer();
+          standLayerRef.current = stands;
+          activeMap.addLayer(stands, "metro-stop-halo");
           ready.current = true;
           syncBuses();
           setScene(activeMap, latest.current.scene, null);
@@ -1197,6 +1180,7 @@ export default function MapView(props: Props) {
       modeControlRef.current = null;
       buildingsReady.current = false;
       busLayerRef.current = null;
+      standLayerRef.current = null;
       map?.remove();
     };
   }, [attempt, applyFocus]);
@@ -1273,102 +1257,41 @@ export default function MapView(props: Props) {
     busLayerRef.current?.setHaloColor(busGlow ?? null);
   }, [busGlow, attempt, status]);
 
-  const stopMark = festive?.stopMark;
-  const markedStops = festive?.stops;
-  useEffect(() => {
-    const map = mapRef.current;
-    const source = ready.current
-      ? (map?.getSource(FESTIVE) as GeoJSONSource | undefined)
-      : undefined;
-    if (!map || !source) return;
-    const stops = stopMark ? (markedStops ?? []) : [];
-    const lanterns = stopMark === "lantern" && stops.length > 0;
-    const modelled = lanterns && mapMode === "3d";
-    const roads = modelled
-      ? routes.flatMap((route) =>
-          route.geometry.features.flatMap((feature) =>
-            feature.geometry
-              ? realLines(feature.geometry).flatMap((line) =>
-                  line.type === "LineString"
-                    ? [line.coordinates as [number, number][]]
-                    : (line.coordinates as [number, number][][]),
-                )
-              : [],
-          ),
-        )
-      : [];
-    lanternLayerRef.current?.setStops(
-      modelled
-        ? stops.map((stop) => {
-            const lngLat: [number, number] = [stop.longitude, stop.latitude];
-            return { lngLat, roadBearing: roadBearing(lngLat, roads) };
-          })
-        : [],
-    );
-    if (lanterns && !map.getSource(FESTIVE_CREDIT)) {
-      map.addSource(FESTIVE_CREDIT, {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-        attribution: LANTERN_CREDIT,
-      });
-      map.addLayer({
-        id: FESTIVE_CREDIT,
-        type: "circle",
-        source: FESTIVE_CREDIT,
-      });
-    } else if (!lanterns && map.getSource(FESTIVE_CREDIT)) {
-      map.removeLayer(FESTIVE_CREDIT);
-      map.removeSource(FESTIVE_CREDIT);
-    }
-    const images = stopMark ? decorationImages(stopMark) : [];
-    const marks: Points = {
-      type: "FeatureCollection",
-      features: modelled
-        ? []
-        : stops.map((stop, index) => ({
-            type: "Feature",
-            geometry: {
-              type: "Point",
-              coordinates: [stop.longitude, stop.latitude],
-            },
-            properties: { mark: `${stopMark}-${index % images.length}` },
-          })),
-    };
-    const missing = images
-      .map((url, index) => ({ url, id: `${stopMark}-${index}` }))
-      .filter(({ id }) => !map.hasImage(id));
-    if (!missing.length) {
-      source.setData(marks);
-      return;
-    }
-    let cancelled = false;
-    void Promise.all(
-      missing.map(
-        ({ url, id }) =>
-          new Promise<void>((resolve) => {
-            const image = new Image();
-            image.onload = () => {
-              if (!cancelled && !map.hasImage(id))
-                map.addImage(id, image, { pixelRatio: 2 });
-              resolve();
-            };
-            image.onerror = () => resolve();
-            image.src = url;
-          }),
+  const roads = useMemo(
+    () =>
+      routes.flatMap((route) =>
+        route.geometry.features.flatMap((feature): Road[] =>
+          feature.geometry
+            ? realLines(feature.geometry).flatMap((line) =>
+                line.type === "LineString"
+                  ? [line.coordinates as [number, number][]]
+                  : (line.coordinates as [number, number][][]),
+              )
+            : [],
+        ),
       ),
-    ).then(() => {
-      if (!cancelled) source.setData(marks);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [stopMark, markedStops, mapMode, routes, attempt, status]);
+    [routes],
+  );
+  const readyMap = useCallback(
+    () => (ready.current ? (mapRef.current ?? undefined) : undefined),
+    [],
+  );
+  useFestiveMap({
+    map: readyMap,
+    standLayer: standLayerRef,
+    festive,
+    threeD: mapMode === "3d",
+    roads,
+    i18n,
+    language,
+    revision: `${attempt}:${status}`,
+  });
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => {
       busLayerRef.current?.setReducedMotion(preference.matches);
-      lanternLayerRef.current?.setReducedMotion(preference.matches);
+      standLayerRef.current?.setReducedMotion(preference.matches);
       setReducedMotion(preference.matches);
       tilt.current.reducedMotion = preference.matches;
     };
