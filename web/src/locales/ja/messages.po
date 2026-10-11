@@ -9,181 +9,181 @@ msgstr ""
 
 #: src/components/TripForm.tsx:198
 msgid "(nearest)"
-msgstr ""
+msgstr "(最寄り)"
 
 #: src/components/StopCard.tsx:160
 msgid "(opens in a new tab)"
-msgstr ""
+msgstr "(新しいタブで開きます)"
 
 #. placeholder {0}: option.transfers
 #: src/components/JourneyResults.tsx:615
 msgid "{0, plural, =0 {Direct · no bus change} =1 {Change bus once} other {Change bus # times}}"
-msgstr ""
+msgstr "{0, plural, =0 {直通 · 乗り換えなし} =1 {乗り換え 1 回} other {乗り換え # 回}}"
 
 #. placeholder {0}: foldedIndexes.size
 #: src/components/JourneyResults.tsx:859
 msgid "{0, plural, one {# departure without a bus yet} other {# departures without a bus yet}}"
-msgstr ""
+msgstr "{0, plural, other {バス未割り当ての便 # 本}}"
 
 #. placeholder {0}: item.count
 #. placeholder {0}: row.count
 #: src/components/BusCard.tsx:313
 #: src/components/TrackingPanel.tsx:73
 msgid "{0, plural, one {# more stop} other {# more stops}}"
-msgstr ""
+msgstr "{0, plural, other {あと # 停留所}}"
 
 #. placeholder {0}: options.length
 #: src/components/JourneyResults.tsx:845
 msgid "{0, plural, one {# option} other {# options}}"
-msgstr ""
+msgstr "{0, plural, other {# 件の候補}}"
 
 #. placeholder {0}: value.minutes
 #: src/i18n.ts:122
 msgid "{0, plural, one {Leaves in # min} other {Leaves in # min}}"
-msgstr ""
+msgstr "{0, plural, other {# 分後に出発}}"
 
 #. placeholder {0}: value.minutes
 #: src/i18n.ts:129
 msgid "{0, plural, one {Left # min ago} other {Left # min ago}}"
-msgstr ""
+msgstr "{0, plural, other {# 分前に出発}}"
 
 #: src/components/TrackingPanel.tsx:202
 msgid "{alightLeft, plural, one {# stop to {alight}} other {# stops to {alight}}}"
-msgstr ""
+msgstr "{alightLeft, plural, =1 {{alight} まで # 停留所} other {{alight} まで # 停留所}}"
 
 #: src/components/JourneyResults.tsx:501
 msgid "{away, plural, one {# stop away} other {# stops away}}"
-msgstr ""
+msgstr "{away, plural, other {あと # 停留所}}"
 
 #: src/components/RoutesPanel.tsx:77
 msgid "{count, plural, one {# stop} other {# stops}}"
-msgstr ""
+msgstr "{count, plural, other {# 停留所}}"
 
 #: src/components/OccupancyBadge.tsx:27
 msgid "{current} of {total} places taken"
-msgstr ""
+msgstr "{total} 席中 {current} 席が使用中"
 
 #: src/components/StopPicker.tsx:41
 msgid "{distance} walk"
-msgstr ""
+msgstr "徒歩 {distance}"
 
 #. Clock time; period is AM or PM
 #: src/i18n.ts:83
 msgid "{hour}:{minute} {period}"
-msgstr ""
+msgstr "{period}{hour}:{minute}"
 
 #: src/i18n.ts:28
 msgid "{km} km"
-msgstr ""
+msgstr "{km} km"
 
 #: src/components/TrackingPanel.tsx:178
 msgid "{left, plural, one {{plate} is # stop from {board}} other {{plate} is # stops from {board}}}"
-msgstr ""
+msgstr "{left, plural, =1 {{plate} は {board} まであと # 停留所} other {{plate} は {board} まであと # 停留所}}"
 
 #: src/components/RoutesPanel.tsx:85
 msgid "{live} live"
-msgstr ""
+msgstr "{live} 台リアルタイム"
 
 #: src/i18n.ts:25
 msgid "{metres} m"
-msgstr ""
+msgstr "{metres} m"
 
 #: src/i18n.ts:33
 msgid "{minutes} min"
-msgstr ""
+msgstr "{minutes} 分"
 
 #: src/components/TrackingPanel.tsx:177
 msgid "{plate} is at {board}"
-msgstr ""
+msgstr "{plate} は {board} にいます"
 
 #: src/components/TrackingPanel.tsx:175
 msgid "{plate} is on its way to {board}"
-msgstr ""
+msgstr "{plate} は {board} に向かっています"
 
 #: src/components/LiveBusList.tsx:111
 msgid "{selectedLabel} is selected. Tap it again to stop following."
-msgstr ""
+msgstr "{selectedLabel} を選択中です。もう一度タップすると追うのをやめます。"
 
 #: src/components/StopPicker.tsx:224
 msgid "{stopCount, plural, one {# stop. Tap one to select.} other {# stops. Tap one to select.}}"
-msgstr ""
+msgstr "{stopCount, plural, other {# 停留所。タップして選択します。}}"
 
 #: src/components/StopPicker.tsx:230
 msgid "{stopCount, plural, one {# stop. Use the arrow keys to choose, then press Enter.} other {# stops. Use the arrow keys to choose, then press Enter.}}"
-msgstr ""
+msgstr "{stopCount, plural, other {# 停留所。矢印キーで選び、Enter を押します。}}"
 
 #. placeholder {0}: stopName(board.stop, language)
 #. placeholder {1}: stopName(board.stop, language)
 #: src/components/BusCard.tsx:222
 msgid "{toBoard, plural, one {# stop to {0}} other {# stops to {1}}}"
-msgstr ""
+msgstr "{toBoard, plural, =1 {{0} まで # 停留所} other {{1} まで # 停留所}}"
 
 #. Short travel date, e.g. Sat, 10 Oct
 #: src/i18n.ts:70
 msgid "{weekday}, {day} {month}"
-msgstr ""
+msgstr "{month}{day}日({weekday})"
 
 #: src/components/JourneyResults.tsx:417
 msgid "<0>Get off at</0> {alightName}"
-msgstr ""
+msgstr "<0>降りる停留所:</0>{alightName}"
 
 #: src/components/JourneyResults.tsx:406
 msgid "<0>Get on at</0> {boardName}"
-msgstr ""
+msgstr "<0>乗る停留所:</0>{boardName}"
 
 #: src/components/MapView.tsx:1226
 msgid "A: Start · B: Destination"
-msgstr ""
+msgstr "A:出発 · B:目的地"
 
 #: src/components/TrackingPanel.tsx:306
 msgid "About {minutesText}"
-msgstr ""
+msgstr "約 {minutesText}"
 
 #: src/components/RoutesPanel.tsx:175
 msgid "All bus routes"
-msgstr ""
+msgstr "すべてのバス路線"
 
 #: src/components/StopPicker.tsx:116
 msgid "All stops"
-msgstr ""
+msgstr "すべての停留所"
 
 #: src/components/JourneyResults.tsx:911
 msgid "All times are Sri Lanka time."
-msgstr ""
+msgstr "時刻はすべてスリランカ時間です。"
 
 #: src/components/ConsentPrompt.tsx:70
 msgid "Allow"
-msgstr ""
+msgstr "許可する"
 
 #: src/i18n.ts:82
 msgid "AM"
-msgstr ""
+msgstr "午前"
 
 #: src/i18n.ts:53
 msgctxt "month"
 msgid "Apr"
-msgstr ""
+msgstr "4月"
 
 #: src/components/JourneyResults.tsx:390
 msgid "Assigned bus"
-msgstr ""
+msgstr "割り当てバス"
 
 #: src/components/JourneyResults.tsx:499
 msgid "At your stop"
-msgstr ""
+msgstr "乗車する停留所に到着"
 
 #: src/i18n.ts:57
 msgctxt "month"
 msgid "Aug"
-msgstr ""
+msgstr "8月"
 
 #: src/routes/__root.tsx:18
 msgid "Back to the map"
-msgstr ""
+msgstr "地図に戻る"
 
 #: src/components/TripSummary.tsx:25
 msgid "Back to the trip form"
-msgstr ""
+msgstr "行程の入力に戻る"
 
 #: src/components/BusCard.tsx:310
 #: src/components/BusCard.tsx:397
@@ -191,942 +191,942 @@ msgstr ""
 #: src/components/LiveBusList.tsx:89
 #: src/components/RoutesPanel.tsx:346
 msgid "Bus"
-msgstr ""
+msgstr "バス"
 
 #: src/components/BusCard.tsx:430
 #: src/components/TrackingPanel.tsx:92
 msgid "Bus is here"
-msgstr ""
+msgstr "バスが到着"
 
 #: src/components/JourneyResults.tsx:494
 msgid "Bus live"
-msgstr ""
+msgstr "バス運行中"
 
 #: src/App.tsx:884
 msgid "Bus route map"
-msgstr ""
+msgstr "バス路線図"
 
 #: src/App.tsx:469
 msgid "Bus routes"
-msgstr ""
+msgstr "バス路線"
 
 #: src/App.tsx:550
 msgctxt "tab"
 msgid "Bus routes"
-msgstr ""
+msgstr "バス路線"
 
 #: src/components/MapLegend.tsx:28
 msgid "Bus stop"
-msgstr ""
+msgstr "バス停"
 
 #: src/components/JourneyResults.tsx:842
 msgid "Buses for your trip"
-msgstr ""
+msgstr "この行程のバス"
 
 #: src/components/JourneyResults.tsx:222
 msgid "Change bus at {changeName}"
-msgstr ""
+msgstr "{changeName} で乗り換え"
 
 #: src/components/JourneyResults.tsx:781
 msgid "Check both stops and choose today or a later date."
-msgstr ""
+msgstr "両方の停留所を確認し、今日かそれ以降の日付を選んでください。"
 
 #: src/components/JourneyResults.tsx:800
 msgid "Check your connection and try again."
-msgstr ""
+msgstr "接続を確認して、もう一度お試しください。"
 
 #: src/components/TripForm.tsx:239
 msgid "Choose a different destination from your starting stop."
-msgstr ""
+msgstr "出発の停留所とは別の目的地を選んでください。"
 
 #: src/components/TripForm.tsx:199
 msgid "Choose a start stop"
-msgstr ""
+msgstr "出発の停留所を選択"
 
 #: src/components/HowToUse.tsx:18
 msgid "Choose where you want to get off."
-msgstr ""
+msgstr "降りたい場所を選びます。"
 
 #: src/components/JourneyResults.tsx:811
 msgid "Choose your starting stop and destination to find a journey."
-msgstr ""
+msgstr "出発の停留所と目的地を選ぶと、行程が見つかります。"
 
 #: src/App.tsx:646
 msgctxt "recent trips"
 msgid "Clear"
-msgstr ""
+msgstr "クリア"
 
 #: src/components/StopPicker.tsx:408
 #: src/components/StopPicker.tsx:483
 msgid "Clear {label}"
-msgstr ""
+msgstr "{label} をクリア"
 
 #: src/App.tsx:960
 #: src/components/StopPicker.tsx:444
 msgid "Close"
-msgstr ""
+msgstr "閉じる"
 
 #: src/components/StopCard.tsx:125
 msgid "Close stop details"
-msgstr ""
+msgstr "停留所の詳細を閉じる"
 
 #: src/state/useTrip.ts:288
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
-msgstr ""
+msgstr "最寄りの停留所:{nearestName} · 直線距離 {nearestDistance}。歩くルートを確認してください。"
 
 #: src/App.tsx:938
 msgid "Colombo & beyond"
-msgstr ""
+msgstr "コロンボとその周辺"
 
 #: src/components/JourneyResults.tsx:792
 msgid "Could not load journeys"
-msgstr ""
+msgstr "行程を読み込めませんでした"
 
 #: src/components/OccupancyBadge.tsx:9
 msgid "Crowded"
-msgstr ""
+msgstr "混雑"
 
 #: src/i18n.ts:61
 msgctxt "month"
 msgid "Dec"
-msgstr ""
+msgstr "12月"
 
 #: src/components/MapView.tsx:1126
 msgid "Destination: {stopLabel}"
-msgstr ""
+msgstr "目的地:{stopLabel}"
 
 #: src/components/RoutesPanel.tsx:196
 msgid "Direction"
-msgstr ""
+msgstr "方面"
 
 #: src/components/TrackingPanel.tsx:269
 #: src/components/TrackingPanel.tsx:352
 msgid "Done"
-msgstr ""
+msgstr "完了"
 
 #: src/components/PhoneDrawer.tsx:126
 msgid "Drag to resize"
-msgstr ""
+msgstr "ドラッグしてサイズ変更"
 
 #: src/components/JourneyResults.tsx:639
 msgid "Duration unavailable"
-msgstr ""
+msgstr "所要時間は不明です"
 
 #: src/components/TripSummary.tsx:48
 msgid "Edit"
-msgstr ""
+msgstr "変更"
 
 #: src/components/TrackingPanel.tsx:269
 #: src/components/TrackingPanel.tsx:356
 msgid "End trip"
-msgstr ""
+msgstr "行程を終了"
 
 #: src/App.tsx:538
 msgid "Explore Metro"
-msgstr ""
+msgstr "Metro を探す"
 
 #: src/components/JourneyResults.tsx:196
 msgid "Fare · Rs. {fare}"
-msgstr ""
+msgstr "運賃 · Rs. {fare}"
 
 #: src/components/JourneyResults.tsx:195
 msgid "Fare · Rs. {fare} (estimate)"
-msgstr ""
+msgstr "運賃 · Rs. {fare}(目安)"
 
 #: src/components/JourneyResults.tsx:192
 msgid "Fare unavailable"
-msgstr ""
+msgstr "運賃は不明です"
 
 #: src/i18n.ts:51
 msgctxt "month"
 msgid "Feb"
-msgstr ""
+msgstr "2月"
 
 #: src/components/OccupancyBadge.tsx:8
 msgid "Filling up"
-msgstr ""
+msgstr "やや混雑"
 
 #: src/App.tsx:679
 msgid "Find buses for the way back, from {end} to {start}"
-msgstr ""
+msgstr "帰りのバスを探す:{end} から {start} まで"
 
 #: src/App.tsx:665
 msgid "Find buses from {start} to {end}"
-msgstr ""
+msgstr "バスを探す:{start} から {end} まで"
 
 #: src/components/TripForm.tsx:253
 msgid "Find my bus"
-msgstr ""
+msgstr "バスを探す"
 
 #: src/components/MapView.tsx:400
 msgid "Find my location"
-msgstr ""
+msgstr "現在地を探す"
 
 #: src/App.tsx:940
 msgid "Find your way around."
-msgstr ""
+msgstr "行き方を調べましょう。"
 
 #: src/components/JourneyResults.tsx:766
 msgid "Finding scheduled journeys…"
-msgstr ""
+msgstr "時刻表の行程を探しています…"
 
 #: src/components/BusCard.tsx:179
 msgid "Finding this bus’s stops…"
-msgstr ""
+msgstr "このバスの停留所を探しています…"
 
 #: src/components/TripForm.tsx:253
 msgid "Finding your buses…"
-msgstr ""
+msgstr "バスを探しています…"
 
 #: src/components/TripForm.tsx:228
 msgid "Finding your location…"
-msgstr ""
+msgstr "現在地を探しています…"
 
 #: src/components/BusCard.tsx:160
 #: src/components/RoutesPanel.tsx:352
 #: src/components/TrackingPanel.tsx:264
 msgid "Follow"
-msgstr ""
+msgstr "追う"
 
 #: src/components/JourneyResults.tsx:317
 msgid "Follow on map"
-msgstr ""
+msgstr "地図で追う"
 
 #: src/lib/followLabels.ts:8
 msgid "Following"
-msgstr ""
+msgstr "追っています"
 
 #: src/i18n.ts:46
 msgctxt "weekday"
 msgid "Fri"
-msgstr ""
+msgstr "金"
 
 #: src/components/TripForm.tsx:197
 msgid "From"
-msgstr ""
+msgstr "出発"
 
 #: src/components/JourneyResults.tsx:245
 msgid "From {fromName}"
-msgstr ""
+msgstr "{fromName} から"
 
 #: src/components/TripSummary.tsx:32
 msgid "From {fromName} to {toName}"
-msgstr ""
+msgstr "{fromName} から {toName} まで"
 
 #: src/components/StopCard.tsx:106
 msgid "From {start} → here"
-msgstr ""
+msgstr "{start} → ここ"
 
 #: src/components/RoutesPanel.tsx:215
 msgid "from {startName}"
-msgstr ""
+msgstr "{startName} から"
 
 #: src/components/TrackingPanel.tsx:209
 #: src/components/TrackingPanel.tsx:220
 msgid "Get off at the next stop"
-msgstr ""
+msgstr "次の停留所で降りる"
 
 #: src/components/BusCard.tsx:248
 #: src/components/TrackingPanel.tsx:344
 msgid "Get off here"
-msgstr ""
+msgstr "ここで降りる"
 
 #: src/components/StopCard.tsx:73
 msgid "Go here"
-msgstr ""
+msgstr "ここへ行く"
 
 #: src/components/TrackingPanel.tsx:193
 #: src/components/TrackingPanel.tsx:219
 msgid "Head to the stop now"
-msgstr ""
+msgstr "今すぐ停留所へ向かう"
 
 #: src/components/ConsentPrompt.tsx:33
 msgid "Help us make Metro better?"
-msgstr ""
+msgstr "Metro の改善にご協力いただけますか?"
 
 #: src/components/StopCard.tsx:112
 msgid "Here → {end}"
-msgstr ""
+msgstr "ここ → {end}"
 
 #: src/components/JourneyResults.tsx:871
 msgid "Hide"
-msgstr ""
+msgstr "隠す"
 
 #: src/components/MapView.tsx:441
 msgid "Hide live buses"
-msgstr ""
+msgstr "リアルタイムのバスを隠す"
 
 #: src/components/BusCard.tsx:200
 msgid "Hide stops"
-msgstr ""
+msgstr "停留所を隠す"
 
 #: src/components/HowToUse.tsx:14
 msgid "How do I use this?"
-msgstr ""
+msgstr "使い方"
 
 #: src/components/ConsentPrompt.tsx:63
 msgid "It's handled by Google Analytics."
-msgstr ""
+msgstr "Google Analytics が処理します。"
 
 #: src/i18n.ts:50
 msgctxt "month"
 msgid "Jan"
-msgstr ""
+msgstr "1月"
 
 #: src/components/JourneyResults.tsx:442
 #: src/components/JourneyResults.tsx:647
 msgid "Journey steps"
-msgstr ""
+msgstr "行程の手順"
 
 #: src/components/MapView.tsx:1217
 msgid "Journey stops; rings show boarding and getting off"
-msgstr ""
+msgstr "行程の停留所。輪は乗車と降車の場所を示します"
 
 #: src/i18n.ts:56
 msgctxt "month"
 msgid "Jul"
-msgstr ""
+msgstr "7月"
 
 #: src/i18n.ts:55
 msgctxt "month"
 msgid "Jun"
-msgstr ""
+msgstr "6月"
 
 #: src/components/ConsentPrompt.tsx:78
 msgid "Keep my current choice"
-msgstr ""
+msgstr "今の選択を維持"
 
 #: src/components/LanguageSwitcher.tsx:31
 #: src/components/LanguageSwitcher.tsx:53
 msgid "Language"
-msgstr ""
+msgstr "言語"
 
 #: src/App.tsx:949
 msgid "Lanka Metro isn’t sending this route line right now."
-msgstr ""
+msgstr "Lanka Metro は現在、この路線の線を送信していません。"
 
 #: src/i18n.ts:120
 msgid "Leaves now"
-msgstr ""
+msgstr "まもなく出発"
 
 #: src/components/RoutesPanel.tsx:188
 msgid "live"
-msgstr ""
+msgstr "リアルタイム"
 
 #: src/components/JourneyResults.tsx:330
 msgid "Live · follow on map"
-msgstr ""
+msgstr "リアルタイム · 地図で追う"
 
 #: src/components/JourneyResults.tsx:424
 msgid "Live arrival estimate"
-msgstr ""
+msgstr "リアルタイムの到着予想"
 
 #: src/components/MapLegend.tsx:37
 msgid "Live bus"
-msgstr ""
+msgstr "リアルタイムのバス"
 
 #: src/components/LiveBusList.tsx:65
 msgid "Live bus positions are unavailable right now. Timetables still work."
-msgstr ""
+msgstr "バスの現在位置は今は表示できません。時刻表は使えます。"
 
 #: src/components/MapView.tsx:1223
 msgid "Live bus; tap to select and follow"
-msgstr ""
+msgstr "リアルタイムのバス。タップして選択し、追います"
 
 #: src/components/LiveBusList.tsx:54
 msgid "Live buses on this route"
-msgstr ""
+msgstr "この路線のリアルタイムのバス"
 
 #: src/components/JourneyResults.tsx:413
 msgid "Live departure estimate"
-msgstr ""
+msgstr "リアルタイムの出発予想"
 
 #: src/components/JourneyResults.tsx:562
 msgid "Live estimate"
-msgstr ""
+msgstr "リアルタイム予想"
 
 #: src/components/LiveBusList.tsx:58
 msgid "Live on this direction"
-msgstr ""
+msgstr "この方面はリアルタイム"
 
 #: src/components/TrackingPanel.tsx:190
 #: src/components/TrackingPanel.tsx:222
 #: src/lib/followLabels.ts:14
 msgid "Live position lost; showing schedule"
-msgstr ""
+msgstr "現在位置が取得できません。時刻表を表示します"
 
 #: src/App.tsx:774
 msgid "Load missing stops"
-msgstr ""
+msgstr "不足している停留所を読み込む"
 
 #: src/App.tsx:721
 msgid "Loading bus routes…"
-msgstr ""
+msgstr "バス路線を読み込み中…"
 
 #: src/App.tsx:889
 #: src/components/MapView.tsx:1163
 msgid "Loading map…"
-msgstr ""
+msgstr "地図を読み込み中…"
 
 #: src/components/StopPicker.tsx:220
 msgid "Loading stops…"
-msgstr ""
+msgstr "停留所を読み込み中…"
 
 #: src/components/RoutesPanel.tsx:234
 msgid "Loading the stops…"
-msgstr ""
+msgstr "停留所を読み込み中…"
 
 #: src/components/MapView.tsx:1143
 msgid "Location permission was not granted. You can still choose your stops."
-msgstr ""
+msgstr "位置情報の許可がありません。停留所は自分で選べます。"
 
 #: src/components/MapView.tsx:401
 msgid "Location unavailable"
-msgstr ""
+msgstr "現在地を取得できません"
 
 #: src/state/useTrip.ts:290
 msgid "Location was not available. You can still type your starting stop."
-msgstr ""
+msgstr "現在地を取得できませんでした。出発の停留所は入力できます。"
 
 #: src/lib/followLabels.ts:10
 msgid "Looking around"
-msgstr ""
+msgstr "周りを見ています"
 
 #: src/components/MapView.tsx:402
 msgid "Map credits"
-msgstr ""
+msgstr "地図のクレジット"
 
 #: src/components/MapView.tsx:1209
 msgid "Map key"
-msgstr ""
+msgstr "地図の凡例"
 
 #: src/components/MapView.tsx:1147
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
-msgstr ""
+msgstr "外部の地図提供元から地図タイルを読み込めませんでした。インターネット接続を確認してください。行程は引き続き計画できます。"
 
 #: src/components/MapView.tsx:1173
 msgid "Map unavailable"
-msgstr ""
+msgstr "地図を表示できません"
 
 #: src/i18n.ts:52
 msgctxt "month"
 msgid "Mar"
-msgstr ""
+msgstr "3月"
 
 #: src/i18n.ts:54
 msgctxt "month"
 msgid "May"
-msgstr ""
+msgstr "5月"
 
 #: src/App.tsx:844
 msgid "Metro home"
-msgstr ""
+msgstr "Metro ホーム"
 
 #: src/i18n.ts:42
 msgctxt "weekday"
 msgid "Mon"
-msgstr ""
+msgstr "月"
 
 #: src/components/RoutesPanel.tsx:348
 msgid "near {nearName}"
-msgstr ""
+msgstr "{nearName} の近く"
 
 #: src/App.tsx:335
 msgid "Near you"
-msgstr ""
+msgstr "近くの停留所"
 
 #: src/components/StopPicker.tsx:290
 msgid "Nearest stop: {stopLabel} · {walk}"
-msgstr ""
+msgstr "最寄りの停留所:{stopLabel} · {walk}"
 
 #: src/components/ConsentPrompt.tsx:62
 msgid "Never your name, your location or anything you type."
-msgstr ""
+msgstr "お名前、現在地、入力した内容は収集しません。"
 
 #: src/components/BusCard.tsx:425
 msgctxt "stop"
 msgid "Next"
-msgstr ""
+msgstr "次"
 
 #: src/components/JourneyResults.tsx:577
 msgid "Next bus"
-msgstr ""
+msgstr "次のバス"
 
 #: src/components/TrackingPanel.tsx:210
 msgid "Next stop: {alight}"
-msgstr ""
+msgstr "次の停留所:{alight}"
 
 #: src/components/JourneyResults.tsx:628
 msgid "No bus assigned yet"
-msgstr ""
+msgstr "バスはまだ割り当てられていません"
 
 #: src/components/JourneyResults.tsx:384
 msgid "No bus assigned yet, so it can’t be followed live."
-msgstr ""
+msgstr "バスがまだ割り当てられていないため、リアルタイムでは追えません。"
 
 #: src/components/LiveBusList.tsx:81
 msgid "No buses reporting here right now."
-msgstr ""
+msgstr "現在、ここで位置を送信しているバスはありません。"
 
 #: src/components/StopPicker.tsx:222
 msgid "No matching stops. Try another stop name or a place."
-msgstr ""
+msgstr "一致する停留所がありません。別の停留所名か地名をお試しください。"
 
 #: src/components/JourneyResults.tsx:823
 msgid "No more scheduled departures today"
-msgstr ""
+msgstr "本日の出発予定はもうありません"
 
 #: src/components/JourneyResults.tsx:824
 msgid "No scheduled journeys found"
-msgstr ""
+msgstr "時刻表の行程が見つかりません"
 
 #: src/components/ConsentPrompt.tsx:68
 msgid "No thanks"
-msgstr ""
+msgstr "いいえ"
 
 #: src/components/LiveBusList.tsx:71
 msgid "None heading this way right now · {elsewhere} on the other direction"
-msgstr ""
+msgstr "今この方面へ向かうバスはありません · 反対方面に {elsewhere} 台"
 
 #: src/App.tsx:785
 msgid "Not affiliated with <0>Lanka Metro Transit</0> or the official <1>LMT GO app</1>."
-msgstr ""
+msgstr "<0>Lanka Metro Transit</0> および公式の <1>LMT GO アプリ</1>とは関係ありません。"
 
 #: src/components/JourneyResults.tsx:629
 msgid "Not every bus assigned yet"
-msgstr ""
+msgstr "割り当て前のバスがあります"
 
 #: src/i18n.ts:60
 msgctxt "month"
 msgid "Nov"
-msgstr ""
+msgstr "11月"
 
 #: src/i18n.ts:59
 msgctxt "month"
 msgid "Oct"
-msgstr ""
+msgstr "10月"
 
 #: src/components/TrackingPanel.tsx:126
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: src/components/JourneyResults.tsx:339
 msgid "On another trip · follow on map"
-msgstr ""
+msgstr "別の運行中 · 地図で追う"
 
 #: src/components/RoutesPanel.tsx:352
 msgid "On map"
-msgstr ""
+msgstr "地図上"
 
 #: src/components/TrackingPanel.tsx:201
 msgid "On your way to {alight}"
-msgstr ""
+msgstr "{alight} に向かっています"
 
 #: src/App.tsx:718
 msgid "Open a route to see its stops and where its buses are now."
-msgstr ""
+msgstr "路線を開くと、停留所とバスの現在位置が見られます。"
 
 #: src/routes/__root.tsx:14
 msgid "Page not found :c"
-msgstr ""
+msgstr "ページが見つかりません :c"
 
 #: src/components/ConsentPrompt.tsx:60
 msgid "Pages you open, and actions like searching a trip, following or tracking a bus, opening a route or changing language."
-msgstr ""
+msgstr "開いたページと、行程の検索、バスを追う・乗車ナビ、路線を開く、言語を変えるなどの操作。"
 
 #: src/components/PhoneDrawer.tsx:61
 msgid "Panel: full height"
-msgstr ""
+msgstr "パネル:全画面"
 
 #: src/components/PhoneDrawer.tsx:60
 msgid "Panel: half height"
-msgstr ""
+msgstr "パネル:半分"
 
 #: src/components/PhoneDrawer.tsx:59
 msgid "Panel: minimised"
-msgstr ""
+msgstr "パネル:最小"
 
 #: src/components/TripForm.tsx:61
 msgid "Pick a date"
-msgstr ""
+msgstr "日付を選択"
 
 #: src/App.tsx:545
 msgid "Plan a trip"
-msgstr ""
+msgstr "行程を計画"
 
 #: src/App.tsx:469
 msgid "Plan your bus trip"
-msgstr ""
+msgstr "バスの行程を計画"
 
 #: src/components/JourneyResults.tsx:768
 msgid "Please wait a moment."
-msgstr ""
+msgstr "少々お待ちください。"
 
 #: src/components/OccupancyBadge.tsx:7
 msgid "Plenty of room"
-msgstr ""
+msgstr "空いています"
 
 #: src/i18n.ts:82
 msgid "PM"
-msgstr ""
+msgstr "午後"
 
 #: src/components/MapView.tsx:399
 msgid "Point north"
-msgstr ""
+msgstr "北を上にする"
 
 #: src/App.tsx:336
 msgid "Popular"
-msgstr ""
+msgstr "人気"
 
 #: src/App.tsx:694
 msgid "Popular starting stops"
-msgstr ""
+msgstr "人気の出発停留所"
 
 #: src/components/HowToUse.tsx:20
 msgid "Press “Find my bus”. Select a departure for boarding instructions."
-msgstr ""
+msgstr "「バスを探す」を押し、出発便を選ぶと乗り方が表示されます。"
 
 #: src/components/ConsentPrompt.tsx:96
 msgid "Privacy choices"
-msgstr ""
+msgstr "プライバシーの選択"
 
 #: src/App.tsx:334
 msgid "Recent"
-msgstr ""
+msgstr "最近"
 
 #: src/App.tsx:643
 msgid "Recent trips"
-msgstr ""
+msgstr "最近の行程"
 
 #: src/components/StopCard.tsx:210
 msgid "Route {route}"
-msgstr ""
+msgstr "{route} 番"
 
 #: src/components/StopCard.tsx:209
 msgid "Route {route} towards {spokenPlaces}"
-msgstr ""
+msgstr "{route} 番、{spokenPlaces} 方面"
 
 #: src/components/ConsentPrompt.tsx:61
 msgid "Route and stop codes and how many days ahead you search."
-msgstr ""
+msgstr "路線と停留所のコード、何日先を検索したか。"
 
 #: src/components/StopPicker.tsx:302
 msgid "Routes"
-msgstr ""
+msgstr "路線"
 
 #: src/components/MapView.tsx:1152
 msgid "Routes and stops map"
-msgstr ""
+msgstr "路線と停留所の地図"
 
 #: src/i18n.ts:47
 msgctxt "weekday"
 msgid "Sat"
-msgstr ""
+msgstr "土"
 
 #: src/components/JourneyResults.tsx:562
 msgid "Scheduled"
-msgstr ""
+msgstr "時刻表"
 
 #: src/components/JourneyResults.tsx:423
 #: src/components/TrackingPanel.tsx:327
 msgid "Scheduled arrival"
-msgstr ""
+msgstr "到着予定"
 
 #: src/components/JourneyResults.tsx:412
 #: src/components/TrackingPanel.tsx:320
 msgid "Scheduled departure"
-msgstr ""
+msgstr "出発予定"
 
 #: src/components/BusCard.tsx:238
 msgid "See all stops"
-msgstr ""
+msgstr "すべての停留所を見る"
 
 #: src/components/StopCard.tsx:158
 msgid "See on Google Maps"
-msgstr ""
+msgstr "Google Maps で見る"
 
 #: src/i18n.ts:58
 msgctxt "month"
 msgid "Sep"
-msgstr ""
+msgstr "9月"
 
 #: src/components/StopCard.tsx:191
 msgid "Served by"
-msgstr ""
+msgstr "運行路線"
 
 #: src/App.tsx:813
 msgid "Service status"
-msgstr ""
+msgstr "運行状況"
 
 #: src/components/JourneyResults.tsx:871
 msgid "Show"
-msgstr ""
+msgstr "表示"
 
 #: src/components/MapView.tsx:441
 msgid "Show live buses"
-msgstr ""
+msgstr "リアルタイムのバスを表示"
 
 #: src/components/JourneyResults.tsx:908
 msgid "Show more journeys ({remaining} more)"
-msgstr ""
+msgstr "行程をもっと表示(あと {remaining} 件)"
 
 #: src/components/BusCard.tsx:200
 msgid "Show stops"
-msgstr ""
+msgstr "停留所を表示"
 
 #: src/components/LiveBusList.tsx:77
 msgid "Show that direction"
-msgstr ""
+msgstr "その方面を表示"
 
 #: src/components/JourneyResults.tsx:829
 msgid "Show the next day"
-msgstr ""
+msgstr "翌日を表示"
 
 #: src/components/JourneyResults.tsx:829
 msgid "Show tomorrow’s buses"
-msgstr ""
+msgstr "明日のバスを表示"
 
 #: src/components/MapView.tsx:1148
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
-msgstr ""
+msgstr "地図の一部を読み込めませんでした。地図またはネットワーク接続が使えない可能性があります。行程は引き続き計画できます。"
 
 #: src/App.tsx:778
 msgid "Some stops couldn’t be loaded. Search may be incomplete."
-msgstr ""
+msgstr "一部の停留所を読み込めませんでした。検索結果が不完全な場合があります。"
 
 #: src/components/StopCard.tsx:73
 msgid "Start here"
-msgstr ""
+msgstr "ここから出発"
 
 #: src/components/MapView.tsx:1126
 msgid "Start: {stopLabel}"
-msgstr ""
+msgstr "出発:{stopLabel}"
 
 #: src/components/MapView.tsx:1212
 msgid "Stop"
-msgstr ""
+msgstr "停留所"
 
 #: src/components/BusCard.tsx:166
 msgid "Stop following"
-msgstr ""
+msgstr "追うのをやめる"
 
 #: src/components/BusCard.tsx:263
 #: src/components/BusCard.tsx:389
 msgid "Stops ahead"
-msgstr ""
+msgstr "この先の停留所"
 
 #: src/components/TrackingPanel.tsx:50
 msgid "Stops to go"
-msgstr ""
+msgstr "残りの停留所"
 
 #: src/i18n.ts:41
 msgctxt "weekday"
 msgid "Sun"
-msgstr ""
+msgstr "日"
 
 #: src/components/TripForm.tsx:213
 msgid "Swap starting and destination stops"
-msgstr ""
+msgstr "出発と目的地の停留所を入れ替える"
 
 #: src/components/MapLegend.tsx:42
 msgid "Tap a stop to plan · tap a bus to follow"
-msgstr ""
+msgstr "停留所をタップして計画 · バスをタップして追う"
 
 #: src/components/MapLegend.tsx:43
 msgid "Tap a stop to plan a trip"
-msgstr ""
+msgstr "停留所をタップして行程を計画"
 
 #: src/components/MapView.tsx:1176
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
-msgstr ""
+msgstr "地図にはインターネット接続とブラウザの WebGL 対応が必要です。停留所の選択と行程の計画は引き続きできます。"
 
 #: src/components/RoutesPanel.tsx:246
 msgid "The stops couldn’t be loaded."
-msgstr ""
+msgstr "停留所を読み込めませんでした。"
 
 #: src/components/JourneyResults.tsx:779
 msgid "This trip can’t be planned"
-msgstr ""
+msgstr "この行程は計画できません"
 
 #: src/i18n.ts:45
 msgctxt "weekday"
 msgid "Thu"
-msgstr ""
+msgstr "木"
 
 #: src/components/JourneyResults.tsx:100
 #: src/components/TrackingPanel.tsx:227
 msgid "Time unavailable"
-msgstr ""
+msgstr "時刻は不明です"
 
 #: src/components/HowToUse.tsx:24
 msgid "Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only — not tickets or official service information."
-msgstr ""
+msgstr "時刻はスリランカ時間です。リアルタイムの予想は時刻表の時刻と区別して表示されます。Lanka Metro Transit、Smart Metro、公式の LMT GO アプリとは関係ありません。行程の計画用であり、乗車券や公式の運行情報ではありません。"
 
 #: src/components/JourneyResults.tsx:248
 msgid "To {toName}"
-msgstr ""
+msgstr "{toName} まで"
 
 #: src/components/TripForm.tsx:53
 msgid "Today"
-msgstr ""
+msgstr "今日"
 
 #: src/components/TripForm.tsx:54
 msgid "Tomorrow"
-msgstr ""
+msgstr "明日"
 
 #: src/i18n.ts:19
 msgid "Towards {place}"
-msgstr ""
+msgstr "{place} 方面"
 
 #: src/components/JourneyResults.tsx:309
 msgid "Track my trip"
-msgstr ""
+msgstr "乗車ナビを開始"
 
 #: src/components/BusCard.tsx:105
 msgid "Tracked bus"
-msgstr ""
+msgstr "追っているバス"
 
 #: src/components/MapView.tsx:432
 msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
-msgstr ""
+msgstr "交通マップ。矢印キーで移動、プラスとマイナスで拡大・縮小します。"
 
 #: src/components/TripForm.tsx:67
 #: src/components/TripForm.tsx:91
 #: src/components/TripForm.tsx:96
 msgid "Travel date"
-msgstr ""
+msgstr "乗車日"
 
 #: src/components/StopCard.tsx:107
 msgid "Trip from {start} to this stop"
-msgstr ""
+msgstr "{start} からこの停留所までの行程"
 
 #: src/components/StopCard.tsx:113
 msgid "Trip from this stop to {end}"
-msgstr ""
+msgstr "この停留所から {end} までの行程"
 
 #: src/App.tsx:760
 #: src/App.tsx:955
 #: src/components/JourneyResults.tsx:796
 #: src/components/RoutesPanel.tsx:242
 msgid "Try again"
-msgstr ""
+msgstr "もう一度試す"
 
 #: src/components/MapView.tsx:1184
 #: src/components/MapView.tsx:1201
 msgid "Try map again"
-msgstr ""
+msgstr "地図を再読み込み"
 
 #: src/components/JourneyResults.tsx:833
 msgid "Try the next day or different stops."
-msgstr ""
+msgstr "翌日か別の停留所をお試しください。"
 
 #: src/i18n.ts:43
 msgctxt "weekday"
 msgid "Tue"
-msgstr ""
+msgstr "火"
 
 #: src/components/TripForm.tsx:184
 msgid "Type a stop or a place"
-msgstr ""
+msgstr "停留所か場所を入力"
 
 #: src/components/HowToUse.tsx:17
 msgid "Type your starting stop and choose a result."
-msgstr ""
+msgstr "出発の停留所を入力し、候補から選びます。"
 
 #: src/components/TripForm.tsx:229
 msgid "Use my location for the nearest stop"
-msgstr ""
+msgstr "現在地から最寄りの停留所を探す"
 
 #: src/components/JourneyResults.tsx:224
 msgid "Wait about {waitLabel}"
-msgstr ""
+msgstr "約 {waitLabel} 待つ"
 
 #: src/lib/followLabels.ts:12
 msgid "Waiting for signal…"
-msgstr ""
+msgstr "信号を待っています…"
 
 #: src/components/JourneyResults.tsx:243
 msgid "Walk"
-msgstr ""
+msgstr "徒歩"
 
 #: src/App.tsx:764
 msgid "We can’t connect to Metro right now."
-msgstr ""
+msgstr "今は Metro に接続できません。"
 
 #: src/components/BusCard.tsx:180
 msgid "We can’t tell where this bus is heading"
-msgstr ""
+msgstr "このバスの行き先がわかりません"
 
 #: src/i18n.ts:44
 msgctxt "weekday"
 msgid "Wed"
-msgstr ""
+msgstr "水"
 
 #: src/components/ConsentPrompt.tsx:48
 msgid "What we collect"
-msgstr ""
+msgstr "収集する情報"
 
 #: src/App.tsx:522
 #: src/components/TripForm.tsx:183
 msgid "Where to?"
-msgstr ""
+msgstr "どこへ行く?"
 
 #: src/App.tsx:606
 #: src/components/JourneyResults.tsx:809
 msgid "Where would you like to go?"
-msgstr ""
+msgstr "どこへ行きますか?"
 
 #: src/components/ConsentPrompt.tsx:36
 msgid "With your OK, we count how the app is used, like which trips people search and which features they use, so we know what to improve next."
-msgstr ""
+msgstr "ご同意いただくと、どんな行程が検索され、どの機能が使われているかなど、アプリの使われ方を集計し、次の改善に役立てます。"
 
 #: src/components/ConsentPrompt.tsx:74
 msgid "You can change this any time from “Privacy choices” at the bottom of the page."
-msgstr ""
+msgstr "ページ下部の「プライバシーの選択」からいつでも変更できます。"
 
 #: src/components/TrackingPanel.tsx:214
 msgid "You’re at {alight}."
-msgstr ""
+msgstr "{alight} にいます。"
 
 #: src/components/TrackingPanel.tsx:213
 #: src/components/TrackingPanel.tsx:221
 msgid "You’ve arrived"
-msgstr ""
+msgstr "到着しました"
 
 #: src/state/useTrip.ts:289
 msgid "Your browser cannot find your location. Please choose a stop."
-msgstr ""
+msgstr "ブラウザで現在地を取得できません。停留所を選んでください。"
 
 #: src/components/TrackingPanel.tsx:60
 #: src/components/TrackingPanel.tsx:166
 msgid "Your bus"
-msgstr ""
+msgstr "あなたのバス"
 
 #: src/components/TrackingPanel.tsx:123
 msgid "Your bus changed to {plate}"
-msgstr ""
+msgstr "あなたのバスが {plate} に変わりました"
 
 #: src/components/StopCard.tsx:149
 msgid "Your destination"
-msgstr ""
+msgstr "あなたの目的地"
 
 #: src/components/MapView.tsx:1145
 msgid "Your location could not be found. Choose your stops instead."
-msgstr ""
+msgstr "現在地を取得できませんでした。停留所を選んでください。"
 
 #: src/components/StopCard.tsx:149
 msgid "Your start"
-msgstr ""
+msgstr "あなたの出発地"
 
 #: src/components/BusCard.tsx:248
 #: src/components/TrackingPanel.tsx:337
 msgid "Your stop"
-msgstr ""
+msgstr "あなたの停留所"
 
 #: src/components/MapView.tsx:397
 msgid "Zoom in"
-msgstr ""
+msgstr "拡大"
 
 #: src/components/MapView.tsx:398
 msgid "Zoom out"
-msgstr ""
+msgstr "縮小"
