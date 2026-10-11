@@ -21,6 +21,9 @@ export type StandStop = {
 };
 
 const STREET_ZOOM = 15;
+// Narrow maps (phones) draw stands smaller, down to this share of their size.
+const NARROW_MAP_PIXELS = 900;
+const MIN_NARROW_SCALE = 0.65;
 const CITY_ZOOM = 12;
 // Stands closer than this many model heights on screen hide the later one.
 const STAND_SPACING = 1.6;
@@ -46,7 +49,7 @@ type Pole = {
   material: THREE.Material;
 };
 
-function standScale(stand: StopStand, zoom: number): number {
+function standScale(stand: StopStand, zoom: number, width: number): number {
   const t = THREE.MathUtils.clamp(
     (zoom - CITY_ZOOM) / (STREET_ZOOM - CITY_ZOOM),
     0,
@@ -57,7 +60,12 @@ function standScale(stand: StopStand, zoom: number): number {
     stand.pixels.street,
     t,
   );
-  return Math.max(stand.meters, pixels * metersPerPixel(zoom));
+  const narrow = THREE.MathUtils.clamp(
+    width / NARROW_MAP_PIXELS,
+    MIN_NARROW_SCALE,
+    1,
+  );
+  return Math.max(stand.meters, pixels * narrow * metersPerPixel(zoom));
 }
 
 // A steady lean, gusts that roll across the map, and each stand's own swing.
@@ -203,7 +211,7 @@ export class StandModelLayer implements CustomLayerInterface {
     if (!this.renderer || !map || !stand || !this.stands.length) return;
     const now = performance.now();
     const wind = this.reducedMotion ? undefined : stand.wind;
-    const scale = standScale(stand, map.getZoom());
+    const scale = standScale(stand, map.getZoom(), map.getCanvas().clientWidth);
     const spacing = scale * STAND_SPACING;
     const reach = (this.pole ? stand.pole!.arm : GROUND_SETBACK) * scale;
     const shown: THREE.Vector3[] = [];

@@ -1068,7 +1068,12 @@ export default function MapView(props: Props) {
           activeMap.addLayer(vehicles);
           const stands = new StandModelLayer();
           standLayerRef.current = stands;
-          activeMap.addLayer(stands, "metro-stop-halo");
+          // Under the basemap's labels, so decorations never hide a place or stop name.
+          activeMap.addLayer(
+            stands,
+            activeMap.getStyle().layers.find((layer) => layer.type === "symbol")
+              ?.id,
+          );
           ready.current = true;
           syncBuses();
           setScene(activeMap, latest.current.scene, null);
