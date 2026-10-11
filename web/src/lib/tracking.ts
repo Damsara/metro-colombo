@@ -122,6 +122,12 @@ export const NEXT_STOP_STOPS = 1;
 /** A tracked bus missing from the live feed this long is lost. */
 export const LOST_AFTER_MS = 60_000;
 
+export function orderedStops(stops: readonly Stop[]): Stop[] {
+  return stops
+    .slice()
+    .sort((a, b) => (a.sequence_number ?? 0) - (b.sequence_number ?? 0));
+}
+
 /**
  * Where the bus is along a direction's stop list, in half steps: a whole
  * number while it is at that stop, and n + 0.5 between stops n and n + 1.

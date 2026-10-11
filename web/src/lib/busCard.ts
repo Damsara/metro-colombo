@@ -46,15 +46,12 @@ export function busJourney(
     position > stops.length - 1
   )
     return null;
-  const ordered = stops
-    .slice()
-    .sort((a, b) => (a.sequence_number ?? 0) - (b.sequence_number ?? 0));
   const indexes = rideIndexes(
-    ordered,
+    stops,
     marks?.boardId ?? "",
     marks?.alightId ?? "",
   );
-  const journeyStops: JourneyStop[] = ordered.map((stop, index) => ({
+  const journeyStops: JourneyStop[] = stops.map((stop, index) => ({
     stop,
     index,
     state:

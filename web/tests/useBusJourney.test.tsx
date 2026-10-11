@@ -3,6 +3,7 @@ import { test } from "vitest";
 import { createElement, useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TransitDataProvider } from "../src/state/TransitData";
 import {
   useBusJourney,
   type BusJourneyResult,
@@ -39,6 +40,9 @@ const route: Route = {
     { id: "d2", start_location: "e", end_location: "a", geojson_url: "" },
   ],
 };
+
+const line = { routeCode: "CM01", directionId: "d1" };
+const offRoute = { status: "unknown", reason: "offRoute", line };
 
 function client(routes = true, withStops = true) {
   const result = new QueryClient({
@@ -80,7 +84,9 @@ function render(samples: Sample[], queryClient = client()) {
   renderToStaticMarkup(
     createElement(QueryClientProvider, {
       client: queryClient,
-      children: createElement(Probe),
+      children: createElement(TransitDataProvider, {
+        children: createElement(Probe),
+      }),
     }),
   );
   return results;
@@ -120,7 +126,7 @@ test("route metadata and direction stops each have a loading state", () => {
     [{ status: "loading" }],
   );
   assert.deepEqual(render([{ bus }], client(true, false)), [
-    { status: "loading" },
+    { status: "loading", line },
   ]);
   assert.deepEqual(render([{ bus: null }], client(false, false)), [null]);
 });
@@ -163,14 +169,12 @@ test("the 800 metre cutoff checks every stop on the chosen direction", () => {
       { bus: { ...bus, ...near(6.8 - latitudeOffset(meters)) } },
     ]);
     if (meters < 800) assert.equal(result?.status, "ready");
-    else assert.deepEqual(result, { status: "unknown", reason: "offRoute" });
+    else assert.deepEqual(result, offRoute);
   }
   const [nearLast] = render([{ bus: { ...bus, ...near(stops[4].latitude) } }]);
   assert.ok(nearLast?.status === "ready");
   assert.equal(nearLast.journey.terminus.state, "here");
-  assert.deepEqual(render([{ bus: { ...bus, lat: NaN } }]), [
-    { status: "unknown", reason: "offRoute" },
-  ]);
+  assert.deepEqual(render([{ bus: { ...bus, lat: NaN } }]), [offRoute]);
   const empty = client();
   empty.setQueryData<RouteStops>(["route-stops", "CM01", "d1"], {
     route_code: "CM01",
@@ -178,9 +182,7 @@ test("the 800 metre cutoff checks every stop on the chosen direction", () => {
     direction_label: "",
     stops: [],
   });
-  assert.deepEqual(render([{ bus }], empty), [
-    { status: "unknown", reason: "offRoute" },
-  ]);
+  assert.deepEqual(render([{ bus }], empty), [offRoute]);
 });
 
 test("fresh feed objects and GPS movement within a half step retain the result", () => {
@@ -198,10 +200,9 @@ test("fresh feed objects and GPS movement within a half step retain the result",
   assert.equal(results[2], results[3]);
 });
 
-test("plate, direction, marks and off-route movement invalidate the journey", () => {
+test("direction, marks and off-route movement invalidate the journey", () => {
   const results = render([
     { bus },
-    { bus: { ...bus, registration_number: "OTHER" } },
     { bus: { ...bus, direction_id: "d2" } },
     { bus, marks: { boardId: "d" } },
     { bus, marks: { boardId: "d", alightId: "e" } },
@@ -211,7 +212,7 @@ test("plate, direction, marks and off-route movement invalidate the journey", ()
   ]);
   for (let index = 1; index < results.length; index++)
     assert.notEqual(results[index - 1], results[index]);
-  assert.deepEqual(results[5], { status: "unknown", reason: "offRoute" });
-  assert.equal(results[6], null);
-  assert.equal(results[7]?.status, "ready");
+  assert.deepEqual(results[4], offRoute);
+  assert.equal(results[5], null);
+  assert.equal(results[6]?.status, "ready");
 });

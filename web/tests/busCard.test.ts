@@ -5,6 +5,7 @@ import {
   journeyStrip,
   type JourneyMarks,
 } from "../src/lib/busCard";
+import { orderedStops } from "../src/lib/tracking";
 import type { Stop } from "../src/types";
 
 function stopAt(id: string, index: number): Stop {
@@ -73,9 +74,9 @@ test("between stops the next stop leads the remaining journey", () => {
   assert.equal(journey(0).ahead[0].state, "here");
 });
 
-test("sequence sorting is stable and leaves the caller's stops untouched", () => {
+test("ordering stops by sequence is stable and leaves the caller's stops untouched", () => {
   const reversed = [...line].reverse();
-  const result = busJourney("CM01", "d1", reversed, 1.5);
+  const result = busJourney("CM01", "d1", orderedStops(reversed), 1.5);
   assert.equal(result?.lastPassed?.stop.id, "b");
   assert.equal(result?.ahead[0].stop.id, "c");
   assert.equal(reversed[0].id, "j");
@@ -83,9 +84,7 @@ test("sequence sorting is stable and leaves the caller's stops untouched", () =>
     .slice(0, 3)
     .map((stop) => ({ ...stop, sequence_number: undefined }));
   assert.deepEqual(
-    busJourney("CM01", "d1", missingSequence, 0)?.ahead.map(
-      ({ stop }) => stop.id,
-    ),
+    orderedStops(missingSequence).map((stop) => stop.id),
     ["a", "b", "c"],
   );
 });
