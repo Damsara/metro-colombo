@@ -113,6 +113,7 @@ export function linkPlaces(
 export const staleCache = Effect.fnUntraced(function* <A>(
   lookup: (key: string) => Effect.Effect<A, UpstreamError>,
   options: {
+    readonly name: string;
     readonly freshTtl: Duration.Input;
     readonly staleTtl: Duration.Input;
     readonly serveStaleFor?: Duration.Input;
@@ -158,26 +159,44 @@ export const staleCache = Effect.fnUntraced(function* <A>(
       return value;
     });
 
+  const answered = (result: string) =>
+    Effect.annotateCurrentSpan("cache.result", result);
+
   return (key: string): Effect.Effect<A, UpstreamError> =>
     Effect.gen(function* () {
       const now = yield* Clock.currentTimeMillis;
       const previous = lastGood.get(key);
-      if (!previous || now - previous.at > staleMillis)
+      if (previous)
+        yield* Effect.annotateCurrentSpan("cache.age_ms", now - previous.at);
+      if (!previous || now - previous.at > staleMillis) {
+        yield* answered(previous ? "expired" : "miss");
         return yield* fetch(key);
+      }
       if (now - previous.at > serveStaleMillis) {
         const result = yield* Effect.exit(fetch(key));
+        yield* answered(Exit.isSuccess(result) ? "waited" : "fallback");
         return Exit.isSuccess(result) ? result.value : previous.value;
       }
-      if (now - previous.at >= freshMillis && !refreshing.has(key)) {
+      if (now - previous.at < freshMillis) {
+        yield* answered("fresh");
+        return previous.value;
+      }
+      yield* answered("stale");
+      if (!refreshing.has(key)) {
         refreshing.add(key);
         yield* fetch(key).pipe(
+          Effect.withSpan(`cache.${options.name}.refresh`),
           Effect.ignore,
           Effect.ensuring(Effect.sync(() => refreshing.delete(key))),
           Effect.forkDetach,
         );
       }
       return previous.value;
-    });
+    }).pipe(
+      Effect.withSpan(`cache.${options.name}`, {
+        attributes: { "cache.key": key },
+      }),
+    );
 });
 
 export class UpstreamApi extends Context.Service<
@@ -347,6 +366,7 @@ export class UpstreamApi extends Context.Service<
       // API rides out an upstream outage. Journeys change by the minute, so
       // they stay short-lived.
       const routes = yield* staleCache(() => fetchRoutes, {
+        name: "routes",
         freshTtl: Duration.hours(12),
         staleTtl: Duration.days(7),
         capacity: 1,
@@ -357,6 +377,7 @@ export class UpstreamApi extends Context.Service<
           return fetchStops(routeId, directionId);
         },
         {
+          name: "stops",
           freshTtl: Duration.hours(12),
           staleTtl: Duration.days(7),
           capacity: 64,
@@ -368,6 +389,7 @@ export class UpstreamApi extends Context.Service<
           return fetchJourney(from, to, date);
         },
         {
+          name: "journey",
           freshTtl: Duration.seconds(60),
           // Today's plans have live ETAs, don't hand out old ones for long.
           serveStaleFor: Duration.minutes(2),
@@ -376,11 +398,13 @@ export class UpstreamApi extends Context.Service<
         },
       );
       const places = yield* staleCache(() => fetchPlaces, {
+        name: "places",
         freshTtl: Duration.hours(24),
         staleTtl: Duration.days(7),
         capacity: 1,
       });
       const geometry = yield* staleCache(fetchGeometry, {
+        name: "geometry",
         freshTtl: Duration.hours(24),
         staleTtl: Duration.days(30),
         capacity: 32,

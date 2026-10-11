@@ -20,6 +20,7 @@ test("serves the last good value when revalidation fails, then degrades past the
           return `v${calls}:${key}`;
         }),
       {
+        name: "test",
         freshTtl: Duration.minutes(10),
         staleTtl: Duration.minutes(30),
         capacity: 4,
@@ -57,6 +58,7 @@ test("serves each key independently and evicts the least recently refreshed", as
           ? Effect.succeed(`value-${key}`)
           : Effect.fail(new UpstreamError({ message: "upstream down" })),
       {
+        name: "test",
         freshTtl: Duration.minutes(10),
         staleTtl: Duration.minutes(30),
         capacity: 2,
@@ -92,6 +94,7 @@ test("answers stale requests at once and refreshes once in the background", asyn
           return `v${calls}:${key}`;
         }),
       {
+        name: "test",
         freshTtl: Duration.minutes(10),
         staleTtl: Duration.minutes(30),
         capacity: 4,
@@ -127,6 +130,7 @@ test("waits for the origin when there is nothing usable to serve", async () => {
           return `v${calls}:${key}`;
         }),
       {
+        name: "test",
         freshTtl: Duration.minutes(10),
         staleTtl: Duration.minutes(30),
         capacity: 4,
@@ -157,6 +161,7 @@ test("past serveStaleFor, waits for a fresh value and falls back to the old one 
           return `v${calls}:${key}`;
         }),
       {
+        name: "test",
         freshTtl: Duration.minutes(1),
         serveStaleFor: Duration.minutes(2),
         staleTtl: Duration.minutes(10),

@@ -2,11 +2,13 @@ import { NodeHttpServer, NodeRuntime } from "@effect/platform-node";
 import { Clock, Effect, Layer, Schema } from "effect";
 import {
   FetchHttpClient,
+  HttpMiddleware,
   HttpRouter,
   HttpServerRequest,
   HttpServerResponse,
   HttpStaticServer,
 } from "effect/http";
+import { Otlp, OtlpSerialization } from "effect/observability";
 import { createServer } from "node:http";
 import path from "node:path";
 import { Auth } from "./auth.js";
@@ -228,15 +230,18 @@ const liveHandler = Effect.gen(function* () {
   return noStore(json(yield* (yield* LiveFleet).snapshot));
 });
 
+// Health checks and live map polls would drown out everything else in traces.
+const untraced = Effect.withTracerEnabled(false);
+
 const ApiRoutes = HttpRouter.addAll(
   [
-    HttpRouter.route("GET", "/health", healthHandler),
+    HttpRouter.route("GET", "/health", untraced(healthHandler)),
     HttpRouter.route("GET", "/routes", routesHandler),
     HttpRouter.route("GET", "/routes/:code", routeHandler),
     HttpRouter.route("GET", "/routes/:code/geometry", geometryHandler),
     HttpRouter.route("GET", "/routes/:code/stops", stopsHandler),
     HttpRouter.route("GET", "/journey", journeyHandler),
-    HttpRouter.route("GET", "/live", liveHandler),
+    HttpRouter.route("GET", "/live", untraced(liveHandler)),
     HttpRouter.route("GET", "/places", placesHandler),
     HttpRouter.route(
       "*",
@@ -275,12 +280,26 @@ const App = LiveFleet.layer.pipe(
   Layer.provideMerge(FetchHttpClient.layer),
 );
 
+// Off unless the OTEL_* env vars are set.
+const Observability = Otlp.layerFromConfig({
+  resource: { serviceName: "metro-api" },
+}).pipe(
+  Layer.provide(OtlpSerialization.layerProtobuf),
+  Layer.provide(FetchHttpClient.layer),
+);
+
+const Untraced = Layer.succeed(HttpMiddleware.TracerDisabledWhen)(
+  (request) =>
+    request.url.startsWith("/api/health") ||
+    request.url.startsWith("/api/live"),
+);
+
 const Main = HttpRouter.serve(
   Layer.mergeAll(
     ApiRoutes,
     WebRoutes,
     HttpRouter.cors({ allowedMethods: ["GET"] }),
   ),
-).pipe(Layer.provide([App, HttpLive]));
+).pipe(Layer.provide([App, HttpLive, Untraced]), Layer.provide(Observability));
 
 Layer.launch(Main).pipe(NodeRuntime.runMain);
