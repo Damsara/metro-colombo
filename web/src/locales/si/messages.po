@@ -131,7 +131,7 @@ msgstr "{alightName} <0>හිදී බසින්න</0>"
 msgid "<0>Get on at</0> {boardName}"
 msgstr "{boardName} <0>හිදී නගින්න</0>"
 
-#: src/components/MapView.tsx:1226
+#: src/components/MapView.tsx:1433
 msgid "A: Start · B: Destination"
 msgstr "A: ආරම්භය · B: ගමනාන්තය"
 
@@ -291,7 +291,7 @@ msgctxt "month"
 msgid "Dec"
 msgstr "දෙසැ"
 
-#: src/components/MapView.tsx:1126
+#: src/components/MapView.tsx:1333
 msgid "Destination: {stopLabel}"
 msgstr "ගමනාන්තය: {stopLabel}"
 
@@ -358,7 +358,7 @@ msgstr "{start} සිට {end} දක්වා බස් සොයන්න"
 msgid "Find my bus"
 msgstr "මගේ බස් රථය සොයන්න"
 
-#: src/components/MapView.tsx:400
+#: src/components/MapView.tsx:414
 msgid "Find my location"
 msgstr "මගේ ස්ථානය සොයන්න"
 
@@ -452,7 +452,7 @@ msgstr "මෙතැන සිට → {end}"
 msgid "Hide"
 msgstr "සඟවන්න"
 
-#: src/components/MapView.tsx:441
+#: src/components/MapView.tsx:576
 msgid "Hide live buses"
 msgstr "සජීවී බස් සඟවන්න"
 
@@ -478,7 +478,7 @@ msgstr "ජන"
 msgid "Journey steps"
 msgstr "ගමන් පියවර"
 
-#: src/components/MapView.tsx:1217
+#: src/components/MapView.tsx:1424
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "ගමනේ නැවතුම්; වළලු මඟින් නගින සහ බසින නැවතුම් පෙන්වයි"
 
@@ -529,7 +529,7 @@ msgstr "සජීවී බස්"
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "සජීවී බස් ස්ථාන දැනට ලබාගත නොහැක. කාලසටහන් තවමත් ක්‍රියා කරයි."
 
-#: src/components/MapView.tsx:1223
+#: src/components/MapView.tsx:1430
 msgid "Live bus; tap to select and follow"
 msgstr "සජීවී බස්; තෝරා අනුගමනය කිරීමට ඔබන්න"
 
@@ -564,7 +564,7 @@ msgid "Loading bus routes…"
 msgstr "බස් මාර්ග ලබාගනිමින්…"
 
 #: src/App.tsx:892
-#: src/components/MapView.tsx:1163
+#: src/components/MapView.tsx:1370
 msgid "Loading map…"
 msgstr "සිතියම ලබාගනිමින්…"
 
@@ -576,11 +576,11 @@ msgstr "නැවතුම් ලබා ගනිමින්…"
 msgid "Loading the stops…"
 msgstr "නැවතුම් ලබාගනිමින්…"
 
-#: src/components/MapView.tsx:1143
+#: src/components/MapView.tsx:1350
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "ස්ථාන අවසරය ලබා දී නැත. ඔබට තවමත් නැවතුම් තෝරාගත හැක."
 
-#: src/components/MapView.tsx:401
+#: src/components/MapView.tsx:415
 msgid "Location unavailable"
 msgstr "ස්ථානය ලබාගත නොහැක"
 
@@ -592,19 +592,19 @@ msgstr "ස්ථානය ලබාගත නොහැකි විය. ආර�
 msgid "Looking around"
 msgstr "වටපිට බලමින්"
 
-#: src/components/MapView.tsx:402
+#: src/components/MapView.tsx:416
 msgid "Map credits"
 msgstr "සිතියම් දායකත්වය"
 
-#: src/components/MapView.tsx:1209
+#: src/components/MapView.tsx:1416
 msgid "Map key"
 msgstr "සිතියම් සංකේත"
 
-#: src/components/MapView.tsx:1147
+#: src/components/MapView.tsx:1354
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "බාහිර සිතියම් සැපයුම්කරුගෙන් සිතියම පූරණය කළ නොහැකි විය. අන්තර්ජාල සම්බන්ධතාව පරීක්ෂා කරන්න. ඔබට තවමත් ගමන සැලසුම් කළ හැක."
 
-#: src/components/MapView.tsx:1173
+#: src/components/MapView.tsx:1380
 msgid "Map unavailable"
 msgstr "සිතියම ලබාගත නොහැක"
 
@@ -770,7 +770,7 @@ msgstr "ඉඩ ඇත"
 msgid "PM"
 msgstr "ප.ව."
 
-#: src/components/MapView.tsx:399
+#: src/components/MapView.tsx:413
 msgid "Point north"
 msgstr "උතුරට හරවන්න"
 
@@ -814,7 +814,7 @@ msgstr "මාර්ග සහ නැවතුම් කේත, සහ ඔබ �
 msgid "Routes"
 msgstr "මාර්ග"
 
-#: src/components/MapView.tsx:1152
+#: src/components/MapView.tsx:1359
 msgid "Routes and stops map"
 msgstr "මාර්ග සහ නැවතුම් සිතියම"
 
@@ -862,7 +862,15 @@ msgstr "සේවා තත්ත්වය"
 msgid "Show"
 msgstr "පෙන්වන්න"
 
-#: src/components/MapView.tsx:441
+#: src/components/MapView.tsx:568
+msgid "Show 3D map"
+msgstr "3D සිතියම පෙන්වන්න"
+
+#: src/components/MapView.tsx:568
+msgid "Show flat map"
+msgstr "පැතලි සිතියම පෙන්වන්න"
+
+#: src/components/MapView.tsx:576
 msgid "Show live buses"
 msgstr "සජීවී බස් පෙන්වන්න"
 
@@ -886,7 +894,7 @@ msgstr "ඊළඟ දිනය පෙන්වන්න"
 msgid "Show tomorrow’s buses"
 msgstr "හෙට බස් පෙන්වන්න"
 
-#: src/components/MapView.tsx:1148
+#: src/components/MapView.tsx:1355
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "සිතියමේ සමහර දත්ත පූරණය කළ නොහැකි විය. සිතියම හෝ ජාල සම්බන්ධතාව නොමැති විය හැක. ඔබට තවමත් ගමන සැලසුම් කළ හැක."
 
@@ -898,11 +906,11 @@ msgstr "සමහර නැවතුම් ලබාගත නොහැකි �
 msgid "Start here"
 msgstr "මෙතැනින් නගින්න"
 
-#: src/components/MapView.tsx:1126
+#: src/components/MapView.tsx:1333
 msgid "Start: {stopLabel}"
 msgstr "ආරම්භය: {stopLabel}"
 
-#: src/components/MapView.tsx:1212
+#: src/components/MapView.tsx:1419
 msgid "Stop"
 msgstr "නැවතුම"
 
@@ -936,7 +944,7 @@ msgstr "ගමන සැලසුම් කිරීමට නැවතුමක
 msgid "Tap a stop to plan a trip"
 msgstr "ගමන සැලසුම් කිරීමට නැවතුමක් ඔබන්න"
 
-#: src/components/MapView.tsx:1176
+#: src/components/MapView.tsx:1383
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "සිතියමට අන්තර්ජාල සම්බන්ධතාවක් සහ බ්‍රවුසරයේ WebGL සහාය අවශ්‍යයි. ඔබට තවමත් නැවතුම් තෝරා ගමන සැලසුම් කළ හැක."
 
@@ -986,7 +994,7 @@ msgstr "මගේ ගමන ලුහුබඳින්න"
 msgid "Tracked bus"
 msgstr "ලුහුබඳින බසය"
 
-#: src/components/MapView.tsx:432
+#: src/components/MapView.tsx:446
 msgid "Transit map. Use arrow keys to move and plus or minus to zoom."
 msgstr "ප්‍රවාහන සිතියම. ඊතල යතුරු මඟින් ගමන් කරන්න. විශාල කිරීමට හෝ කුඩා කිරීමට + හෝ − භාවිතා කරන්න."
 
@@ -1011,8 +1019,8 @@ msgstr "මෙම නැවතුමේ සිට {end} දක්වා ගම�
 msgid "Try again"
 msgstr "නැවත උත්සාහ කරන්න"
 
-#: src/components/MapView.tsx:1184
-#: src/components/MapView.tsx:1201
+#: src/components/MapView.tsx:1391
+#: src/components/MapView.tsx:1408
 msgid "Try map again"
 msgstr "සිතියම නැවත උත්සාහ කරන්න"
 
@@ -1110,7 +1118,7 @@ msgstr "ඔබේ බසය {plate} ලෙස වෙනස් විය"
 msgid "Your destination"
 msgstr "ඔබේ ගමනාන්තය"
 
-#: src/components/MapView.tsx:1145
+#: src/components/MapView.tsx:1352
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "ඔබේ ස්ථානය සොයාගත නොහැකි විය. ඒ වෙනුවට නැවතුම් තෝරන්න."
 
@@ -1123,10 +1131,10 @@ msgstr "ඔබේ ආරම්භය"
 msgid "Your stop"
 msgstr "ඔබේ නැවතුම"
 
-#: src/components/MapView.tsx:397
+#: src/components/MapView.tsx:411
 msgid "Zoom in"
 msgstr "විශාල කරන්න"
 
-#: src/components/MapView.tsx:398
+#: src/components/MapView.tsx:412
 msgid "Zoom out"
 msgstr "කුඩා කරන්න"
