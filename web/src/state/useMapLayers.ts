@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { planTabBuses } from "../lib/mapBuses";
 import {
   resolveBusDirectionId,
   type JourneyOption,
@@ -18,6 +19,10 @@ interface MapLayerInputs {
   activeRoute: Route | undefined;
   direction: string | undefined;
   selectedJourney: JourneyOption | null;
+  /** The plan's options while results are showing, otherwise null. */
+  resultOptions: readonly JourneyOption[] | null;
+  trackedJourney: JourneyOption | null;
+  trackedBus: LiveBus | null;
   routeStops: Stop[] | undefined;
   allStops: Stop[];
 }
@@ -32,6 +37,9 @@ export function useMapLayers({
   activeRoute,
   direction,
   selectedJourney,
+  resultOptions,
+  trackedJourney,
+  trackedBus,
   routeStops,
   allStops,
 }: MapLayerInputs) {
@@ -64,6 +72,27 @@ export function useMapLayers({
     });
   }, [buses, selectedBus, activeRoute, direction, routeCodeOf]);
 
+  const planTabBusList = useMemo(() => {
+    const chosen = trackedJourney ?? selectedJourney;
+    const journeys = chosen ? [chosen] : resultOptions;
+    return planTabBuses({
+      buses,
+      routes,
+      routeCodeOf,
+      journeys,
+      keep: [selectedBus, trackedBus],
+    });
+  }, [
+    buses,
+    routes,
+    routeCodeOf,
+    trackedJourney,
+    selectedJourney,
+    resultOptions,
+    selectedBus,
+    trackedBus,
+  ]);
+
   const emphasizeRoutes = useMemo((): RouteRef[] => {
     if (tab === "plan") {
       return (selectedJourney?.legs ?? []).flatMap((leg) =>
@@ -83,7 +112,7 @@ export function useMapLayers({
 
   return {
     routeLock: tab === "routes" ? routeLock : null,
-    buses: tab === "routes" ? routesTabBuses : buses,
+    buses: tab === "routes" ? routesTabBuses : planTabBusList,
     stops,
     emphasizeRoutes,
   };
