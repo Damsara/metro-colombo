@@ -836,12 +836,18 @@ function Home() {
           </Trans>
         </p>
         <div className="flex flex-wrap justify-center gap-x-5 empty:hidden">
-          {/* Phones keep the header to the logo and language; the API link lives here. */}
+          {/* Phones keep the header to the logo and language; the API and data links live here. */}
           <Link
             className={`${FOOTER_LINK} inline-flex min-h-9 items-center md:hidden`}
             to="/docs"
           >
             API
+          </Link>
+          <Link
+            className={`${FOOTER_LINK} inline-flex min-h-9 items-center md:hidden`}
+            to="/data"
+          >
+            Data
           </Link>
           <PrivacyChoicesLink className="min-h-9 max-md:inline-flex max-md:items-center md:min-h-0" />
           <a
@@ -892,6 +898,16 @@ function Home() {
                 to="/docs"
               >
                 API
+              </Link>
+              <Link
+                className={`${buttonClass({
+                  variant: "neutral",
+                  size: "xs",
+                  pill: true,
+                })} max-md:hidden`}
+                to="/data"
+              >
+                Data
               </Link>
               <LanguageSwitcher />
             </div>
