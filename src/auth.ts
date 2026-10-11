@@ -7,6 +7,7 @@ import {
   Duration,
   Effect,
   Layer,
+  Metric,
   Option,
   Redacted,
   Ref,
@@ -17,6 +18,39 @@ import { HttpBody, HttpClient, HttpClientResponse } from "effect/http";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { UpstreamConfig } from "./config.js";
+
+export type Endpoint =
+  | "routes"
+  | "stops"
+  | "journey"
+  | "places"
+  | "geometry"
+  | "colours"
+  | "auth";
+export type Outcome =
+  | "ok"
+  | "http_error"
+  | "decode_error"
+  | "timeout"
+  | "transport";
+
+const requests = Metric.counter("upstream.requests", { incremental: true });
+const decodeFailures = Metric.counter("upstream.decode_failures", {
+  incremental: true,
+});
+const fallbacks = Metric.counter("upstream.fallbacks", { incremental: true });
+
+export const countRequest = (endpoint: Endpoint, outcome: Outcome) =>
+  Metric.update(Metric.withAttributes(requests, { endpoint, outcome }), 1).pipe(
+    Effect.andThen(
+      outcome === "decode_error"
+        ? Metric.update(Metric.withAttributes(decodeFailures, { endpoint }), 1)
+        : Effect.void,
+    ),
+  );
+
+export const countFallback = (endpoint: Endpoint) =>
+  Metric.update(Metric.withAttributes(fallbacks, { endpoint }), 1);
 
 export class AuthError extends Schema.TaggedError<AuthError>()("AuthError", {
   message: Schema.String,
@@ -111,7 +145,18 @@ export class Auth extends Context.Service<
             body: HttpBody.jsonUnsafe(body),
           })
           .pipe(
-            Effect.flatMap(HttpClientResponse.schemaBodyJson(schema)),
+            Effect.tapError(() => countRequest("auth", "transport")),
+            Effect.flatMap((response) =>
+              HttpClientResponse.schemaBodyJson(schema)(response).pipe(
+                Effect.tapError((error) =>
+                  countRequest(
+                    "auth",
+                    Schema.isSchemaError(error) ? "decode_error" : "transport",
+                  ),
+                ),
+              ),
+            ),
+            Effect.tap(() => countRequest("auth", "ok")),
             Effect.mapError(
               () =>
                 new AuthError({ message: `upstream /auth/${endpoint} failed` }),
@@ -159,7 +204,7 @@ export class Auth extends Context.Service<
             // login.
           }
         });
-      }).pipe(renewing.withPermits(1));
+      }).pipe(Effect.withSpan("Auth.refresh"), renewing.withPermits(1));
 
       const currentToken = Effect.gen(function* () {
         if (!isFresh(yield* Ref.get(state))) yield* renew;
@@ -170,7 +215,7 @@ export class Auth extends Context.Service<
           });
         }
         return Redacted.make(next.webviewToken);
-      });
+      }).pipe(Effect.withSpan("Auth.currentToken"));
 
       return Auth.of({ currentToken });
     }),

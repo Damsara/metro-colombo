@@ -231,8 +231,10 @@ const liveHandler = Effect.gen(function* () {
   return noStore(json(yield* (yield* LiveFleet).snapshot));
 });
 
-// Health checks and live map polls would drown out everything else in traces.
-const untraced = Effect.withTracerEnabled(false);
+// Health checks and live map polls would drown out everything else in traces
+// and request logs.
+const untraced = <A, E, R>(handler: Effect.Effect<A, E, R>) =>
+  HttpMiddleware.withLoggerDisabled(Effect.withTracerEnabled(handler, false));
 
 const ApiRoutes = HttpRouter.addAll(
   [

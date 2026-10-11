@@ -3,6 +3,7 @@
 
 import {
   Cache,
+  Cause,
   Clock,
   Context,
   Duration,
@@ -13,7 +14,7 @@ import {
   Schema,
 } from "effect";
 import { HttpClient, HttpClientResponse } from "effect/http";
-import { Auth } from "./auth.js";
+import { Auth, countFallback, countRequest, type Endpoint } from "./auth.js";
 import { UpstreamConfig } from "./config.js";
 import * as S from "./schemas.js";
 
@@ -231,130 +232,181 @@ export class UpstreamApi extends Context.Service<
       const auth = yield* Auth;
       const fareApi = `${config.eimskyBase}/fare-service/api/v1`;
 
-      const getJson = <A>(
-        schema: Schema.Codec<A, unknown>,
-        url: string,
-        headers: Record<string, string> = {},
-      ): Effect.Effect<A, UpstreamError> =>
-        Effect.gen(function* () {
-          const response = yield* http.get(url, { headers });
-          const ok = response.status >= 200 && response.status < 300;
-          if (!ok) {
-            const detail = yield* HttpClientResponse.schemaBodyJson(
-              UpstreamErrorBody,
-            )(response).pipe(
-              Effect.map((body) => body.error.message),
-              Effect.orElseSucceed(() => undefined),
+      const getJson = Effect.fn("UpstreamApi.getJson")(
+        function* <A>(
+          schema: Schema.Codec<A, unknown>,
+          endpoint: Endpoint,
+          url: string,
+          headers: Record<string, string> = {},
+        ) {
+          return yield* Effect.gen(function* () {
+            const response = yield* http
+              .get(url, { headers })
+              .pipe(Effect.tapError(() => countRequest(endpoint, "transport")));
+            const ok = response.status >= 200 && response.status < 300;
+            if (!ok) {
+              yield* countRequest(endpoint, "http_error");
+              const detail = yield* HttpClientResponse.schemaBodyJson(
+                UpstreamErrorBody,
+              )(response).pipe(
+                Effect.map((body) => body.error.message),
+                Effect.orElseSucceed(() => undefined),
+              );
+              return yield* new UpstreamError({
+                message: `Upstream responded with HTTP ${response.status}`,
+                status: response.status,
+                detail,
+              });
+            }
+            const body = yield* HttpClientResponse.schemaBodyJson(schema)(
+              response,
+            ).pipe(
+              Effect.tapError((error) =>
+                countRequest(
+                  endpoint,
+                  Schema.isSchemaError(error) ? "decode_error" : "transport",
+                ),
+              ),
             );
-            return yield* new UpstreamError({
-              message: `Upstream responded with HTTP ${response.status}`,
-              status: response.status,
-              detail,
-            });
-          }
-          return yield* HttpClientResponse.schemaBodyJson(schema)(response);
-        }).pipe(
-          Effect.timeout(REQUEST_TIMEOUT),
-          Effect.mapError((cause) =>
-            cause instanceof UpstreamError
-              ? cause
-              : new UpstreamError({
-                  message: "Upstream request failed",
-                  cause,
-                }),
-          ),
-        );
-
-      // Same as getJson but attaches the current auto-renewed bearer token.
-      const getAuthed = <A>(schema: Schema.Codec<A, unknown>, url: string) =>
-        Effect.gen(function* () {
-          const token = yield* auth.currentToken.pipe(
-            Effect.mapError(
-              (error) =>
-                new UpstreamError({
-                  message: error.message,
-                  status: 502,
-                  cause: error,
-                }),
+            yield* countRequest(endpoint, "ok");
+            return body;
+          }).pipe(
+            Effect.timeout(REQUEST_TIMEOUT),
+            Effect.tapError((error) =>
+              Cause.isTimeoutError(error)
+                ? countRequest(endpoint, "timeout")
+                : Effect.void,
             ),
           );
-          return yield* getJson(schema, url, {
-            authorization: `Bearer ${Redacted.value(token)}`,
-          });
+        },
+        Effect.mapError((cause) =>
+          cause instanceof UpstreamError
+            ? cause
+            : new UpstreamError({
+                message: "Upstream request failed",
+                cause,
+              }),
+        ),
+      );
+
+      // Same as getJson but attaches the current auto-renewed bearer token.
+      const getAuthed = Effect.fn("UpstreamApi.getAuthed")(function* <A>(
+        schema: Schema.Codec<A, unknown>,
+        endpoint: Endpoint,
+        url: string,
+      ) {
+        const token = yield* auth.currentToken.pipe(
+          Effect.mapError(
+            (error) =>
+              new UpstreamError({
+                message: error.message,
+                status: 502,
+                cause: error,
+              }),
+          ),
+        );
+        return yield* getJson(schema, endpoint, url, {
+          authorization: `Bearer ${Redacted.value(token)}`,
         });
+      });
 
       const fetchRoutes = getAuthed(
         EimskyRoutesResponse,
+        "routes",
         `${fareApi}/routes/geo`,
-      ).pipe(Effect.map((r) => r.data.routes));
+      ).pipe(
+        Effect.map((r) => r.data.routes),
+        Effect.withSpan("UpstreamApi.routes"),
+      );
 
       const fetchColours = getJson(
         LkRoutesResponse,
+        "colours",
         `${config.lankametroBase}/api/routes`,
       ).pipe(
         Effect.map(
           (r) =>
             new Map(r.routes.map((route) => [route.code, route.color_hex])),
         ),
+        Effect.withSpan("UpstreamApi.colours"),
       );
 
-      const fetchStops = (routeId: string, directionId: string) =>
-        getAuthed(
+      const fetchStops = Effect.fn("UpstreamApi.stopsFor")(function* (
+        routeId: string,
+        directionId: string,
+      ) {
+        const r = yield* getAuthed(
           StopsResponse,
+          "stops",
           `${fareApi}/routes/${encodeURIComponent(routeId)}/stops?${new URLSearchParams({ direction_id: directionId })}`,
-        ).pipe(
-          // Upstream names often arrive with stray spaces and newlines attached.
-          Effect.map((r) =>
-            r.data.stops.map((stop) => ({
-              ...stop,
-              stop_name_en: stop.stop_name_en.trim(),
-              stop_name_si: stop.stop_name_si.trim(),
-              stop_name_tm: stop.stop_name_tm.trim(),
-            })),
-          ),
         );
+        // Upstream names often arrive with stray spaces and newlines attached.
+        return r.data.stops.map((stop) => ({
+          ...stop,
+          stop_name_en: stop.stop_name_en.trim(),
+          stop_name_si: stop.stop_name_si.trim(),
+          stop_name_tm: stop.stop_name_tm.trim(),
+        }));
+      });
 
-      const fetchJourney = (from: string, to: string, date: string) =>
-        getAuthed(
+      const fetchJourney = Effect.fn("UpstreamApi.journey")(function* (
+        from: string,
+        to: string,
+        date: string,
+      ) {
+        const { data } = yield* getAuthed(
           JourneyResponse,
+          "journey",
           `${fareApi}/journeys/plan?${new URLSearchParams({ from_stop_id: from, to_stop_id: to, date })}`,
-        ).pipe(
-          // `option_token` is for booking, which this API does not offer.
-          Effect.map(({ data }) => ({
-            ...data,
-            options: data.options.map(
-              ({ option_token: _, ...option }) => option,
-            ),
-          })),
         );
+        // `option_token` is for booking, which this API does not offer.
+        return {
+          ...data,
+          options: data.options.map(({ option_token: _, ...option }) => option),
+        };
+      });
 
       const fetchPlaces = Effect.all(
         [
-          getJson(LkPlacesResponse, `${config.lankametroBase}/api/places`),
-          getJson(LkStopsResponse, `${config.lankametroBase}/api/stops`),
+          getJson(
+            LkPlacesResponse,
+            "places",
+            `${config.lankametroBase}/api/places`,
+          ),
+          getJson(
+            LkStopsResponse,
+            "places",
+            `${config.lankametroBase}/api/stops`,
+          ),
         ],
         { concurrency: 2 },
       ).pipe(
         Effect.map(([places, stops]) => linkPlaces(places.places, stops.stops)),
+        Effect.withSpan("UpstreamApi.places"),
       );
 
       // Route GeoJSON lives on Google Cloud Storage and lankametro.lk proxies the
       // same objects (by their already-encoded path) when direct access fails.
       // Only GCS URLs are fetched, whatever the upstream route data says.
       const GCS = "https://storage.googleapis.com/";
-      const fetchGeometry = (url: string) =>
-        url.startsWith(GCS)
-          ? getJson(Schema.Unknown, url).pipe(
-              Effect.catch(() =>
-                getJson(
-                  Schema.Unknown,
-                  `${config.lankametroBase}/gcs-proxy/${url.slice(GCS.length)}`,
-                ),
-              ),
-            )
-          : Effect.fail(
-              new UpstreamError({ message: `unexpected geometry URL: ${url}` }),
-            );
+      const fetchGeometry = Effect.fn("UpstreamApi.geometry")(function* (
+        url: string,
+      ) {
+        if (!url.startsWith(GCS)) {
+          return yield* new UpstreamError({
+            message: `unexpected geometry URL: ${url}`,
+          });
+        }
+        return yield* getJson(Schema.Unknown, "geometry", url).pipe(
+          Effect.catch(() =>
+            getJson(
+              Schema.Unknown,
+              "geometry",
+              `${config.lankametroBase}/gcs-proxy/${url.slice(GCS.length)}`,
+            ),
+          ),
+        );
+      });
 
       // Reference data is cached for hours and served stale for days, so the
       // API rides out an upstream outage. Journeys change by the minute, so
@@ -425,19 +477,23 @@ export class UpstreamApi extends Context.Service<
           directions,
           ({ route, direction }) =>
             stopsFor(route.id, direction.id).pipe(
+              Effect.tapError(() => countFallback("stops")),
               Effect.orElseSucceed((): ReadonlyArray<S.Stop> => []),
             ),
           { concurrency: 8 },
         );
         return new Map(lists.flat().map((stop) => [stop.stop_code, stop.id]));
-      });
+      }).pipe(Effect.withSpan("UpstreamApi.stopIdsByCode"));
 
       const colouredRoutes = Effect.gen(function* () {
         const list = yield* routes("all");
         const byCode = yield* colours("all").pipe(
           Effect.timeout(Duration.seconds(3)),
           Effect.tapError((error) =>
-            Effect.logWarning("route colours unavailable", error),
+            Effect.andThen(
+              countFallback("colours"),
+              Effect.logWarning("route colours unavailable", error),
+            ),
           ),
           Effect.orElseSucceed(() => new Map<string, string>()),
         );
@@ -445,7 +501,7 @@ export class UpstreamApi extends Context.Service<
           ...route,
           color_hex: byCode.get(route.code) ?? route.color_hex,
         }));
-      });
+      }).pipe(Effect.withSpan("UpstreamApi.colouredRoutes"));
 
       return UpstreamApi.of({
         routes: colouredRoutes,
