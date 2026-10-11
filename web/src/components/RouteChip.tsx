@@ -6,7 +6,6 @@ const SIZES = {
   xs: "min-h-5 min-w-9 px-1 text-2xs",
 };
 
-/** A route code on the route's line colour. */
 export function RouteChip({
   code,
   color,

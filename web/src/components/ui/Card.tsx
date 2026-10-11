@@ -1,9 +1,4 @@
-/**
- * Classes for a bordered card, a shade lighter than the page; `selected` adds
- * a charcoal outline, `tentative` a dashed one for something not yet settled.
- * A class helper rather than a component, because cards are buttons, list
- * items and plain boxes.
- */
+/** A class helper rather than a component, because cards are buttons, list items and plain boxes. */
 export function cardClass({
   selected = false,
   tentative = false,

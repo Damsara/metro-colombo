@@ -8,7 +8,6 @@ import {
 } from "../lib/follow";
 import { busKey, type LiveBus } from "../types";
 
-/** Which live bus is picked, whether the map follows it, and whether buses show at all. */
 export function useBusSelection(
   buses: LiveBus[],
   liveLoaded: boolean,

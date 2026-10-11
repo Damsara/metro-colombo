@@ -26,7 +26,6 @@ export default function LiveBusList({
   selectedBusId: string | null;
   route: Route;
   directionId?: string | null;
-  /** The live feed is unreachable or disconnected. */
   unavailable: boolean;
   onBusSelect: (bus: LiveBus | null) => void;
   onShowOtherDirection: () => void;

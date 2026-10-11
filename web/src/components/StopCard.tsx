@@ -22,14 +22,8 @@ import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
 import { IconButton } from "./ui/IconButton";
 
-// Over the map beside the legend. Phones show the card in the drawer instead.
 const FLOATING = `absolute right-7.5 bottom-19 z-20 w-84 max-w-[calc(100%-60px)] p-5 shadow-card max-lg:right-5 max-lg:bottom-56 ${cardClass()}`;
 
-/**
- * A selected stop: its names, the routes calling there and where they go,
- * and actions to start or end a trip there. The action that finishes a
- * half-planned trip leads.
- */
 export function StopCard({
   stop,
   entry,
@@ -43,18 +37,14 @@ export function StopCard({
   onChoose,
 }: {
   stop: Stop;
-  /** The stop's catalog entry, which knows the routes calling there. */
   entry: CatalogStop | undefined;
   language: Language;
   routeColors: ReadonlyMap<string, string>;
   from: Stop | null;
   to: Stop | null;
-  /** In the phone's drawer rather than floating over the map. */
   inline?: boolean;
-  /** Move focus to the stop's name, for a card opened from the keyboard. */
   focusHeading?: boolean;
   onClose: () => void;
-  /** `search` is set when the choice completes the trip. */
   onChoose: (target: StopTarget, search: boolean) => void;
 }) {
   const { t, i18n } = useLingui();
@@ -62,7 +52,6 @@ export function StopCard({
   const headingId = useId();
   const servedId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
-  // Where focus was when the card opened, to go back to on close.
   const opener = useRef<Element | null>(null);
 
   const name = stopName(stop, language);

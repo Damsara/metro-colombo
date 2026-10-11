@@ -18,10 +18,8 @@ export function isLanguage(value: string): value is Language {
   return (LANGUAGES as readonly string[]).includes(value);
 }
 
-/** The languages upstream data has names in. */
 export type NameLanguage = "en" | "si" | "ta";
 
-/** The language whose upstream names an interface language shows. */
 export function nameLanguage(language: Language): NameLanguage {
   return language === "si" || language === "ta" ? language : "en";
 }
@@ -49,20 +47,16 @@ export interface Stop {
   longitude: number;
   sequence_number?: number;
 }
-/** A route calling at a stop, and where that direction's buses end up. */
 export interface StopService {
   route: string;
   towards?: string;
 }
 export interface CatalogStop extends Stop {
-  /** Ids of every direction-specific stop merged into this entry. */
   ids: string[];
   routes: string[];
   towards?: string[];
-  /** Each route and direction calling here. */
   services?: StopService[];
 }
-/** A landmark and the stop nearest to it. */
 export interface Place {
   id: number;
   name: string;
@@ -103,14 +97,12 @@ export interface LiveBus {
   timestamp?: number;
 }
 
-// Stable identity for a live bus across position updates.
 export function busKey(bus: LiveBus): string {
   return bus.id ?? bus.registration_number ?? "";
 }
 
 const plate = (value: string) => value.replace(/[^\da-z]/gi, "").toUpperCase();
 
-/** The live position of a journey's assigned bus, if it is reporting now. */
 export function findLiveBus(
   buses: readonly LiveBus[],
   assigned: { id?: string; registration_number: string } | undefined,
@@ -135,11 +127,7 @@ function bestKnownTime(stop: JourneyStop): number {
   return Date.parse(stop.estimated_time ?? stop.scheduled_time ?? "");
 }
 
-/**
- * Whether a live assigned bus is running this ride now. A bus is assigned to
- * a whole day of departures, so reporting live alone may mean it is on
- * another route, heading the other way, or on an earlier run.
- */
+// A bus is assigned to a whole day of departures, so reporting live alone may mean it is on another route, heading the other way, or on an earlier run.
 export function isOnRide(bus: LiveBus, ride: Ride, now: number): boolean {
   if (bus.route_code && bus.route_code !== ride.route.code) return false;
   if (bus.direction_id && bus.direction_id !== ride.direction_id) return false;
@@ -150,7 +138,6 @@ export function isOnRide(bus: LiveBus, ride: Ride, now: number): boolean {
   return true;
 }
 
-/** How crowded a bus feels: roomy, filling up or crowded. */
 export type Crowding = "roomy" | "filling" | "crowded";
 
 interface Occupancy {
@@ -221,7 +208,6 @@ export interface JourneyOption {
     full_amount: number;
     half_amount: number;
     complete: boolean;
-    /** The fare category was assumed by the planner rather than known. */
     category_assumed?: boolean;
   };
   legs: Leg[];
@@ -241,7 +227,6 @@ export interface MapRoute {
   color: string;
   geometry: RouteGeometry;
 }
-/** The direction a live bus reports, or undefined when it doesn't say. */
 export function busDirection(
   route: Route | undefined,
   raw?: string,
@@ -256,7 +241,6 @@ export function busDirection(
   return Number.isInteger(index) ? directions[index] : undefined;
 }
 
-/** Resolve live-feed direction_id to a fare-service direction uuid. */
 export function resolveBusDirectionId(
   route: Route | undefined,
   raw?: string,
@@ -269,11 +253,8 @@ export interface RouteRef {
 }
 export interface MapViewProps {
   routes: MapRoute[];
-  /** Route metadata (directions), used to place buses on their path. */
   routeCatalog: Route[];
-  /** When set (bus selected), only this route line is drawn. */
   routeLock?: RouteRef | null;
-  /** Highlight these routes and fade the others. */
   emphasizeRoutes?: RouteRef[];
   stops: Stop[];
   buses: LiveBus[];
@@ -284,16 +265,11 @@ export interface MapViewProps {
   selectedBus: LiveBus | null;
   followBus: boolean;
   language: Language;
-  /** A tapped stop, or null for a tap on the map away from any stop or bus. */
   onStopSelect: (stop: Stop | null) => void;
   onBusSelect: (bus: LiveBus | null) => void;
   onFollowChange: (follow: boolean) => void;
   showLive: boolean;
   onShowLiveChange: (show: boolean) => void;
-  /**
-   * On phones, how much of the map the header (top) and the drawer (bottom)
-   * cover, in pixels, so framing and following keep clear of them.
-   */
   insets?: { top: number; bottom: number };
   busOverlay?: ReactNode;
 }
@@ -321,7 +297,6 @@ export function nextDay(date: string): string {
 }
 export const COLOMBO_OFFSET_MS = 5.5 * 3600000;
 
-/** The date in Colombo (YYYY-MM-DD) at `now`, which defaults to this moment. */
 export function colomboDate(now: number = Date.now()): string {
   return new Date(now + COLOMBO_OFFSET_MS).toISOString().slice(0, 10);
 }

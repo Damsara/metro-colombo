@@ -1,7 +1,6 @@
 import { CircleHelp } from "lucide-react";
 import { useLingui } from "@lingui/react/macro";
 
-/** A folded how-to and the small print, at the foot of the side panel. */
 export function HowToUse({ hidden }: { hidden: boolean }) {
   const { t } = useLingui();
   return (

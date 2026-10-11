@@ -49,11 +49,6 @@ async function locationGranted(): Promise<boolean> {
   }
 }
 
-/**
- * The trip being planned: its two stops and date, the search and its
- * results page, "use my location" for the starting stop and the recent
- * trips.
- */
 export function useTrip(stops: CatalogStop[]) {
   const { t, i18n } = useLingui();
   const { language } = useLanguage();
@@ -170,10 +165,8 @@ export function useTrip(stops: CatalogStop[]) {
     saveRecentTrips(trips);
   };
   const submit = () => search(from, to);
-  /** Searches straight away, for a trip finished from a stop's card. */
   const searchFromStop = (start: CatalogStop, end: CatalogStop) =>
     search(start, end, "stop");
-  /** Runs a remembered trip, or its way back when `reverse` is set. */
   const searchRecent = (trip: RecentTrip, reverse = false) => {
     const start = findStop(stops, reverse ? trip.to : trip.from);
     const end = findStop(stops, reverse ? trip.from : trip.to);

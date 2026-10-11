@@ -2,7 +2,6 @@ import { useCallback, useMemo } from "react";
 import { useLive } from "../api";
 import type { LiveBus } from "../types";
 
-/** Live bus positions, with each bus's route code filled in where the feed left it out. */
 export function useLiveBuses(routeCodeById: ReadonlyMap<string, string>) {
   const liveQuery = useLive();
   const buses = useMemo(
@@ -34,7 +33,6 @@ export function useLiveBuses(routeCodeById: ReadonlyMap<string, string>) {
   return {
     buses,
     unavailable,
-    /** Whether any response has arrived yet. */
     loaded: liveQuery.data !== undefined,
     /** When the latest response arrived, on this device's clock. */
     receivedAt: liveQuery.dataUpdatedAt,

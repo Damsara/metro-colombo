@@ -15,7 +15,6 @@ interface MapLayerInputs {
   buses: LiveBus[];
   selectedBus: LiveBus | null;
   routeCodeOf: (bus: LiveBus) => string | undefined;
-  /** The route shown in the panel (the open route, or the journey's first ride). */
   activeRoute: Route | undefined;
   direction: string | undefined;
   selectedJourney: JourneyOption | null;
@@ -26,7 +25,6 @@ interface MapLayerInputs {
   allStops: Stop[];
 }
 
-/** What the map should draw, worked out from the panel's state. */
 export function useMapLayers({
   tab,
   routes,
@@ -42,7 +40,6 @@ export function useMapLayers({
   routeStops,
   allStops,
 }: MapLayerInputs) {
-  // A followed bus pins the map to its own route and direction.
   const routeLock = useMemo(() => {
     if (!selectedBus) return null;
     const code = routeCodeOf(selectedBus);

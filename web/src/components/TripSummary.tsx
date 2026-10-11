@@ -5,7 +5,6 @@ import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
 import { IconButton } from "./ui/IconButton";
 
-/** The top of the results page: the trip searched for, and a way back to edit it. */
 export function TripSummary({
   fromName,
   toName,

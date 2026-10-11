@@ -15,10 +15,6 @@ const OPTIONS: { value: Language; label: string }[] = [
   { value: "ja", label: "日本語" },
 ];
 
-/**
- * Three buttons on wider screens; on phones, where the header is short, one
- * native drop-down that opens the system picker.
- */
 export function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage();
   const { t } = useLingui();
@@ -47,8 +43,7 @@ export function LanguageSwitcher() {
           );
         })}
       </div>
-      {/* The drop-down is invisible over a pill showing the current choice,
-          so the pill stays as narrow as its label. */}
+      {/* The drop-down is invisible over a pill showing the current choice, so the pill stays as narrow as its label. */}
       <label className="relative inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card pr-2.5 pl-3 text-sm font-semibold text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink xl:hidden">
         <span className="sr-only">{t`Language`}</span>
         <Globe size={16} aria-hidden="true" className="text-muted" />

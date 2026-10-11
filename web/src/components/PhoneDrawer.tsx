@@ -7,11 +7,6 @@ import { cycleSnap, SNAPS, type Snap } from "../lib/drawerSnap";
 // A press that moves further than this is a drag, not a tap.
 const TAP_SLOP_PX = 8;
 
-/**
- * The phone's bottom drawer over the full-screen map: always open, never
- * modal, resting at peek, half or full height. The map stays usable behind
- * it at every height.
- */
 export function PhoneDrawer({
   label,
   snap,
@@ -22,7 +17,6 @@ export function PhoneDrawer({
 }: {
   label: string;
   snap: Snap;
-  /** How tall the drawer stands at each snap, in pixels. */
   heights: Record<Snap, number>;
   viewport: number;
   onSnapChange: (snap: Snap) => void;
@@ -30,7 +24,6 @@ export function PhoneDrawer({
 }) {
   const { t } = useLingui();
   const stateId = useId();
-  // The snap before this one, so the handle knows which way it was going.
   const previous = useRef<Snap | null>(null);
   const shown = useRef(snap);
   useEffect(() => {
@@ -86,7 +79,6 @@ export function PhoneDrawer({
           role="region"
           aria-describedby={undefined}
           className="fixed inset-x-0 top-0 z-30 flex flex-col rounded-t-2xl border-t border-line bg-paper shadow-[0_-6px_24px_#211d1922] outline-none"
-          // The part below the screen at full height stays empty.
           style={{ height: viewport, paddingBottom: viewport - heights.full }}
           // Drags that start on a button must not end up pressing it.
           onPointerDownCapture={(event) => {

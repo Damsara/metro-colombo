@@ -46,13 +46,12 @@ const DISC_SEGMENTS = 32;
 const SHADOW_COLOR = parseInt(palette.ink.slice(1), 16);
 const SHADOW_OPACITY = 0.16;
 const SHADOW_HEIGHT = 0.03;
-const SHADOW_SIZE: [number, number] = [1.65, 6.3]; // width × length
+const SHADOW_SIZE: [number, number] = [1.65, 6.3];
 const HALO_OPACITY = 0.16;
 const SELECTED_HALO_OPACITY = 0.3;
 const HALO_HEIGHT = 0.02;
 const HALO_RADIUS = 8;
 
-/** One bus on the map: the group that moves, and the halo we recolour. */
 type BusInstance = {
   group: THREE.Group;
   halo: THREE.Mesh;
@@ -62,7 +61,6 @@ function materialsOf(mesh: THREE.Mesh): THREE.Material[] {
   return Array.isArray(mesh.material) ? mesh.material : [mesh.material];
 }
 
-// A see-through flat material for the shadow and halo discs under a bus.
 function discMaterial(color: number, opacity: number): THREE.MeshBasicMaterial {
   return new THREE.MeshBasicMaterial({
     color,
@@ -91,7 +89,6 @@ function repaint(material: THREE.Material): void {
   material.metalness = Math.min(material.metalness, MAX_METALNESS);
 }
 
-// Merge the static model once by material; all vehicles share these GPU resources.
 function prepareModel(model: THREE.Group): THREE.Group {
   const merged = mergeByMaterial(model);
   fitToBusLength(merged);
@@ -102,8 +99,6 @@ function prepareModel(model: THREE.Group): THREE.Group {
   return oriented;
 }
 
-// Bake every mesh's transform into its geometry and merge meshes that share a
-// material, so each bus draws in a handful of calls. Frees the originals.
 function mergeByMaterial(model: THREE.Group): THREE.Group {
   model.updateMatrixWorld(true);
   const batches = new Map<THREE.Material, THREE.BufferGeometry[]>();
@@ -133,8 +128,6 @@ function mergeByMaterial(model: THREE.Group): THREE.Group {
   return result;
 }
 
-// Scale the model to BUS_LENGTH_METERS nose to tail (along Z), centred on
-// the origin with its wheels on the ground.
 function fitToBusLength(model: THREE.Group): void {
   const bounds = new THREE.Box3().setFromObject(model);
   const center = bounds.getCenter(new THREE.Vector3());
@@ -161,31 +154,20 @@ function disposeObject(root: THREE.Object3D): void {
 }
 
 function busScaleAtZoom(zoom: number): number {
-  // Preserve real proportions, with a small readable footprint at network zoom.
   const metersPerPixel =
     (EARTH_CIRCUMFERENCE_METERS * Math.cos((ORIGIN[1] * Math.PI) / 180)) /
     (WORLD_PIXELS_AT_ZOOM_0 * 2 ** zoom);
   return Math.max(1, (MIN_BUS_PIXELS * metersPerPixel) / BUS_LENGTH_METERS);
 }
 
-/**
- * Live buses as 3D models in MapLibre's WebGL context. GPS fixes arrive every
- * few seconds; between them, `BusMotion` predicts movement along the route and
- * the layer samples it on every map frame, so animation never re-renders React.
- *
- * The three.js scene works in "local metres" around ORIGIN: x east, y up,
- * z south. That keeps numbers small (Mercator units are tiny, and float32
- * would make buses jitter) and lets the model be built at real size.
- */
+// The scene works in local metres around ORIGIN (x east, y up, z south) because Mercator units are tiny and float32 would make buses jitter.
 export class BusModelLayer implements CustomLayerInterface {
   readonly id = "metro-live-buses";
   readonly type = "custom" as const;
   readonly renderingMode = "3d" as const;
 
-  // Set in onAdd and cleared in onRemove.
   private map?: LibreMap;
   private renderer?: THREE.WebGLRenderer;
-  // The prepared bus model every vehicle clones; undefined until it loads.
   private template?: THREE.Group;
 
   private readonly scene = new THREE.Scene();
@@ -193,9 +175,6 @@ export class BusModelLayer implements CustomLayerInterface {
   // the camera itself stays at the identity.
   private readonly camera = new THREE.Camera();
 
-  // Local metres → Mercator: ORIGIN's Mercator position, Mercator units per
-  // metre there, and the matrix that maps (x east, y up, z south) onto
-  // Mercator's (x east, y south, z up).
   private readonly origin = MercatorCoordinate.fromLngLat(ORIGIN);
   private readonly meter = this.origin.meterInMercatorCoordinateUnits();
   private readonly localToMercator = new THREE.Matrix4()
@@ -203,14 +182,12 @@ export class BusModelLayer implements CustomLayerInterface {
     .scale(new THREE.Vector3(this.meter, -this.meter, this.meter))
     .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
 
-  // Scratch objects reused every frame and pick, to avoid garbage.
   private readonly projection = new THREE.Matrix4();
   private readonly raycaster = new THREE.Raycaster();
   private readonly near = new THREE.Vector3();
   private readonly far = new THREE.Vector3();
 
   private readonly motion = new BusMotion();
-  // Buses on the map, by busKey, and where each was last drawn.
   private readonly vehicles = new Map<string, BusInstance>();
   private readonly positions = new Map<string, [number, number]>();
   private selected = "";
@@ -218,10 +195,8 @@ export class BusModelLayer implements CustomLayerInterface {
   // Set once removed, so a model that finishes loading late is thrown away.
   private disposed = false;
 
-  // Shared by every bus; disposed once in onRemove.
   private readonly discGeometry = new THREE.CircleGeometry(1, DISC_SEGMENTS);
   private readonly shadowMaterial = discMaterial(SHADOW_COLOR, SHADOW_OPACITY);
-  // A soft red glow under every bus, brighter for the one you're following.
   private readonly haloMaterial = discMaterial(BUS_RED, HALO_OPACITY);
   private readonly selectedHaloMaterial = discMaterial(
     BUS_RED,
@@ -233,7 +208,6 @@ export class BusModelLayer implements CustomLayerInterface {
     gl: WebGLRenderingContext | WebGL2RenderingContext,
   ): void {
     this.map = map;
-    // Draw into MapLibre's own canvas and context, on top of what it drew.
     this.renderer = new THREE.WebGLRenderer({
       canvas: map.getCanvas(),
       context: gl,
@@ -243,7 +217,6 @@ export class BusModelLayer implements CustomLayerInterface {
     this.loadModel(map);
   }
 
-  /** New GPS fixes (or route data); pass an empty list to hide every bus. */
   setFixes(buses: LiveBus[], geometries: MapRoute[], routes: Route[]): void {
     this.motion.setRoutes(geometries, routes);
     this.motion.update(buses, performance.now());
@@ -260,7 +233,6 @@ export class BusModelLayer implements CustomLayerInterface {
     this.map?.triggerRepaint();
   }
 
-  /** Last rendered position of a bus, as [lng, lat]. */
   positionOf(key: string): [number, number] | undefined {
     return this.positions.get(key);
   }
@@ -283,16 +255,12 @@ export class BusModelLayer implements CustomLayerInterface {
     if (moving && !this.reducedMotion) map.triggerRepaint();
   }
 
-  /** The bus under a screen point (CSS pixels), if any. */
   pick(point: PointLike): string | null {
     if (!this.map || !this.vehicles.size) return null;
     const p = Array.isArray(point) ? { x: point[0], y: point[1] } : point;
-    // CSS pixels → clip space (-1..1, y up).
     const canvas = this.map.getCanvas();
     const x = (p.x / canvas.clientWidth) * 2 - 1;
     const y = 1 - (p.y / canvas.clientHeight) * 2;
-    // Back through last frame's projection to local metres, at the near and
-    // far planes, giving the ray under the pointer.
     this.near.set(x, y, -1).applyMatrix4(this.camera.projectionMatrixInverse);
     this.far.set(x, y, 1).applyMatrix4(this.camera.projectionMatrixInverse);
     this.raycaster.set(this.near, this.far.sub(this.near).normalize());
@@ -353,10 +321,6 @@ export class BusModelLayer implements CustomLayerInterface {
       });
   }
 
-  /**
-   * Move every bus to where BusMotion says it is now, add new ones and drop
-   * those that have gone. Returns whether any bus moved since last frame.
-   */
   private placeBuses(template: THREE.Group, scale: number): boolean {
     const present = new Set<string>();
     let moving = false;
@@ -371,7 +335,6 @@ export class BusModelLayer implements CustomLayerInterface {
         moving = true;
       this.positions.set(key, [bus.lng, bus.lat]);
       const { group, halo } = this.instanceFor(key, template);
-      // lng/lat → Mercator → local metres (Mercator y already points south).
       const coordinate = MercatorCoordinate.fromLngLat({
         lng: bus.lng,
         lat: bus.lat,
@@ -419,8 +382,6 @@ export class BusModelLayer implements CustomLayerInterface {
     return instance;
   }
 
-  // Local metres → Mercator (localToMercator) → clip space (MapLibre's
-  // matrix), folded into one projection; its inverse is kept for pick().
   private updateCamera(args: CustomRenderMethodInput): void {
     this.projection.fromArray(args.defaultProjectionData.mainMatrix);
     this.camera.projectionMatrix

@@ -9,18 +9,13 @@
   }
 }
 
-/* Solid surfaces instead of frosted glass when the user asks for that. */
 @custom-variant reduce-transparency (@media (prefers-reduced-transparency: reduce));
 
 @theme {
   --font-sans: "DM Sans", "Noto Sans Sinhala", "Noto Sans Tamil", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Colour, in four roles: charcoal (ink) for doing things, red for the bus
-     (the logo, live buses, bus actions), yellow for the bus's side stripe
-     (thin accents only, never text) and soft parchment for the surface, with
-     slightly lighter cards on it. Route colours stay the operator's. Every
-     colour in the UI comes from here; src/theme.ts mirrors these values. */
+  /* Yellow is for thin accents only, never text. src/theme.ts mirrors these values. */
   --color-paper: #f1ede4;
   --color-card: #f9f7f2;
   --color-field: #e7e1d5;
@@ -48,8 +43,6 @@
   --color-danger-200: #ebcbc3;
   --color-destination: #d26540;
 
-  /* Type scale. Sizes carry no line height of their own; text inherits the
-     line height of its container unless a `leading-*` is set. */
   --text-*: initial;
   --text-2xs: 11px;
   --text-xs: 12px;
@@ -67,7 +60,6 @@
   --leading-normal: 1.5;
   --leading-relaxed: 1.6;
 
-  /* Corners: chips, controls (buttons, inputs, notices), cards and sheets. */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -76,9 +68,7 @@
   --shadow-float: 0 4px 18px #211d192e;
   --shadow-menu: 0 10px 40px #211d1925;
 
-  /* Layout thresholds: phone (<761px), compact (≤1100px), wide (≥1600px).
-     `md` matches the JavaScript check that decides whether the map is shown
-     beside the panel. */
+  /* `md` matches the JavaScript check that decides whether the map is shown beside the panel. */
   --breakpoint-*: initial;
   --breakpoint-md: 761px;
   --breakpoint-lg: 1101px;
@@ -86,7 +76,6 @@
   --breakpoint-2xl: 1600px;
 
   --animate-follow-pulse: follow-pulse 1.6s ease-out infinite;
-  /* A panel page sliding in from the side (forward) or back. */
   --animate-page-forward: page-forward 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-page-back: page-back 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
   @keyframes page-forward {
@@ -174,7 +163,6 @@
       filter: brightness(0.97);
     }
   }
-  /* A charcoal ring with a gap of whatever surface is behind it. */
   button:focus-visible,
   a:focus-visible,
   input:focus-visible,
@@ -185,8 +173,7 @@
     outline: 2px solid var(--color-ink);
     outline-offset: 2px;
   }
-  /* Tracking tuned for Latin text pulls Sinhala and Tamil letter clusters
-     apart; this overrides every component's tracking. */
+  /* Tracking tuned for Latin text pulls Sinhala and Tamil letter clusters apart. */
   :lang(si) *,
   :lang(ta) * {
     letter-spacing: normal !important;
@@ -205,9 +192,7 @@
   }
 }
 
-/* MapLibre renders its own controls, styled by its own unlayered stylesheet.
-   These overrides stay unlayered too, so they compete with it by specificity
-   rather than always losing to it. */
+/* MapLibre's stylesheet is unlayered, so these overrides stay unlayered to compete by specificity instead of always losing. */
 .maplibregl-ctrl-group {
   background: var(--color-card) !important;
   border: 1px solid var(--color-line);
@@ -243,9 +228,7 @@
   outline: 2px solid var(--color-ink);
   outline-offset: -4px;
 }
-/* Phones: the controls ride on the right just above the drawer, as does the
-   attribution. App sets --map-controls-inset to the drawer's height, capped
-   at half the screen so the controls never slide under the header. */
+/* App sets --map-controls-inset to the drawer's height, capped at half the screen so the controls never slide under the header. */
 @media (max-width: 760px) {
   .maplibregl-ctrl-top-right,
   .maplibregl-ctrl-bottom-right {
@@ -258,14 +241,11 @@
     width: 48px !important;
     height: 48px !important;
   }
-  /* The attribution sits below the control column. */
   .maplibregl-ctrl-top-right {
     bottom: calc(var(--map-controls-inset, 0px) + 36px) !important;
   }
 }
-/* The live-bus toggle is our own control inside MapLibre's group. The group
-   selector out-ranks MapLibre's `display: block` for control buttons, which
-   Safari would otherwise use to pin the icon to the left. */
+/* The group selector out-ranks MapLibre's `display: block`, which Safari would use to pin the icon to the left. */
 .maplibregl-ctrl-group .map-live-toggle-ctrl {
   display: grid;
   place-items: center;

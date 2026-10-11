@@ -53,12 +53,10 @@ interface JourneyResultsProps {
   selected: JourneyOption | null;
   onSelect: (option: JourneyOption | null) => void;
   onRetry: () => void;
-  /** Search the same trip on the day after `plan.date`. */
   onNextDay: () => void;
   routeColors: ReadonlyMap<string, string>;
   liveBuses: readonly LiveBus[];
   onShowBus: (bus: LiveBus) => void;
-  /** Follow a live bus on this ride through to the stop you get off at. */
   onTrack?: (option: JourneyOption, ride: Ride, bus: LiveBus) => void;
 }
 
@@ -73,7 +71,6 @@ const FARE_FORMAT = new Intl.NumberFormat("en-LK", {
 const CLOCK_TICK_MS = 15_000;
 
 const STATE = "mt-5";
-// Each step's icon is joined to the next by a dotted line.
 const LEG =
   "relative flex gap-3 pb-5 not-last:after:absolute not-last:after:top-10 not-last:after:bottom-1 not-last:after:left-4 not-last:after:border-l-2 not-last:after:border-dotted not-last:after:border-line-strong";
 const LEG_ICON =
@@ -125,7 +122,6 @@ function stopTime(stop: Ride["board"]): string | undefined {
   return hasLiveEstimate(stop) ? stop.estimated_time : stop.scheduled_time;
 }
 
-/** The first ride whose assigned bus is live and running it now. */
 function liveRide(
   option: JourneyOption,
   liveBuses: readonly LiveBus[],
@@ -139,11 +135,6 @@ function liveRide(
   return undefined;
 }
 
-/**
- * How many stops the bus makes until it reaches `boardId`, on the direction's
- * full stop list: 1 when it is next, 0 while the bus is there, negative once
- * it has passed, null when the stop isn't on the list.
- */
 export function stopsAway(
   bus: Pick<LiveBus, "lat" | "lng">,
   stops: readonly Stop[],
@@ -155,11 +146,7 @@ export function stopsAway(
   return stopsUntil(position, board);
 }
 
-/**
- * Whether the operator has put a bus on the option's rides yet: "all",
- * "some" (a transfer with only one bus known) or "none". A ride without one
- * can't be tracked live.
- */
+// A ride without a bus can't be tracked live; "some" is a transfer with only one bus known.
 export function busAssignment(option: JourneyOption): "all" | "some" | "none" {
   const rides = option.legs.flatMap((leg) =>
     leg.kind === "ride" ? [leg.ride] : [],
@@ -170,7 +157,6 @@ export function busAssignment(option: JourneyOption): "all" | "some" | "none" {
   return assigned === rides.length ? "all" : assigned ? "some" : "none";
 }
 
-/** The option to mark "Next bus": the soonest one still to leave today. */
 export function nextBusIndex(
   options: readonly JourneyOption[],
   isToday: boolean,
@@ -259,7 +245,6 @@ function WalkLeg({ move, language }: { move: Move; language: Language }) {
   );
 }
 
-/** The live estimate for a stop when there is one, else its timetable time. */
 function StopTimeLine({
   stop,
   scheduledLabel,
@@ -431,7 +416,6 @@ function RideLeg({
   );
 }
 
-/** Each leg in order, with a change step between back-to-back rides. */
 function JourneySteps({
   option,
   language,
@@ -477,7 +461,6 @@ function JourneyLeg({
   );
 }
 
-/** "● Bus live · 3 stops away", with how full it is. */
 function LiveStatus({ ride, bus }: { ride: Ride; bus: LiveBus }) {
   const { t } = useLingui();
   const route = useRouteStops(ride.route.code, ride.direction_id);
@@ -508,10 +491,6 @@ function LiveStatus({ ride, bus }: { ride: Ride; bus: LiveBus }) {
   );
 }
 
-/**
- * One journey: a summary button that expands to its steps. The steps only
- * render while the card is selected.
- */
 function JourneyCard({
   option,
   cardId,
@@ -693,7 +672,6 @@ export default function JourneyResults({
       .sort((a, b) => boardTime(a) - boardTime(b));
   }, [plan, today, now]);
 
-  // A departure that has passed drops out of the list; release it from the map too.
   useEffect(() => {
     if (
       selected &&

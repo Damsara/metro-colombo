@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { BusFront } from "lucide-react";
 
-/** The page header: the Metro wordmark (linking home) and page actions. */
 export function AppHeader({
   homeLabel,
   suffix,
@@ -11,9 +10,7 @@ export function AppHeader({
   children,
 }: {
   homeLabel: string;
-  /** Small text after the wordmark, e.g. "API". */
   suffix?: string;
-  /** Reload the app from scratch, resetting any trip in progress. */
   reloadHome?: boolean;
   className?: string;
   children: ReactNode;
@@ -30,7 +27,6 @@ export function AppHeader({
       >
         <span className="relative grid h-12 w-11 place-items-center overflow-hidden rounded-lg bg-brand text-white max-md:h-10 max-md:w-9">
           <BusFront size={25} className="max-md:size-[22px]" />
-          {/* The yellow stripe along the side of a Metro bus. */}
           <span className="absolute inset-x-0 bottom-1.5 h-0.5 bg-stripe" />
         </span>
         <span>

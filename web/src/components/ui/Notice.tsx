@@ -6,10 +6,6 @@ const TONES = {
   danger: "border-danger-200 bg-danger-50 text-danger [&_svg]:text-danger",
 };
 
-/**
- * A message about the state of the page: an error, a warning, or an empty or
- * loading result. Announced to screen readers through `role`.
- */
 export function Notice({
   tone = "neutral",
   icon,

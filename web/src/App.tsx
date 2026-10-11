@@ -80,10 +80,7 @@ const MapView = lazy(() => import("./components/MapView"));
 
 const NO_BUSES: LiveBus[] = [];
 const POPULAR_STOPS = ["makumbura", "colombo fort", "kottawa"];
-// The control column and the attribution under it, so the column stops short
-// of the header.
 const CONTROLS_PX = 210;
-// Refreshes the tracked journey's live estimates.
 const TRACK_REFRESH_MS = 60_000;
 
 export default function App() {
@@ -101,9 +98,7 @@ function Home() {
     useTransitData();
   const [tab, setTab] = useState<"plan" | "routes">("plan");
   const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
-  // A stop opened from the keyboard moves focus to its card.
   const [stopFromKeyboard, setStopFromKeyboard] = useState(false);
-  // Phones show the map full screen with everything else in a drawer over it.
   const phone = !useMediaQuery("(min-width: 761px)");
   const [snap, setSnap] = useState<Snap>("peek");
   const viewport = useViewportHeight();
@@ -112,8 +107,7 @@ function Home() {
   const headerHeight = useElementHeight(headerRef);
   const snapHeight = snapHeights(viewport, headerHeight, safeBottom);
   const drawerInset = phone ? snapHeight[snap] : 0;
-  // The map keeps its framing and controls above half height at most, since
-  // a full-height drawer hides it anyway.
+  // A full-height drawer hides the map anyway, so framing stops at half height.
   const mapInset = Math.min(drawerInset, snapHeight.half);
 
   // Old links to the phone's full-screen map open with the drawer at peek.
@@ -155,8 +149,6 @@ function Home() {
         : "waiting";
   const [frameRide, setFrameRide] = useState<Ride | null>(null);
 
-  // The Plan tab shows the selected journey's first ride; the Routes tab shows
-  // the route the user opened.
   const firstRide = selectedJourney?.legs.find((leg) => leg.kind === "ride");
   const firstRideTrip = firstRide?.kind === "ride" ? firstRide.ride : undefined;
   const markRide = tracking.active ? tracking.ride : firstRideTrip;
@@ -196,8 +188,6 @@ function Home() {
     allStops: catalog.stops,
   });
 
-  // Picking a bus also opens the map on phones and, on the Bus routes tab,
-  // the route it's on.
   const selectBus = selection.select;
   const showRouteOf = browser.showRouteOf;
   const handleBusSelect = useCallback(
@@ -231,7 +221,6 @@ function Home() {
     if (trackingPlan && trackedLive && !selection.selectedBusId)
       selectBus(trackedLive);
   }, [trackingPlan, trackedLive, selection.selectedBusId, selectBus]);
-  // Ending tracking, by button or by Back, lets go of the bus.
   const wasTracking = useRef(false);
   const trackedRide = useRef<Ride | null>(null);
   useEffect(() => {
@@ -254,7 +243,6 @@ function Home() {
     return () => window.clearInterval(interval);
   }, [tracking.active, refetchJourney]);
 
-  // Move the drawer to suit what the user just asked for.
   const viewJourney = selectedJourney ? journeyKey(selectedJourney) : null;
   const viewBus = selectedBus ? busKey(selectedBus) : null;
   const viewRoute = browser.routeCode;
@@ -340,7 +328,6 @@ function Home() {
     ],
     [t, trip.recentStops, trip.nearbyStops, popularStops],
   );
-  // The catalog's name in the current language, or the remembered one.
   const recentName = (stop: RecentStop) => {
     const entry = findStop(catalog.stops, stop);
     return entry ? stopName(entry, language) : stop.name;
@@ -353,8 +340,6 @@ function Home() {
         : undefined,
     [catalog.stops, selectedStop],
   );
-  // On phones the card takes over the drawer; closing it puts the drawer
-  // back where it was.
   const snapBeforeStop = useRef<Snap | null>(null);
   const openStop = (stop: Stop, keyboard = false) => {
     if (!selectedStop) snapBeforeStop.current = snap;
@@ -367,7 +352,6 @@ function Home() {
     snapBeforeStop.current = null;
   };
   const changeSnap = (next: Snap) => {
-    // Lowering the drawer to peek puts the stop's card away.
     if (next === "peek" && selectedStop) {
       setSelectedStop(null);
       snapBeforeStop.current = null;
@@ -391,7 +375,6 @@ function Home() {
       trip.searchFromStop(entry, trip.to);
       return;
     }
-    // A stop can't be both ends, so taking one end frees the other.
     if (target === "from") {
       trip.changeFrom(entry);
       if (trip.to && sameStop(stop, trip.to)) trip.changeTo(null);
@@ -399,7 +382,6 @@ function Home() {
       trip.changeTo(entry);
       if (trip.from && sameStop(stop, trip.from)) trip.changeFrom(null);
     }
-    // Bring the form up enough to show both stops and the search button.
     setSnap((current) => (current === "peek" ? "half" : current));
   };
   const selectTripJourney = trip.selectJourney;
@@ -474,8 +456,6 @@ function Home() {
   // moves the drawer.
   const panelScrolls = !phone || snap === "full";
   const formRef = useRef<HTMLDivElement>(null);
-  // At peek a phone shows "Where to?" first, Uber-style; it opens the
-  // form's own destination picker.
   const whereToBar = phone && snap === "peek" && tab === "plan" && !showResults;
   const stopCard = selectedStop && (
     <StopCard
@@ -534,7 +514,6 @@ function Home() {
         </div>
       )}
       <Tabs
-        // While tracking, a phone's drawer keeps to the bus.
         className={`border-b border-line px-6 pt-4.5 pb-3.5 max-md:px-4 max-md:pt-0 max-md:pb-2 ${
           trackingPlan || cardInDrawer ? "max-md:hidden" : ""
         }`}
@@ -560,7 +539,6 @@ function Home() {
         className={`min-h-0 flex-1 overscroll-contain px-7.5 pt-7.5 pb-5 max-lg:px-6 max-lg:py-6 max-md:px-4 max-md:pt-3 max-md:pb-6 2xl:px-10 2xl:py-9 ${
           panelScrolls ? "touch-pan-y overflow-y-auto" : "overflow-hidden"
         }`}
-        // At full height, a drag inside scrolls the panel instead.
         data-vaul-no-drag={phone && panelScrolls ? "" : undefined}
       >
         {trackingPlan ? (
@@ -603,7 +581,6 @@ function Home() {
         ) : tab === "plan" ? (
           <div
             key="form"
-            // Coming back from the results page slides the form in from the left.
             className={request ? "motion-safe:animate-page-back" : ""}
           >
             <h1 className="sr-only">{t`Where would you like to go?`}</h1>
@@ -838,7 +815,6 @@ function Home() {
           } as CSSProperties
         }
       >
-        {/* On phones the header floats, frosted, over the map. */}
         <div
           ref={headerRef}
           className="relative z-40 max-md:absolute max-md:inset-x-0 max-md:top-0"

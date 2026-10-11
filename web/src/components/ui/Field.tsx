@@ -1,10 +1,6 @@
 import type { ReactNode, SelectHTMLAttributes } from "react";
 import { ChevronDown } from "lucide-react";
 
-/**
- * A labelled form control. `inline` puts the label beside the control inside
- * a bordered box; `stacked` puts it above.
- */
 export function Field({
   label,
   layout = "stacked",
@@ -39,10 +35,7 @@ export function Field({
   );
 }
 
-/**
- * A drop-down list. The native control is restyled (Safari otherwise keeps
- * its own compact look and ignores the height), with our own chevron.
- */
+/** The native control is restyled because Safari otherwise keeps its own compact look and ignores the height. */
 export function Select({
   className = "",
   ...props

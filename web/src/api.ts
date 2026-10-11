@@ -34,7 +34,6 @@ async function get<T>(path: string, signal: AbortSignal): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-/** `/routes/:code/<resource>`, for one direction when one is given. */
 function routePath(
   code: string,
   resource: "stops" | "geometry",
@@ -75,12 +74,7 @@ export function distanceMeters(a: LatLng, b: LatLng): number {
 }
 
 export function useStopCatalog(routes: Route[]) {
-  // Upstream gives each stop a separate id and code per direction, so the
-  // same stop shows up once for each side of the road, with slightly
-  // different coordinates. Same-named stops are merged only when they're
-  // close together: plenty of places share a name, and a stop on another
-  // road stays separate.
-  // `combine` is stable per `routes`, so this only re-runs when data changes.
+  // Upstream gives each stop a separate id and code per direction; same-named stops are merged only when close together, since plenty of places share a name.
   const combine = useCallback(
     (queries: UseQueryResult<RouteStops[]>[]) => {
       const byName = new Map<string, CatalogStop[]>();
@@ -250,10 +244,6 @@ const FEED_INTERVAL_MS = 5000;
 const FEED_MARGIN_MS = 400;
 const FEED_RETRY_MS = 1000;
 
-/**
- * Delay before the next /live poll, timed to land just after the next
- * upstream update rather than up to 5 s after it.
- */
 export function nextLivePoll(feed: LiveFeed | undefined): number {
   const age = feed?.success ? feed.age_ms : undefined;
   // No timing to align to (old server, disconnected feed): plain interval.

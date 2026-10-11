@@ -21,7 +21,6 @@ import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
 import { Notice } from "./ui/Notice";
 
-/** Every route, busiest first. */
 export function RouteList({
   routes,
   stops,
@@ -29,7 +28,6 @@ export function RouteList({
   onOpen,
 }: {
   routes: Route[];
-  /** The stop catalogue, for each route's stop count. */
   stops: CatalogStop[];
   liveCountByRoute: ReadonlyMap<string, number>;
   onOpen: (route: Route) => void;
@@ -96,7 +94,6 @@ export function RouteList({
   );
 }
 
-/** One route: its direction, live buses and stops in order. */
 export function RouteDetail({
   route,
   directionIndex,
@@ -142,7 +139,6 @@ export function RouteDetail({
         .sort((a, b) => (a.sequence_number ?? 0) - (b.sequence_number ?? 0)),
     [stops],
   );
-  // Each live bus in this direction sits at its nearest stop in the list.
   const busesByStop = useMemo(() => {
     const placed = new Map<number, LiveBus[]>();
     if (!ordered.length) return placed;
@@ -255,8 +251,7 @@ export function RouteDetail({
               key={stop.id}
               className="relative not-last:before:absolute not-last:before:top-1/2 not-last:before:-bottom-1/2 not-last:before:-left-px not-last:before:w-0.5 not-last:before:bg-line"
             >
-              {/* The whole row, dot included, opens the stop's card; tapping
-                  the open stop again closes it. */}
+              {/* The whole row, dot included, opens the stop's card; tapping the open stop again closes it. */}
               <button
                 type="button"
                 className="group relative -ml-3 flex min-h-16 w-[calc(100%+12px)] items-center gap-3.5 rounded-md py-3 pr-2 pl-1.5 text-left aria-pressed:bg-tint-100 hover-fine:not-aria-pressed:bg-tint-50"
@@ -311,7 +306,6 @@ export function RouteDetail({
   );
 }
 
-/** A live bus, listed under the stop it's nearest to. */
 function BusAtStop({
   bus,
   nearName,

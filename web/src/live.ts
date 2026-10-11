@@ -8,7 +8,6 @@ function asString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-// Validate live positions from `/api/live` before they reach the map.
 export function normalizeBuses(values: readonly unknown[]): LiveBus[] {
   const buses: LiveBus[] = [];
   for (const value of values) {
