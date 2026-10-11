@@ -1,4 +1,5 @@
 import type { FeatureCollection, Geometry } from "geojson";
+import type { ReactNode } from "react";
 
 export type Language = "en" | "si" | "ta";
 
@@ -275,8 +276,7 @@ export interface MapViewProps {
    * cover, in pixels, so framing and following keep clear of them.
    */
   insets?: { top: number; bottom: number };
-  /** The floating card for the selected bus; tracking shows it in the panel instead. */
-  showBusPill?: boolean;
+  busOverlay?: ReactNode;
 }
 
 export function stopName(stop: Stop, language: Language): string {

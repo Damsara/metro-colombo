@@ -27,7 +27,6 @@ import {
 import { routeColor as colorForRoute } from "../lib/routeColor";
 import { palette } from "../theme";
 import { BusModelLayer } from "./BusModelLayer";
-import { FollowBusPill } from "./FollowBusPill";
 import { Button } from "./ui/Button";
 import { Notice } from "./ui/Notice";
 import {
@@ -485,16 +484,13 @@ export default function MapView(props: Props) {
     selectedJourney,
     selectedBus,
     followBus,
-    followState,
     frameRide = null,
     language,
-    onBusSelect,
-    onFollowEvent,
     showLive,
     insets,
     routeLock = null,
     emphasizeRoutes = NO_ROUTES,
-    showBusPill = true,
+    busOverlay,
   } = props;
   const { t } = useLingui();
   const selectedBusKey = selectedBus ? busKey(selectedBus) : "";
@@ -1085,14 +1081,7 @@ export default function MapView(props: Props) {
           className={`relative h-full w-full ${status === "unavailable" ? "invisible" : ""}`}
           aria-hidden={status === "unavailable"}
         />
-        {status === "ready" && selectedBus && showBusPill && (
-          <FollowBusPill
-            bus={selectedBus}
-            state={followState ?? "following"}
-            onFollow={() => onFollowEvent({ type: "follow" })}
-            onRelease={() => onBusSelect(null)}
-          />
-        )}
+        {status === "ready" && busOverlay}
         {status === "loading" && (
           <p className={MAP_STATUS} role="status">
             {t`Loading map…`}

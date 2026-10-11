@@ -24,6 +24,7 @@ import { track } from "./lib/analytics";
 import { MAP_STATUS } from "./classNames";
 import { AppHeader } from "./components/AppHeader";
 import { PrivacyChoicesLink } from "./components/ConsentPrompt";
+import { FollowBusPill } from "./components/FollowBusPill";
 import { HowToUse } from "./components/HowToUse";
 import JourneyResults, { journeyKey } from "./components/JourneyResults";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
@@ -836,7 +837,16 @@ function Home() {
                 followBus={selection.followBus}
                 followState={selection.followState}
                 frameRide={tab === "plan" ? frameRide : null}
-                showBusPill={showBusPill}
+                busOverlay={
+                  selectedBus && showBusPill ? (
+                    <FollowBusPill
+                      bus={selectedBus}
+                      state={selection.followState ?? "following"}
+                      onFollow={() => selection.dispatch({ type: "follow" })}
+                      onRelease={() => handleBusSelect(null)}
+                    />
+                  ) : null
+                }
                 language={language}
                 onStopSelect={(stop) => (stop ? openStop(stop) : closeStop())}
                 onBusSelect={handleBusSelect}
