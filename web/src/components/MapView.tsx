@@ -44,6 +44,7 @@ import { decorationImages } from "../occasions/decorations";
 import type { DecorationId } from "../occasions/types";
 import { BusModelLayer } from "./BusModelLayer";
 import { LanternModelLayer } from "./LanternModelLayer";
+import { roadBearing } from "../lib/roadBearing";
 import { MapModeControl } from "./MapModeControl";
 import { Button } from "./ui/Button";
 import { Notice } from "./ui/Notice";
@@ -1283,8 +1284,26 @@ export default function MapView(props: Props) {
     const stops = stopMark ? (markedStops ?? []) : [];
     const lanterns = stopMark === "lantern" && stops.length > 0;
     const modelled = lanterns && mapMode === "3d";
+    const roads = modelled
+      ? routes.flatMap((route) =>
+          route.geometry.features.flatMap((feature) =>
+            feature.geometry
+              ? realLines(feature.geometry).flatMap((line) =>
+                  line.type === "LineString"
+                    ? [line.coordinates as [number, number][]]
+                    : (line.coordinates as [number, number][][]),
+                )
+              : [],
+          ),
+        )
+      : [];
     lanternLayerRef.current?.setStops(
-      modelled ? stops.map((stop) => [stop.longitude, stop.latitude]) : [],
+      modelled
+        ? stops.map((stop) => {
+            const lngLat: [number, number] = [stop.longitude, stop.latitude];
+            return { lngLat, roadBearing: roadBearing(lngLat, roads) };
+          })
+        : [],
     );
     if (lanterns && !map.getSource(FESTIVE_CREDIT)) {
       map.addSource(FESTIVE_CREDIT, {
@@ -1343,7 +1362,7 @@ export default function MapView(props: Props) {
     return () => {
       cancelled = true;
     };
-  }, [stopMark, markedStops, mapMode, attempt, status]);
+  }, [stopMark, markedStops, mapMode, routes, attempt, status]);
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");

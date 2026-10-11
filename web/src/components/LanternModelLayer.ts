@@ -34,7 +34,26 @@ const ARM_LENGTH = 0.55;
 const ARM_RISE = 0.18;
 const BAMBOO = 0xc8a464;
 
-type Stand = { group: THREE.Group; pivot: THREE.Group };
+export type LanternStop = {
+  lngLat: [number, number];
+  // Degrees clockwise from north, either way along the road; null off-road.
+  roadBearing: number | null;
+};
+
+type Stand = {
+  group: THREE.Group;
+  pivot: THREE.Group;
+  stop: THREE.Vector3;
+  toRoad: THREE.Vector2;
+  wind: THREE.Vector2;
+};
+
+// The pole stands at the roadside and its arm reaches back over the stop.
+function towardsRoad(roadBearing: number | null): THREE.Vector2 {
+  if (roadBearing === null) return WIND_TOWARDS.clone();
+  const radians = THREE.MathUtils.degToRad(roadBearing);
+  return new THREE.Vector2(Math.cos(radians), Math.sin(radians));
+}
 
 function lanternScaleAtZoom(zoom: number): number {
   const metersPerPixel =
@@ -86,15 +105,7 @@ function poleParts(): {
     8,
   ).translate(0, POLE_HEIGHT / 2, 0);
   const top = new THREE.Vector3(0, POLE_HEIGHT * 0.96, 0);
-  const tip = top
-    .clone()
-    .add(
-      new THREE.Vector3(
-        WIND_TOWARDS.x * ARM_LENGTH,
-        ARM_RISE,
-        WIND_TOWARDS.y * ARM_LENGTH,
-      ),
-    );
+  const tip = top.clone().add(new THREE.Vector3(ARM_LENGTH, ARM_RISE, 0));
   const direction = tip.clone().sub(top);
   const arm = new THREE.CylinderGeometry(
     POLE_RADIUS * 0.45,
@@ -139,7 +150,7 @@ export class LanternModelLayer implements CustomLayerInterface {
     roughness: 0.85,
   });
 
-  private stops: [number, number][] = [];
+  private stops: LanternStop[] = [];
   private stands: Stand[] = [];
   private reducedMotion = false;
   private nextFrame?: ReturnType<typeof setTimeout>;
@@ -161,7 +172,7 @@ export class LanternModelLayer implements CustomLayerInterface {
     this.rebuild();
   }
 
-  setStops(stops: [number, number][]): void {
+  setStops(stops: LanternStop[]): void {
     this.stops = stops;
     if (stops.length) this.load();
     this.rebuild();
@@ -183,15 +194,18 @@ export class LanternModelLayer implements CustomLayerInterface {
     const scale = lanternScaleAtZoom(map.getZoom());
     const spacing = scale * STAND_SPACING;
     const shown: THREE.Vector3[] = [];
-    this.stands.forEach(({ group, pivot }, index) => {
-      group.visible = shown.every(
-        (other) => other.distanceTo(group.position) >= spacing,
-      );
+    this.stands.forEach(({ group, pivot, stop, toRoad, wind }, index) => {
+      group.visible = shown.every((other) => other.distanceTo(stop) >= spacing);
       if (!group.visible) return;
-      shown.push(group.position);
+      shown.push(stop);
       group.scale.setScalar(scale);
-      const tilt = windy ? windTilt(group.position, index, now) : 0;
-      pivot.rotation.set(-tilt * WIND_TOWARDS.y, 0, tilt * WIND_TOWARDS.x);
+      group.position.set(
+        stop.x - toRoad.x * ARM_LENGTH * scale,
+        0,
+        stop.z - toRoad.y * ARM_LENGTH * scale,
+      );
+      const tilt = windy ? windTilt(stop, index, now) : 0;
+      pivot.rotation.set(-tilt * wind.y, 0, tilt * wind.x);
     });
     this.projection.fromArray(args.defaultProjectionData.mainMatrix);
     this.camera.projectionMatrix
@@ -217,7 +231,7 @@ export class LanternModelLayer implements CustomLayerInterface {
 
   private onScreen(map: LibreMap): boolean {
     const bounds = map.getBounds();
-    return this.stops.some((stop) => bounds.contains(stop));
+    return this.stops.some((stop) => bounds.contains(stop.lngLat));
   }
 
   private scheduleFrame(map: LibreMap): void {
@@ -256,9 +270,12 @@ export class LanternModelLayer implements CustomLayerInterface {
     for (const { group } of this.stands) this.scene.remove(group);
     this.stands = [];
     if (this.templates.length) {
-      this.stops.forEach(([lng, lat], index) => {
+      this.stops.forEach(({ lngLat: [lng, lat], roadBearing }, index) => {
         const coordinate = MercatorCoordinate.fromLngLat({ lng, lat });
+        const toRoad = towardsRoad(roadBearing);
+        const yaw = Math.atan2(-toRoad.y, toRoad.x);
         const group = new THREE.Group();
+        group.rotation.y = yaw;
         group.add(new THREE.Mesh(this.parts.pole, this.bamboo));
         group.add(new THREE.Mesh(this.parts.arm, this.bamboo));
         const pivot = new THREE.Group();
@@ -267,13 +284,18 @@ export class LanternModelLayer implements CustomLayerInterface {
         model.rotation.y = index * 0.9;
         pivot.add(model);
         group.add(pivot);
-        group.position.set(
+        const stop = new THREE.Vector3(
           (coordinate.x - this.origin.x) / this.meter,
           0,
           (coordinate.y - this.origin.y) / this.meter,
         );
+        const wind = new THREE.Vector2(
+          WIND_TOWARDS.x * Math.cos(yaw) - WIND_TOWARDS.y * Math.sin(yaw),
+          WIND_TOWARDS.x * Math.sin(yaw) + WIND_TOWARDS.y * Math.cos(yaw),
+        );
+        group.position.copy(stop);
         this.scene.add(group);
-        this.stands.push({ group, pivot });
+        this.stands.push({ group, pivot, stop, toRoad, wind });
       });
     }
     this.map?.triggerRepaint();
