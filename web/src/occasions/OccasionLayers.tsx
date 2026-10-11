@@ -8,10 +8,12 @@ export function OccasionLayers({
   theme,
   playMoment,
   onMomentDone,
+  bottomInset = 0,
 }: {
   theme: OccasionTheme;
   playMoment: boolean;
   onMomentDone: () => void;
+  bottomInset?: number;
 }) {
   useEffect(() => {
     if (!playMoment) return;
@@ -33,7 +35,14 @@ export function OccasionLayers({
           }}
         />
       )}
-      {Moment && <Moment />}
+      {Moment && (
+        <div
+          className="absolute inset-x-0 top-0"
+          style={{ bottom: bottomInset }}
+        >
+          <Moment />
+        </div>
+      )}
     </div>
   );
 }

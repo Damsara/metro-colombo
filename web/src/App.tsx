@@ -954,6 +954,7 @@ function Home() {
                 theme={festive.theme}
                 playMoment={festive.playMoment && richDevice}
                 onMomentDone={festive.momentDone}
+                bottomInset={phone ? mapInset : 0}
               />
             )}
             <div
