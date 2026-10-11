@@ -302,28 +302,15 @@ function Home() {
     }
     wasBusInDrawer.current = busInDrawer;
   }, [busInDrawer, viewBus]);
-  const [cardOpenFor, setCardOpenFor] = useState<string | null>(null);
   useEffect(() => {
-    if (viewBus) return;
-    setCardAsideFor(null);
-    setCardOpenFor(null);
+    if (!viewBus) setCardAsideFor(null);
   }, [viewBus]);
-  const cardExpanded = phone
-    ? busInDrawer && snap !== "peek"
-    : !!cardBus && cardOpenFor === viewBus;
   const cardRouteCode = cardBus ? routeCodeOf(cardBus) : undefined;
   const cardRoute = cardRouteCode ?? "unknown";
   const busLine = busJourney?.line;
   const cardDestination = routes
     .find((route) => route.code === busLine?.routeCode)
     ?.directions.find((item) => item.id === busLine?.directionId)?.end_location;
-  // Once per opening, not per live update.
-  const expandedRoute = useRef(cardRoute);
-  expandedRoute.current = cardRoute;
-  useEffect(() => {
-    if (cardExpanded)
-      track("bus_card_expand", { route: expandedRoute.current });
-  }, [cardExpanded]);
 
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -449,10 +436,6 @@ function Home() {
     ? 0
     : Math.min(mapInset, viewport - headerHeight - CONTROLS_PX);
 
-  const expandCard = (expanded: boolean) => {
-    if (phone) setSnap(expanded ? "half" : "peek");
-    else setCardOpenFor(expanded ? viewBus : null);
-  };
   const seeAllStops = () => {
     if (!cardBus) return;
     const code = routeCodeOf(cardBus);
@@ -471,11 +454,11 @@ function Home() {
       result={busJourney}
       color={routeColor(routeColors.get(cardRoute))}
       language={language}
-      expanded={cardExpanded}
+      expanded={busInDrawer && snap !== "peek"}
       inline={phone}
       onFollow={() => selection.dispatch({ type: "follow" })}
       onRelease={() => handleBusSelect(null)}
-      onExpand={expandCard}
+      onExpand={(expanded) => setSnap(expanded ? "half" : "peek")}
       onSeeAllStops={seeAllStops}
     />
   );

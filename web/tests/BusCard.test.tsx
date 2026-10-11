@@ -112,10 +112,12 @@ function render(
   {
     state = "following",
     expanded = false,
+    inline = true,
     onSeeAllStops = () => {},
   }: {
     state?: FollowState;
     expanded?: boolean;
+    inline?: boolean;
     onSeeAllStops?: () => void;
   } = {},
 ): string {
@@ -132,6 +134,7 @@ function render(
           color: "#0a7d55",
           language: "en",
           expanded,
+          inline,
           onFollow: () => {},
           onRelease: () => {},
           onExpand: () => {},
@@ -176,6 +179,10 @@ test("expanded, it lists every stop left with the bus and Next", () => {
   const html = render(ready(mine), { expanded: true });
   const words = text(html);
   assert.match(html, /aria-expanded="true"[^>]*>Hide stops/);
+  assert.match(
+    render(ready(mine), { expanded: true, inline: false }),
+    /aria-expanded="false"[^>]*>Show stops/,
+  );
   assert.match(words, /6 stops to Nugegoda/);
   assert.match(
     words,

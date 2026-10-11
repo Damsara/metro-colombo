@@ -1,7 +1,13 @@
 import { plural } from "@lingui/core/macro";
 import { Plural, useLingui } from "@lingui/react/macro";
-import { BusFront, CircleCheck, MapPinOff, X } from "lucide-react";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { CircleCheck, MapPinOff, X } from "lucide-react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { minutesLabel, timeLabel, towards } from "../i18n";
 import { liveSignal, type FollowState } from "../lib/follow";
 import { followStatus } from "../lib/followLabels";
@@ -11,12 +17,11 @@ import type { Reassignment, Tracking } from "../state/useTracking";
 import { stopName, type Language } from "../types";
 import { OccupancyMeter } from "./OccupancyBadge";
 import { RouteChip } from "./RouteChip";
+import { BusMarker, StopDot, TIMELINE_DOT, TIMELINE_ROW } from "./Timeline";
 import { Button } from "./ui/Button";
 import { cardClass } from "./ui/Card";
 
-const ROW =
-  "relative flex min-h-9 items-center gap-3 not-last:after:absolute not-last:after:top-6.5 not-last:after:-bottom-2.5 not-last:after:left-2.5 not-last:after:border-l-2 not-last:after:border-line-strong";
-const DOT = "grid size-5 shrink-0 place-items-center";
+const LINE = { "--line": "var(--color-line-strong)" } as CSSProperties;
 
 /**
  * The stops from the bus to the one that matters next, bus in red, your stop
@@ -39,15 +44,17 @@ function ProgressLine({
   const rows = progressRows(stops, position, target);
   if (!rows.length) return null;
   return (
-    <ol className="mt-4 flex flex-col gap-2" aria-label={t`Stops to go`}>
+    <ol
+      className="mt-4 flex flex-col gap-2"
+      style={LINE}
+      aria-label={t`Stops to go`}
+    >
       {rows.map((row, index) => {
         if (row.kind === "bus")
           return (
-            <li key="bus" className={ROW}>
-              <span className={DOT}>
-                <span className="grid size-5 place-items-center rounded-full bg-bus text-white">
-                  <BusFront size={12} aria-hidden="true" />
-                </span>
+            <li key="bus" className={TIMELINE_ROW}>
+              <span className={TIMELINE_DOT}>
+                <BusMarker />
               </span>
               <span className="text-sm font-semibold text-bus">
                 {t`Your bus`}
@@ -56,8 +63,11 @@ function ProgressLine({
           );
         if (row.kind === "gap")
           return (
-            <li key={`gap-${index}`} className={`${ROW} text-sm text-muted`}>
-              <span className={DOT} aria-hidden="true">
+            <li
+              key={`gap-${index}`}
+              className={`${TIMELINE_ROW} text-sm text-muted`}
+            >
+              <span className={TIMELINE_DOT} aria-hidden="true">
                 <span className="size-1 rounded-full bg-faint" />
               </span>
               <Plural
@@ -68,17 +78,9 @@ function ProgressLine({
             </li>
           );
         return (
-          <li key={`stop-${row.index}`} className={ROW}>
-            <span className={DOT} aria-hidden="true">
-              {row.bus ? (
-                <span className="grid size-5 place-items-center rounded-full bg-bus text-white">
-                  <BusFront size={12} />
-                </span>
-              ) : row.target ? (
-                <span className="size-4 rounded-full border-4 border-ink bg-card" />
-              ) : (
-                <span className="size-2.5 rounded-full border-2 border-line-strong bg-card" />
-              )}
+          <li key={`stop-${row.index}`} className={TIMELINE_ROW}>
+            <span className={TIMELINE_DOT} aria-hidden="true">
+              {row.bus ? <BusMarker /> : <StopDot marked={row.target} />}
             </span>
             <span
               className={`min-w-0 flex-1 truncate ${row.target ? "text-base font-semibold" : "text-sm"}`}

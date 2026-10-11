@@ -1,8 +1,9 @@
 import { plural } from "@lingui/core/macro";
 import { Plural, useLingui } from "@lingui/react/macro";
 import { ArrowRight, BusFront, ChevronDown, X } from "lucide-react";
-import { useId, type CSSProperties } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { towards } from "../i18n";
+import { track } from "../lib/analytics";
 import {
   journeyStrip,
   type BusJourney,
@@ -12,17 +13,21 @@ import { liveSignal, type FollowState } from "../lib/follow";
 import { followStatus } from "../lib/followLabels";
 import { usePlaceName } from "../lib/placeNames";
 import type { BusJourneyResult } from "../state/useBusJourney";
-import { occupancy, stopName, type Language, type LiveBus } from "../types";
+import {
+  busKey,
+  occupancy,
+  stopName,
+  type Language,
+  type LiveBus,
+} from "../types";
 import { OccupancyMeter } from "./OccupancyBadge";
 import { RouteChip } from "./RouteChip";
 import { Button } from "./ui/Button";
+import { BusMarker, StopDot, TIMELINE_DOT, TIMELINE_ROW } from "./Timeline";
 import { IconButton } from "./ui/IconButton";
 
 const FLOATING =
   "absolute top-3.5 left-1/2 z-10 flex max-h-[calc(100%-28px)] w-[min(440px,calc(100%-152px))] -translate-x-1/2 flex-col rounded-2xl bg-card text-ink shadow-float";
-const ROW =
-  "relative flex min-h-9 items-center gap-3 not-last:after:absolute not-last:after:top-6.5 not-last:after:-bottom-2.5 not-last:after:left-2.5 not-last:after:border-l-2 not-last:after:border-(--line)";
-const DOT = "grid size-5 shrink-0 place-items-center";
 
 export function BusCard({
   bus,
@@ -32,7 +37,7 @@ export function BusCard({
   result,
   color,
   language,
-  expanded,
+  expanded = false,
   inline = false,
   onFollow,
   onRelease,
@@ -46,34 +51,48 @@ export function BusCard({
   result: BusJourneyResult | null;
   color: string;
   language: Language;
-  expanded: boolean;
+  expanded?: boolean;
   inline?: boolean;
   onFollow: () => void;
   onRelease: () => void;
-  onExpand: (expanded: boolean) => void;
+  onExpand?: (expanded: boolean) => void;
   onSeeAllStops: () => void;
 }) {
   const { i18n, t } = useLingui();
   const place = usePlaceName();
   const stopsId = useId();
+  const key = busKey(bus);
+  const [openFor, setOpenFor] = useState<string | null>(null);
+  const open = inline ? expanded : openFor === key;
+  const setOpen = (next: boolean) => {
+    if (inline) onExpand?.(next);
+    else setOpenFor(next ? key : null);
+  };
+  // Once per opening, not per live update.
+  const expandedRoute = useRef(routeCode);
+  expandedRoute.current = routeCode;
+  useEffect(() => {
+    if (open)
+      track("bus_card_expand", { route: expandedRoute.current ?? "unknown" });
+  }, [open]);
   const journey = result?.status === "ready" ? result.journey : null;
   const board = journey?.board;
   const toBoard = journey?.stopsToBoard;
 
   return (
     <section
-      className={inline ? "px-4 pb-6" : FLOATING}
+      className={inline ? "px-4 pb-6" : `${FLOATING} px-3.5`}
       style={{ "--line": color } as CSSProperties}
       aria-label={t`Tracked bus`}
       onKeyDown={(event) => {
         if (event.key !== "Escape") return;
         event.stopPropagation();
-        if (expanded && !inline) onExpand(false);
+        if (open && !inline) setOpen(false);
         else onRelease();
       }}
     >
       <div
-        className={`flex items-center gap-3 ${inline ? "" : "py-2 pr-2 pl-3.5"}`}
+        className={`flex items-center gap-3 ${inline ? "" : "-mr-1.5 py-2"}`}
       >
         {liveSignal(state) ? (
           <span
@@ -132,25 +151,19 @@ export function BusCard({
         </IconButton>
       </div>
 
-      {result?.status === "unknown" && (
-        <p className={`mt-2 text-sm text-muted ${inline ? "" : "px-3.5 pb-3"}`}>
-          {t`We can’t tell where this bus is heading`}
-        </p>
-      )}
-      {result?.status === "loading" && (
+      {(result?.status === "unknown" || result?.status === "loading") && (
         <p
-          role="status"
-          className={`mt-2 text-sm text-muted ${inline ? "" : "px-3.5 pb-3"}`}
+          role={result.status === "loading" ? "status" : undefined}
+          className={`mt-2 text-sm text-muted ${inline ? "" : "pb-3"}`}
         >
-          {t`Finding this bus’s stops…`}
+          {result.status === "loading"
+            ? t`Finding this bus’s stops…`
+            : t`We can’t tell where this bus is heading`}
         </p>
       )}
 
-      {journey && !expanded && (
-        <div
-          className={inline ? "mt-3" : "px-3.5 pt-1"}
-          onClick={() => onExpand(true)}
-        >
+      {journey && !open && (
+        <div className={inline ? "mt-3" : "pt-1"} onClick={() => setOpen(true)}>
           <JourneyStrip journey={journey} language={language} />
         </div>
       )}
@@ -159,30 +172,30 @@ export function BusCard({
         <button
           type="button"
           className={`flex min-h-11 items-center gap-1 self-start text-sm font-semibold text-ink ${
-            inline ? "mt-1" : "px-3.5"
+            inline ? "mt-1" : "-mx-3.5 px-3.5"
           }`}
-          aria-expanded={expanded}
+          aria-expanded={open}
           aria-controls={stopsId}
-          onClick={() => onExpand(!expanded)}
+          onClick={() => setOpen(!open)}
         >
-          {expanded ? t`Hide stops` : t`Show stops`}
+          {open ? t`Hide stops` : t`Show stops`}
           <ChevronDown
             size={16}
             aria-hidden="true"
             className={`transition-transform duration-200 ease-out motion-reduce:transition-none ${
-              expanded ? "rotate-180" : ""
+              open ? "rotate-180" : ""
             }`}
           />
         </button>
       )}
 
-      {journey && expanded && (
+      {journey && open && (
         <div
           id={stopsId}
           className={
             inline
               ? "border-t border-line pt-3"
-              : "max-h-[min(60vh,28rem)] min-h-0 overflow-y-auto overscroll-contain border-t border-line px-3.5 pt-3 pb-3.5 motion-safe:animate-page-forward"
+              : "-mx-3.5 max-h-[min(60vh,28rem)] min-h-0 overflow-y-auto overscroll-contain border-t border-line px-3.5 pt-3 pb-3.5 motion-safe:animate-page-forward"
           }
         >
           {board && toBoard != null && (
@@ -234,6 +247,8 @@ function JourneyStrip({
           item.kind === "stop"
             ? `stop-${item.stop.index}`
             : `${item.kind}-${index}`;
+        const terminus =
+          item.kind === "stop" && item.stop.index === journey.terminus.index;
         return (
           <li
             key={key}
@@ -260,17 +275,16 @@ function JourneyStrip({
                 />
               )}
               {item.kind === "bus" ? (
-                <span className="relative grid size-5 place-items-center rounded-full bg-bus text-white">
-                  <BusFront size={12} />
-                </span>
+                <BusMarker />
               ) : item.kind === "gap" ? (
                 <span className="relative rounded-full bg-card px-1 text-2xs font-semibold text-muted">
                   +{item.count}
                 </span>
               ) : (
-                <StopMark
-                  stop={item.stop}
-                  terminus={item.stop.index === journey.terminus.index}
+                <StopDot
+                  marked={!!item.stop.mark}
+                  terminus={terminus}
+                  passed={item.stop.state === "passed"}
                 />
               )}
             </span>
@@ -287,7 +301,7 @@ function JourneyStrip({
             {item.kind === "stop" && (
               <StripLabel
                 stop={item.stop}
-                terminus={item.stop.index === journey.terminus.index}
+                terminus={terminus}
                 language={language}
               />
             )}
@@ -329,30 +343,6 @@ function StripLabel({
   );
 }
 
-function StopMark({
-  stop,
-  terminus,
-}: {
-  stop: JourneyStop;
-  terminus: boolean;
-}) {
-  if (stop.mark)
-    return (
-      <span className="relative size-4 rounded-full border-4 border-ink bg-card" />
-    );
-  if (terminus)
-    return (
-      <span className="relative size-3.5 rounded-sm border-[3px] border-(--line) bg-card" />
-    );
-  return (
-    <span
-      className={`relative size-2.5 rounded-full border-2 border-(--line) bg-card ${
-        stop.state === "passed" ? "opacity-50" : ""
-      }`}
-    />
-  );
-}
-
 type TimelineRow =
   | { kind: "bus" }
   | { kind: "stop"; stop: JourneyStop; terminus: boolean };
@@ -381,11 +371,9 @@ function JourneyTimeline({
       {rows.map((row) => {
         if (row.kind === "bus")
           return (
-            <li key="bus" className={ROW}>
-              <span className={DOT}>
-                <span className="grid size-5 place-items-center rounded-full bg-bus text-white">
-                  <BusFront size={12} aria-hidden="true" />
-                </span>
+            <li key="bus" className={TIMELINE_ROW}>
+              <span className={TIMELINE_DOT}>
+                <BusMarker />
               </span>
               <span className="text-sm font-semibold text-bus">{t`Bus`}</span>
             </li>
@@ -397,15 +385,13 @@ function JourneyTimeline({
         return (
           <li
             key={`stop-${stop.index}`}
-            className={`${ROW} ${passed ? "after:opacity-35" : ""}`}
+            className={`${TIMELINE_ROW} ${passed ? "after:opacity-35" : ""}`}
           >
-            <span className={DOT} aria-hidden="true">
+            <span className={TIMELINE_DOT} aria-hidden="true">
               {here ? (
-                <span className="grid size-5 place-items-center rounded-full bg-bus text-white">
-                  <BusFront size={12} />
-                </span>
+                <BusMarker />
               ) : (
-                <StopMark stop={stop} terminus={end} />
+                <StopDot marked={!!stop.mark} terminus={end} passed={passed} />
               )}
             </span>
             <span
