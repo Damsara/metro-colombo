@@ -47,6 +47,7 @@ test("classifies every title the feed uses", () => {
     ["Nawam Full Moon Poya Day", "poya"],
     ["Day prior to Sinhala & Tamil New Year Day", "avurudu"],
     ["Sinhala and Tamil New Year Day", "avurudu"],
+    ["New Year's Day", null],
     ["Deepavali Festival Day", "deepavali"],
     ["Christmas", "christmas"],
     ["Tamil Thai Pongal Day", "thaiPongal"],

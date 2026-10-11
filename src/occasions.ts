@@ -1,4 +1,4 @@
-import { Context, Duration, Effect, Layer } from "effect";
+import { Cause, Clock, Context, Duration, Effect, Layer } from "effect";
 import { HttpClient } from "effect/http";
 import { countFallback, countRequest } from "./auth.js";
 import { OccasionsConfig } from "./config.js";
@@ -13,7 +13,7 @@ import { staleCache, UpstreamError } from "./upstream.js";
 const RULES: ReadonlyArray<readonly [RegExp, OccasionKind]> = [
   [/vesak/i, "vesak"],
   [/poson/i, "poson"],
-  [/new year/i, "avurudu"],
+  [/sinhala|tamil new year/i, "avurudu"],
   [/deepavali/i, "deepavali"],
   [/christmas/i, "christmas"],
   [/pongal/i, "thaiPongal"],
@@ -75,11 +75,41 @@ export function toOccasions(
 }
 
 const UPCOMING_DAYS = 400;
+const FEED_TIMEOUT = Duration.seconds(15);
+// Warn this long before the feed runs out, while there's time to find a new one.
+const FEED_ENDING_DAYS = 60;
 
 const addDays = (date: string, days: number) =>
   new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000)
     .toISOString()
     .slice(0, 10);
+
+const COLOMBO_UTC_OFFSET_MS = 5.5 * 3_600_000;
+
+const colomboToday = Clock.currentTimeMillis.pipe(
+  Effect.map((now) =>
+    new Date(now + COLOMBO_UTC_OFFSET_MS).toISOString().slice(0, 10),
+  ),
+);
+
+export function upcomingFrom(
+  all: ReadonlyArray<Occasion>,
+  today: string,
+): Occasion[] {
+  const year = Number(today.slice(0, 4));
+  const until = addDays(today, UPCOMING_DAYS);
+  const seen = new Set<string>();
+  return [...all, ...fixedOccasions(year, year + 1)]
+    .filter((o) => o.date >= today && o.date <= until)
+    .filter((o) => {
+      const key = `${o.date}|${o.kind}`;
+      return !seen.has(key) && seen.add(key);
+    })
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) || priority(a.kind) - priority(b.kind),
+    );
+}
 
 export class Occasions extends Context.Service<
   Occasions,
@@ -121,9 +151,26 @@ export class Occasions extends Context.Service<
           return yield* new UpstreamError({ message: "holiday feed is empty" });
         }
         yield* countRequest("occasions", "ok");
+        const last = events.reduce(
+          (latest, event) => (event.date > latest ? event.date : latest),
+          "",
+        );
+        if (last < addDays(yield* colomboToday, FEED_ENDING_DAYS))
+          yield* Effect.logWarning("holiday feed ends soon", { last });
         const years = events.map((event) => Number(event.date.slice(0, 4)));
         return toOccasions(events, Math.min(...years), Math.max(...years) + 1);
-      }).pipe(Effect.withSpan("Occasions.fetchFeed"));
+      }).pipe(
+        Effect.timeout(FEED_TIMEOUT),
+        Effect.catchIf(Cause.isTimeoutError, () =>
+          Effect.andThen(
+            countRequest("occasions", "timeout"),
+            Effect.fail(
+              new UpstreamError({ message: "holiday feed timed out" }),
+            ),
+          ),
+        ),
+        Effect.withSpan("Occasions.fetchFeed"),
+      );
       const feed = yield* staleCache(() => fetchFeed, {
         name: "occasions",
         freshTtl: Duration.hours(24),
@@ -140,10 +187,7 @@ export class Occasions extends Context.Service<
               ),
             ),
             Effect.orElseSucceed(() => FALLBACK_OCCASIONS),
-            Effect.map((all) => {
-              const until = addDays(today, UPCOMING_DAYS);
-              return all.filter((o) => o.date >= today && o.date <= until);
-            }),
+            Effect.map((all) => upcomingFrom(all, today)),
           ),
       });
     }),
