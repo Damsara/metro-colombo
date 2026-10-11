@@ -162,11 +162,7 @@ function Home() {
     !!cardBus && !!markRide && isOnRide(cardBus, markRide, Date.now());
   const boardId = onRide ? markRide?.board.id : undefined;
   const alightId = onRide ? markRide?.alight.id : undefined;
-  const marks = useMemo(
-    () => (boardId || alightId ? { boardId, alightId } : undefined),
-    [boardId, alightId],
-  );
-  const busJourney = useBusJourney(selectedBus, marks);
+  const busJourney = useBusJourney(selectedBus, { boardId, alightId });
   const activeRouteCode =
     tab === "plan" ? firstRideTrip?.route.code : browser.routeCode;
   const activeRoute = routes.find((route) => route.code === activeRouteCode);
@@ -199,15 +195,15 @@ function Home() {
   const handleBusSelect = useCallback(
     (bus: LiveBus | null) => {
       selectBus(bus);
-      if (bus) setFrameRide(null);
-      if (bus && phone) {
+      if (!bus) return;
+      const code = routeCodeOf(bus);
+      setFrameRide(null);
+      if (phone) {
         setSelectedStop(null);
         snapBeforeStop.current = null;
       }
-      if (bus) track("follow_bus", { route: routeCodeOf(bus) ?? "unknown" });
-      if (!bus || tab !== "routes") return;
-      const code = routeCodeOf(bus);
-      if (code) showRouteOf(code, bus.direction_id);
+      track("follow_bus", { route: code ?? "unknown" });
+      if (code && tab === "routes") showRouteOf(code, bus.direction_id);
     },
     [selectBus, tab, routeCodeOf, showRouteOf, phone],
   );
@@ -438,11 +434,10 @@ function Home() {
 
   const seeAllStops = () => {
     if (!cardBus) return;
-    const code = routeCodeOf(cardBus);
-    track("bus_card_all_stops", { route: code ?? "unknown" });
-    if (!code) return;
+    track("bus_card_all_stops", { route: cardRoute });
+    if (!cardRouteCode) return;
     changeTab("routes");
-    showRouteOf(code, cardBus.direction_id);
+    showRouteOf(cardRouteCode, cardBus.direction_id);
     if (phone) setCardAsideFor(viewBus);
   };
   const busCard = cardBus && (
