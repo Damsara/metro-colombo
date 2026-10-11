@@ -11,6 +11,9 @@ import {
 import { Otlp, OtlpSerialization } from "effect/observability";
 import { createServer } from "node:http";
 import path from "node:path";
+import { ArchiveStore } from "./archive/r2.js";
+import { FleetRecorder } from "./archive/recorder.js";
+import { ArchiveRoutes } from "./archive/routes.js";
 import { Auth } from "./auth.js";
 import { ServerConfig } from "./config.js";
 import { UpstreamHttp } from "./http.js";
@@ -304,7 +307,9 @@ const WarmCaches = Layer.effectDiscard(
   ),
 );
 
-const App = Layer.merge(LiveFleet.layer, WarmCaches).pipe(
+const App = Layer.merge(WarmCaches, FleetRecorder).pipe(
+  Layer.provideMerge(LiveFleet.layer),
+  Layer.provideMerge(ArchiveStore.layer),
   Layer.provideMerge(Occasions.layer),
   Layer.provideMerge(UpstreamApi.layer),
   Layer.provideMerge(Auth.layer),
@@ -328,6 +333,7 @@ const Untraced = Layer.succeed(HttpMiddleware.TracerDisabledWhen)(
 const Main = HttpRouter.serve(
   Layer.mergeAll(
     ApiRoutes,
+    ArchiveRoutes,
     WebRoutes,
     HttpRouter.cors({ allowedMethods: ["GET"] }),
   ),
