@@ -25,11 +25,13 @@ import {
   type FollowState,
 } from "../lib/follow";
 import { routeColor as colorForRoute } from "../lib/routeColor";
+import { splitRoute } from "../lib/routeSplit";
 import { palette } from "../theme";
 import { BusModelLayer } from "./BusModelLayer";
 import { Button } from "./ui/Button";
 import { Notice } from "./ui/Notice";
 import {
+  busDirection,
   busKey,
   stopName,
   type MapViewProps,
@@ -41,6 +43,8 @@ import {
 const COLOMBO: [number, number] = [79.8612, 6.9271];
 const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 const ROUTES = "metro-routes";
+const ROUTE_LINES = "metro-route-lines";
+const SPLIT = "metro-route-split";
 const STOPS = "metro-stops";
 const STOP_HIT = "metro-stop-hit";
 const STOP_COLOR = palette.ink;
@@ -237,6 +241,7 @@ function addTransitLayers(map: LibreMap): void {
   const empty: FeatureCollection = { type: "FeatureCollection", features: [] };
   map.addSource(ROUTES, { type: "geojson", data: empty });
   // Stops are keyed so the one under the mouse can carry a hover state.
+  map.addSource(SPLIT, { type: "geojson", data: empty });
   map.addSource(STOPS, { type: "geojson", data: empty, promoteId: "key" });
   // Route lines go under the basemap's place labels; stops stay on top.
   const firstLabel = map
@@ -244,7 +249,7 @@ function addTransitLayers(map: LibreMap): void {
     .layers.find((layer) => layer.type === "symbol")?.id;
   map.addLayer(
     {
-      id: "metro-route-lines",
+      id: ROUTE_LINES,
       type: "line",
       source: ROUTES,
       layout: { "line-cap": "round", "line-join": "round" },
@@ -260,6 +265,21 @@ function addTransitLayers(map: LibreMap): void {
           1,
           0.75,
         ],
+      },
+    },
+    firstLabel,
+  );
+  map.addLayer(
+    {
+      id: SPLIT,
+      type: "line",
+      source: SPLIT,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": ["get", "color"],
+        "line-width": 6,
+        "line-opacity": ["case", ["==", ["get", "phase"], "behind"], 0.25, 1],
+        "line-opacity-transition": { duration: 0 },
       },
     },
     firstLabel,
@@ -533,6 +553,7 @@ export default function MapView(props: Props) {
                 geometry,
                 properties: {
                   code: route.code,
+                  direction: route.directionId ?? "",
                   color: colorForRoute(route.color),
                   highlight,
                   dimmed,
@@ -544,6 +565,43 @@ export default function MapView(props: Props) {
     }),
     [routes, routeLock, emphasizeRoutes, selectedBusRoute],
   );
+
+  const busLat = selectedBus?.lat;
+  const busLng = selectedBus?.lng;
+  const busRouteCode = selectedBus?.route_code;
+  const busDirectionId = selectedBus?.direction_id;
+  const busSplit = useMemo(() => {
+    if (busLat === undefined || busLng === undefined) return null;
+    const direction = busDirection(
+      routeCatalog.find((item) => item.code === busRouteCode),
+      busDirectionId,
+    );
+    const route = direction
+      ? routes.find(
+          (item) =>
+            item.code === busRouteCode && item.directionId === direction.id,
+        )
+      : undefined;
+    const split = route && splitRoute(route, { lat: busLat, lng: busLng });
+    if (!route || !split) return null;
+    const color = colorForRoute(route.color);
+    const piece = (phase: string, lines: Position[][]) =>
+      lines.map((coordinates) => ({
+        type: "Feature" as const,
+        geometry: { type: "LineString" as const, coordinates },
+        properties: { phase, color },
+      }));
+    return {
+      hidden: `${route.code}\n${route.directionId}`,
+      data: {
+        type: "FeatureCollection" as const,
+        features: [
+          ...piece("behind", split.behind),
+          ...piece("ahead", split.ahead),
+        ],
+      },
+    };
+  }, [busLat, busLng, busRouteCode, busDirectionId, routes, routeCatalog]);
 
   const stopScene = useMemo(() => {
     const lookup = new Map<string, Stop>();
@@ -925,6 +983,44 @@ export default function MapView(props: Props) {
       setStatus("unavailable");
     }
   }, [scene, focus, applyFocus]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready.current) return;
+    try {
+      (map.getSource(SPLIT) as GeoJSONSource | undefined)?.setData(
+        busSplit?.data ?? { type: "FeatureCollection", features: [] },
+      );
+    } catch {
+      ready.current = false;
+      setStatus("unavailable");
+    }
+  }, [busSplit, attempt, status]);
+
+  const hiddenLine = busSplit?.hidden ?? "";
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready.current) return;
+    const [code, direction] = hiddenLine.split("\n");
+    try {
+      map.setFilter(
+        ROUTE_LINES,
+        hiddenLine
+          ? [
+              "!",
+              [
+                "all",
+                ["==", ["get", "code"], code],
+                ["==", ["get", "direction"], direction],
+              ],
+            ]
+          : null,
+      );
+    } catch {
+      ready.current = false;
+      setStatus("unavailable");
+    }
+  }, [hiddenLine, attempt, status]);
 
   // When the phone drawer settles at a new height, frame the view again above
   // it, unless the user has moved the map since.

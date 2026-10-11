@@ -9,8 +9,8 @@ import {
 
 // Positions are worked out in metres on a flat grid around Colombo, which is
 // plenty accurate for a city-sized network.
-const LAT_METERS = 111320;
-const LNG_METERS = LAT_METERS * Math.cos((6.9271 * Math.PI) / 180);
+export const LAT_METERS = 111320;
+export const LNG_METERS = LAT_METERS * Math.cos((6.9271 * Math.PI) / 180);
 
 const MAX_SPEED = 25; // m/s (90 km/h). Faster is GPS noise, even on Galle Road.
 
@@ -66,10 +66,10 @@ const angleDelta = (from: number, to: number) =>
 const bearing = (dx: number, dy: number) =>
   ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
 
-type XY = { x: number; y: number };
+export type XY = { x: number; y: number };
 
 /** One route line, in metres, with the running distance at each point. */
-type Path = {
+export type Path = {
   key: string;
   code: string;
   direction?: string;
@@ -131,7 +131,7 @@ function toXY(bus: LiveBus): XY {
   return { x: bus.lng * LNG_METERS, y: bus.lat * LAT_METERS };
 }
 
-function lines(geometry: Geometry): Position[][] {
+export function lines(geometry: Geometry): Position[][] {
   if (geometry.type === "LineString") return [geometry.coordinates];
   if (geometry.type === "MultiLineString") return geometry.coordinates;
   if (geometry.type === "GeometryCollection")
@@ -139,7 +139,7 @@ function lines(geometry: Geometry): Position[][] {
   return [];
 }
 
-function buildPath(route: MapRoute, line: Position[]): Path | undefined {
+export function buildPath(route: MapRoute, line: Position[]): Path | undefined {
   const points: XY[] = [];
   const distances: number[] = [];
   let length = 0;
@@ -208,7 +208,7 @@ function pathHeading(path: Path, distance: number, sign: number): number {
 }
 
 /** Where `point` lands on the segment start→end: how far along (0–1) and how far off. */
-function project(point: XY, start: XY, end: XY) {
+export function project(point: XY, start: XY, end: XY) {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const fraction = clamp(
