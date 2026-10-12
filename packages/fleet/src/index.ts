@@ -5,3 +5,4 @@ export * from "./publisher.js";
 export * from "./snapshot.js";
 export * from "./recorder.js";
 export * from "./fleet.js";
+export * from "./routes.js";
