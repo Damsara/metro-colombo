@@ -1,7 +1,7 @@
 import type { I18n } from "@lingui/core";
 import type { ComponentType } from "react";
 
-// Same list and order as src/occasion-kinds.ts; earlier kinds win when two share a date.
+// Same list and order as packages/core/src/occasions/kinds.ts; earlier kinds win when two share a date.
 export const OCCASION_KINDS = [
   "vesak",
   "poson",

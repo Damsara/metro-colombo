@@ -14,7 +14,7 @@ import {
 import { WebSocket } from "ws";
 import { Auth } from "./auth.js";
 import { UpstreamConfig } from "./config.js";
-import type { S } from "@metro/core";
+import { type Fix, type S, toFix, withRouteCodes } from "@metro/core";
 import { UpstreamApi } from "./upstream.js";
 
 const STALE_AFTER = Duration.seconds(60);
@@ -22,64 +22,12 @@ const STALE_AFTER = Duration.seconds(60);
 const SILENT_AFTER = Duration.seconds(30);
 const WATCHDOG_EVERY_MS = 5_000;
 
-const NETWORK_MAX_LAT = 7.2;
-const NETWORK_MAX_LNG = 80.4;
-
 class LiveFeedClosed extends Data.TaggedError("LiveFeedClosed")<{
   readonly receivedData: boolean;
 }> {}
 
-type Fix = S.LiveBus & { readonly receivedAt: number };
-
 // About an hour of fixes; the archive takes them every few minutes.
 const MAX_RECORDED_FIXES = 100_000;
-
-const finite = (value: unknown): number | undefined =>
-  Predicate.isNumber(value) && Number.isFinite(value) ? value : undefined;
-const nonEmpty = (value: unknown): string | undefined =>
-  Predicate.isString(value) && value.length > 0 ? value : undefined;
-
-const OPTIONAL_TEXT = [
-  "route_code",
-  "route_id",
-  "direction_id",
-  "registration_number",
-] as const;
-const OPTIONAL_NUMBERS = [
-  "heading",
-  "current_capacity",
-  "total_capacity",
-  "timestamp",
-] as const;
-
-export function toFix(input: unknown, receivedAt: number): Fix | undefined {
-  if (!Predicate.isObject(input)) return undefined;
-  const bus = input as Record<string, unknown>;
-  const id = nonEmpty(bus.bus_id) ?? nonEmpty(bus.id);
-  let lat = finite(bus.lat) ?? finite(bus.latitude);
-  let lng = finite(bus.lng) ?? finite(bus.longitude);
-  if (!id || lat === undefined || lng === undefined) return undefined;
-  // Some fixes arrive a degree north and east of the truth; the real network sits below 7.2 N and west of 80.4 E.
-  if (lat > NETWORK_MAX_LAT || lng > NETWORK_MAX_LNG) {
-    lat -= 1;
-    lng -= 1;
-  }
-  const fix: { -readonly [K in keyof Fix]: Fix[K] } = {
-    id,
-    lat,
-    lng,
-    receivedAt,
-  };
-  for (const key of OPTIONAL_TEXT) {
-    const value = nonEmpty(bus[key]);
-    if (value !== undefined) fix[key] = value;
-  }
-  for (const key of OPTIONAL_NUMBERS) {
-    const value = finite(bus[key]);
-    if (value !== undefined) fix[key] = value;
-  }
-  return fix;
-}
 
 const gpsPayload = (
   bytes: WebSocket.RawData,
@@ -212,19 +160,15 @@ export class LiveFleet extends Context.Service<
         const routes = yield* upstream.routes.pipe(
           Effect.orElseSucceed(() => []),
         );
-        const routeCodes = new Map(
-          routes.map((route) => [route.id, route.code]),
-        );
-        const buses: S.LiveBus[] = [];
+        const fresh: Array<Omit<Fix, "receivedAt">> = [];
         for (const [id, { receivedAt, ...bus }] of fixes) {
           if (now - receivedAt > Duration.toMillis(STALE_AFTER)) {
             fixes.delete(id);
             continue;
           }
-          const route_code =
-            bus.route_code ?? (bus.route_id && routeCodes.get(bus.route_id));
-          buses.push(route_code ? { ...bus, route_code } : bus);
+          fresh.push(bus);
         }
+        const buses = withRouteCodes(fresh, routes);
         return {
           success: connected,
           count: buses.length,

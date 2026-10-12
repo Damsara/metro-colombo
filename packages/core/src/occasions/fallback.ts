@@ -1,4 +1,4 @@
-import type { Occasion } from "./occasion-kinds.js";
+import type { Occasion } from "./kinds.js";
 
 export const FALLBACK_OCCASIONS: ReadonlyArray<Occasion> = [
   { date: "2025-01-01", kind: "newYear", title: "New Year's Day" },

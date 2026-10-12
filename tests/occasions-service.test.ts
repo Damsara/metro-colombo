@@ -3,7 +3,8 @@ import { test } from "node:test";
 import { Duration, Effect, Fiber, Layer } from "effect";
 import { TestClock } from "effect/testing";
 import { HttpClient, HttpClientResponse } from "effect/http";
-import { Occasions, upcomingFrom } from "../src/occasions.js";
+import { upcomingFrom } from "@metro/core";
+import { Occasions } from "../src/occasions.js";
 
 const client = (respond: () => Response) =>
   Layer.succeed(HttpClient.HttpClient)(

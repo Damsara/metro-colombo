@@ -5,7 +5,7 @@ import {
   fixedOccasions,
   parseIcs,
   toOccasions,
-} from "../src/occasions.js";
+} from "@metro/core";
 
 const ics = [
   "BEGIN:VCALENDAR",
