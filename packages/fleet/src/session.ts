@@ -89,18 +89,23 @@ export const makeSession = (alerts: AlertBookShape) =>
       saveSession(next).pipe(Effect.catch((error) => Effect.logWarning("session not saved, retrying next tick", error.message)));
     const saveLogin = (next: StoredLogin) =>
       Effect.andThen(Effect.sync(() => void ((login = next), (loginUncleared = false))), state.set("login", next));
+    // Storage keeps the login record until the new session is saved, so a restart never falls back to the spent token.
     const clearLogin = Effect.andThen(
       Effect.sync(() => void ((login = undefined), (loginUncleared = true))),
-      Effect.suspend(() => state.delete("login")).pipe(
-        Effect.andThen(Effect.sync(() => void (loginUncleared = false))),
-        Effect.catch((error) => Effect.logWarning("login state not cleared, retrying next tick", error.message)),
+      Effect.suspend(() =>
+        sessionUnsaved
+          ? Effect.void
+          : state.delete("login").pipe(
+              Effect.andThen(Effect.sync(() => void (loginUncleared = false))),
+              Effect.catch((error) => Effect.logWarning("login state not cleared, retrying next tick", error.message)),
+            ),
       ),
     );
     const retryWrites = semaphore.withPermits(1)(
       Effect.suspend(() =>
         Effect.andThen(
           sessionUnsaved && session ? keepSession(session) : Effect.void,
-          loginUncleared && !login ? clearLogin : Effect.void,
+          Effect.suspend(() => (loginUncleared && !login && !sessionUnsaved ? clearLogin : Effect.void)),
         ),
       ),
     );
@@ -150,7 +155,10 @@ export const makeSession = (alerts: AlertBookShape) =>
         if (login || fresh(now)) return;
         const current = session;
         if (!current?.refreshToken) return yield* needLogin("no refresh token");
+        // Upstream rotates the token as it answers, so an interrupt before the save would lose the only live one.
         const pair = yield* auth.refresh(current.refreshToken).pipe(
+          Effect.tap((rotated) => saveSession({ ...current, refreshToken: rotated.refreshToken, webviewToken: "", expiresAt: 0 })),
+          Effect.uninterruptible,
           Effect.map(Option.some),
           Effect.catchTag("AuthHttpError", (error) =>
             isDeadToken(error)
@@ -162,7 +170,6 @@ export const makeSession = (alerts: AlertBookShape) =>
           ),
         );
         if (Option.isNone(pair)) return;
-        yield* saveSession({ ...current, refreshToken: pair.value.refreshToken, webviewToken: "", expiresAt: 0 });
         yield* adopt(pair.value.refreshToken, pair.value.accessToken);
       }),
     );

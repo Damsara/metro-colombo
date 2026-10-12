@@ -361,6 +361,59 @@ test("a failed session save after an accepted code still accepts it and saves on
   assert.deepEqual(upstream.calls.refresh, []);
   assert.equal(JSON.parse(backing.get("session") ?? "{}").refreshToken, "refresh-otp");
   assert.equal(JSON.parse(backing.get("session") ?? "{}").webviewToken, "webview-1");
+  assert.equal(backing.has("login"), false);
+});
+
+test("the login record stays until the session from an accepted code is saved", async () => {
+  const backing = new Map([
+    ["session", JSON.stringify(expired)],
+    ["login", JSON.stringify(awaitingCode)],
+  ]);
+  const memory = memoryStateStore(backing);
+  const failingSessionWrites: StateStoreShape = {
+    ...memory,
+    set: (key, value) => (key === "session" ? Effect.fail(new StateError({ message: "write failed" })) : memory.set(key, value)),
+  };
+  const first = setup({ state: failingSessionWrites });
+  const outcome = await first.run((session) => Effect.andThen(session.submitCode("123456"), session.token));
+  assert.equal(tokenText(outcome), "webview-1");
+  assert.equal(backing.has("login"), true);
+  const restarted = setup({ state: memoryStateStore(backing) });
+  restarted.upstream.settings.refreshStatus = 400;
+  const status = await restarted.run((session) => Effect.andThen(session.token, session.status));
+  assert.equal(status, "login_needed");
+  assert.deepEqual(restarted.upstream.calls.refresh, []);
+  assert.deepEqual(restarted.upstream.calls.checkPhone, []);
+});
+
+test("interrupting a token call mid-refresh still saves the rotated refresh token", async () => {
+  const backing = new Map([["session", JSON.stringify(expired)]]);
+  const memory = memoryStateStore(backing);
+  let open!: () => void;
+  const gate = new Promise<void>((resolve) => (open = resolve));
+  let held = false;
+  const slowSave: StateStoreShape = {
+    ...memory,
+    set: (key, value) => {
+      if (key !== "session" || held) return memory.set(key, value);
+      held = true;
+      return Effect.andThen(Effect.promise(() => gate), memory.set(key, value));
+    },
+  };
+  const settle = Effect.forEach(Array.from({ length: 200 }), () => Effect.yieldNow, { discard: true });
+  const { upstream, run } = setup({ state: slowSave });
+  await run((session) =>
+    Effect.gen(function* () {
+      const caller = yield* Effect.forkChild(session.token);
+      yield* settle;
+      const interrupting = yield* Effect.forkChild(Fiber.interrupt(caller));
+      yield* settle;
+      open();
+      yield* Fiber.join(interrupting);
+    }),
+  );
+  assert.deepEqual(upstream.calls.refresh, ["stored"]);
+  assert.equal(JSON.parse(backing.get("session") ?? "{}").refreshToken, "refresh-1");
 });
 
 test("a restart within 10 minutes does not text another code", async () => {
