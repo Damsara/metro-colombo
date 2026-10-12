@@ -14,6 +14,7 @@ import {
 import { HttpBody, HttpClient, HttpClientResponse } from "effect/http";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { Alerts } from "./alerts.js";
 import { UpstreamConfig } from "./config.js";
 
 export type Endpoint =
@@ -26,7 +27,11 @@ export type Endpoint =
   | "occasions"
   | "auth";
 export type Outcome =
-  "ok" | "http_error" | "decode_error" | "timeout" | "transport";
+  | "ok"
+  | "http_error"
+  | "decode_error"
+  | "timeout"
+  | "transport";
 
 const requests = Metric.counter("upstream.requests", { incremental: true });
 const decodeFailures = Metric.counter("upstream.decode_failures", {
@@ -48,7 +53,13 @@ export const countFallback = (endpoint: Endpoint) =>
 
 export class AuthError extends Schema.TaggedError<AuthError>()("AuthError", {
   message: Schema.String,
+  status: Schema.optional(Schema.Number),
 }) {}
+
+export class NoCodePending extends Schema.TaggedError<NoCodePending>()(
+  "NoCodePending",
+  {},
+) {}
 
 type TokenState = {
   readonly webviewToken: string;
@@ -58,6 +69,8 @@ type TokenState = {
 
 // Renew early so a request never races the 1-hour expiry boundary.
 const RENEW_MARGIN = Duration.minutes(10);
+// Each request texts the phone, and a code stays valid for 5 minutes.
+const CODE_EVERY = Duration.minutes(10);
 
 const RefreshResponse = Schema.Struct({
   data: Schema.Struct({
@@ -71,6 +84,35 @@ const WebviewResponse = Schema.Struct({
     expires_in: Schema.Number,
   }),
 });
+const CheckPhoneResponse = Schema.Struct({
+  data: Schema.Struct({ otp_reference: Schema.String }),
+});
+
+export const normalizePhone = (raw: string): string | undefined => {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("94") && digits.length === 11) return `+${digits}`;
+  if (digits.startsWith("0") && digits.length === 10)
+    return `+94${digits.slice(1)}`;
+  return undefined;
+};
+
+// verify-otp's reply nests the tokens differently by account state.
+const findTokens = (
+  value: unknown,
+  found: { access?: string; refresh?: string } = {},
+) => {
+  if (typeof value !== "object" || value === null) return found;
+  const record = value as Record<string, unknown>;
+  for (const [key, field] of [
+    ["access_token", "access"],
+    ["refresh_token", "refresh"],
+  ] as const) {
+    const token = record[key];
+    if (typeof token === "string" && token) found[field] ??= token;
+  }
+  for (const nested of Object.values(record)) findTokens(nested, found);
+  return found;
+};
 
 const readStoredRefresh = (file: string) => {
   try {
@@ -88,7 +130,12 @@ const readStoredRefresh = (file: string) => {
 
 export class Auth extends Context.Service<
   Auth,
-  { readonly currentToken: Effect.Effect<Redacted.Redacted<string>, AuthError> }
+  {
+    readonly currentToken: Effect.Effect<Redacted.Redacted<string>, AuthError>;
+    readonly submitCode: (
+      code: string,
+    ) => Effect.Effect<void, AuthError | NoCodePending>;
+  }
 >()("lmt-go/Auth") {
   static readonly layer = Layer.effect(
     Auth,
@@ -96,6 +143,7 @@ export class Auth extends Context.Service<
       const config = yield* UpstreamConfig;
       const http = yield* HttpClient.HttpClient;
       const clock = yield* Clock.Clock;
+      const alerts = yield* Alerts;
       const authBase = `${config.eimskyBase}/user-service/api/v1/auth`;
       const stateFile = path.resolve(config.authStatePath);
 
@@ -107,6 +155,12 @@ export class Auth extends Context.Service<
       });
       const seed = stored || envSeed;
       let fallbackSeed = stored && envSeed !== stored ? envSeed : "";
+      const phone = Option.match(config.phone, {
+        onNone: () => undefined,
+        onSome: normalizePhone,
+      });
+      if (Option.isSome(config.phone) && !phone)
+        yield* Effect.logWarning("METRO_PHONE is not a Sri Lankan number");
 
       const state = yield* Ref.make<TokenState | null>(
         seed ? { webviewToken: "", refreshToken: seed, expiresAt: 0 } : null,
@@ -120,12 +174,7 @@ export class Auth extends Context.Service<
         current.expiresAt - clock.currentTimeMillisUnsafe() >
           Duration.toMillis(RENEW_MARGIN);
 
-      const post = <A>(
-        schema: Schema.Codec<A, unknown>,
-        endpoint: string,
-        body: unknown,
-        bearer?: string,
-      ) =>
+      const send = (endpoint: string, body: unknown, bearer?: string) =>
         http
           .post(`${authBase}/${endpoint}`, {
             headers: {
@@ -136,31 +185,122 @@ export class Auth extends Context.Service<
           })
           .pipe(
             Effect.tapError(() => countRequest("auth", "transport")),
-            Effect.flatMap((response) =>
-              HttpClientResponse.schemaBodyJson(schema)(response).pipe(
-                Effect.tapError((error) =>
-                  countRequest(
-                    "auth",
-                    Schema.isSchemaError(error) ? "decode_error" : "transport",
-                  ),
-                ),
-              ),
-            ),
-            Effect.tap(() => countRequest("auth", "ok")),
             Effect.mapError(
               () =>
                 new AuthError({ message: `upstream /auth/${endpoint} failed` }),
             ),
+            Effect.flatMap((response) =>
+              response.status < 400
+                ? Effect.succeed(response)
+                : Effect.andThen(
+                    countRequest("auth", "http_error"),
+                    new AuthError({
+                      message: `upstream /auth/${endpoint} answered HTTP ${response.status}`,
+                      status: response.status,
+                    }),
+                  ),
+            ),
           );
+
+      const post = <A>(
+        schema: Schema.Codec<A, unknown>,
+        endpoint: string,
+        body: unknown,
+        bearer?: string,
+      ) =>
+        send(endpoint, body, bearer).pipe(
+          Effect.flatMap((response) =>
+            HttpClientResponse.schemaBodyJson(schema)(response).pipe(
+              Effect.tapError((error) =>
+                countRequest(
+                  "auth",
+                  Schema.isSchemaError(error) ? "decode_error" : "transport",
+                ),
+              ),
+              Effect.mapError(
+                () =>
+                  new AuthError({
+                    message: `upstream /auth/${endpoint} failed`,
+                  }),
+              ),
+            ),
+          ),
+          Effect.tap(() => countRequest("auth", "ok")),
+        );
+
+      const adopt = (refreshToken: string, accessToken: string) =>
+        Effect.gen(function* () {
+          const webview = yield* post(
+            WebviewResponse,
+            "webview-token",
+            {},
+            accessToken,
+          );
+          yield* Ref.set(state, {
+            webviewToken: webview.data.webview_token,
+            refreshToken,
+            expiresAt:
+              clock.currentTimeMillisUnsafe() + webview.data.expires_in * 1000,
+          });
+          yield* Effect.sync(() => {
+            try {
+              writeFileSync(
+                stateFile,
+                JSON.stringify({ refresh_token: refreshToken }),
+                { mode: 0o600 },
+              );
+            } catch {
+              // Keeps working until the next restart, which then needs a new login.
+            }
+          });
+        });
+
+      let loginNeeded = false;
+      let pendingCode: string | undefined;
+      let lastCodeRequest = Number.NEGATIVE_INFINITY;
+
+      const requestCode = Effect.gen(function* () {
+        const now = clock.currentTimeMillisUnsafe();
+        if (!phone || now - lastCodeRequest < Duration.toMillis(CODE_EVERY))
+          return;
+        lastCodeRequest = now;
+        const sent = yield* post(CheckPhoneResponse, "customer/check-phone", {
+          phone,
+        });
+        pendingCode = sent.data.otp_reference;
+        yield* Effect.logInfo("login code requested");
+      }).pipe(
+        Effect.catch((error) =>
+          Effect.logWarning("login code request failed", error),
+        ),
+      );
+
+      // Stops calling refresh until a code arrives; retrying a dead token never revives it.
+      const needLogin = (reason: string) =>
+        Effect.gen(function* () {
+          if (!loginNeeded) {
+            loginNeeded = true;
+            yield* alerts.send({
+              urgent: true,
+              title: "Live buses are down: login needed",
+              message: phone
+                ? `Upstream login failed: ${reason}. A code is being texted to the login phone; the iPhone shortcut sends it back.`
+                : `Upstream login failed: ${reason}. Set METRO_PHONE, or run scripts/otp-login.mjs and redeploy.`,
+            });
+          }
+          yield* requestCode;
+          return yield* new AuthError({ message: `login needed: ${reason}` });
+        });
+
+      const isDead = (error: AuthError) =>
+        error.status !== undefined && error.status >= 400 && error.status < 500;
 
       const renew = Effect.gen(function* () {
         const current = yield* Ref.get(state);
         if (isFresh(current)) return;
-        if (!current?.refreshToken) {
-          return yield* new AuthError({
-            message: "no refresh token; run scripts/otp-login.mjs once",
-          });
-        }
+        if (loginNeeded)
+          return yield* needLogin("the refresh token was rejected");
+        if (!current?.refreshToken) return yield* needLogin("no refresh token");
         const refreshWith = (token: string) =>
           post(RefreshResponse, "refresh", { refresh_token: token });
         const refresh = yield* refreshWith(current.refreshToken).pipe(
@@ -169,31 +309,43 @@ export class Auth extends Context.Service<
             fallbackSeed = "";
             return retry ? refreshWith(retry) : Effect.fail(error);
           }),
+          Effect.catchIf(isDead, (error) =>
+            needLogin(`the refresh token was rejected (HTTP ${error.status})`),
+          ),
         );
-        const webview = yield* post(
-          WebviewResponse,
-          "webview-token",
-          {},
-          refresh.data.access_token,
-        );
-        yield* Ref.set(state, {
-          webviewToken: webview.data.webview_token,
-          refreshToken: refresh.data.refresh_token,
-          expiresAt:
-            clock.currentTimeMillisUnsafe() + webview.data.expires_in * 1000,
-        });
-        yield* Effect.sync(() => {
-          try {
-            writeFileSync(
-              stateFile,
-              JSON.stringify({ refresh_token: refresh.data.refresh_token }),
-              { mode: 0o600 },
-            );
-          } catch {
-            // Keeps working until the next restart, which then needs a new login.
-          }
-        });
+        yield* adopt(refresh.data.refresh_token, refresh.data.access_token);
       }).pipe(Effect.withSpan("Auth.refresh"), renewing.withPermits(1));
+
+      const submitCode = (code: string) =>
+        Effect.gen(function* () {
+          if (!pendingCode) return yield* new NoCodePending();
+          const response = yield* send("customer/verify-otp", {
+            otp_reference: pendingCode,
+            otp_code: code,
+          });
+          const body = yield* response.json.pipe(
+            Effect.mapError(
+              () => new AuthError({ message: "verify-otp reply unreadable" }),
+            ),
+          );
+          const tokens = findTokens(body);
+          if (!tokens.access || !tokens.refresh) {
+            return yield* new AuthError({
+              message: "verify-otp returned no tokens",
+            });
+          }
+          yield* adopt(tokens.refresh, tokens.access);
+          pendingCode = undefined;
+          fallbackSeed = "";
+          lastCodeRequest = Number.NEGATIVE_INFINITY;
+          if (loginNeeded) {
+            loginNeeded = false;
+            yield* alerts.send({
+              title: "Live buses: login restored",
+              message: "The code was accepted and the live feed is resuming.",
+            });
+          }
+        }).pipe(Effect.withSpan("Auth.submitCode"), renewing.withPermits(1));
 
       const currentToken = Effect.gen(function* () {
         if (!isFresh(yield* Ref.get(state))) yield* renew;
@@ -206,7 +358,7 @@ export class Auth extends Context.Service<
         return Redacted.make(next.webviewToken);
       }).pipe(Effect.withSpan("Auth.currentToken"));
 
-      return Auth.of({ currentToken });
+      return Auth.of({ currentToken, submitCode });
     }),
   );
 }

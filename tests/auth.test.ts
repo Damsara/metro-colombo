@@ -5,6 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { ConfigProvider, Effect, Layer, Redacted } from "effect";
 import { HttpClient, HttpClientResponse } from "effect/http";
+import { Alerts } from "../src/alerts.js";
 import { Auth } from "../src/auth.js";
 
 // Each refresh token works once and is replaced by the next, like the real server.
@@ -48,6 +49,9 @@ const run = <A, E>(
       Effect.provide(
         Auth.layer.pipe(
           Layer.provide(http),
+          Layer.provide(
+            Layer.succeed(Alerts, Alerts.of({ send: () => Effect.void })),
+          ),
           Layer.provide(
             ConfigProvider.layer(ConfigProvider.fromEnvRecord(env)),
           ),
