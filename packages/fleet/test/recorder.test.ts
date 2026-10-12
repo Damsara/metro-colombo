@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { inflateRawSync } from "node:zlib";
 import { Effect } from "effect";
 import { TestClock } from "effect/testing";
 import { decodeArchiveChunk, type RecordedFix, StoreError } from "@metro/core";
@@ -71,8 +72,7 @@ test("failed uploads stay pending and go up in order once storage recovers", asy
     "raw/2026-10-12/080500-fleet.ndjson.gz",
     LIVE_ARCHIVE_KEY,
   ]);
-  const live = spy.puts[2].body;
-  assert.equal(live.length, spy.puts[0].body.length + spy.puts[1].body.length);
+  assert.deepEqual(await ids(spy.puts[2].body), ["a", "b"]);
 });
 
 test("pending rows are capped, dropping the oldest and counting them", async () => {
@@ -123,9 +123,26 @@ test("the live file keeps only chunks since the start of the previous hour", asy
     }),
   );
   const lives = spy.puts.filter((put) => put.key === LIVE_ARCHIVE_KEY);
-  const chunks = spy.puts.filter((put) => put.key !== LIVE_ARCHIVE_KEY);
-  assert.equal(lives[1].body.length, chunks[0].body.length + chunks[1].body.length);
-  assert.equal(lives[2].body.length, chunks[1].body.length + chunks[2].body.length);
+  assert.deepEqual(await ids(lives[1].body), ["a", "b"]);
+  assert.deepEqual(await ids(lives[2].body), ["b", "c"]);
+});
+
+// workerd's DecompressionStream rejects anything after the first gzip member, so the live file must be exactly one.
+const singleGzipMember = (body: Uint8Array) => 10 + inflateRawSync(body.subarray(10), { info: true }).engine.bytesWritten + 8 === body.length;
+
+test("the live file is one gzip member however many chunks it spans", async () => {
+  const { spy } = await withRecorder(undefined, (recorder) =>
+    Effect.gen(function* () {
+      recorder.record(fix("a", T0));
+      yield* recorder.flush;
+      yield* TestClock.adjust(5 * MINUTE);
+      recorder.record(fix("b", T0 + 5 * MINUTE));
+      yield* recorder.flush;
+    }),
+  );
+  const lives = spy.puts.filter((put) => put.key === LIVE_ARCHIVE_KEY);
+  assert.equal(singleGzipMember(lives[1].body), true);
+  assert.deepEqual(await ids(lives[1].body), ["a", "b"]);
 });
 
 test("a flush is due only every 5 minutes", async () => {

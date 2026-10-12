@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { runInDurableObject } from "cloudflare:test";
-import { Effect, Exit } from "effect";
+import { Effect, Exit, Option } from "effect";
+import { TestClock } from "effect/testing";
 import { decodeArchiveChunk, encodeArchiveChunk, toArchiveRow } from "@metro/core";
+import { memoryObjectStore, testClockAt } from "@metro/core/testing";
+import { LIVE_ARCHIVE_KEY, makeRecorder } from "@metro/fleet";
 import { test, vi } from "vitest";
 import { clockSuite } from "../../../packages/core/test/suites/clock.suite.ts";
 import { objectStoreSuite } from "../../../packages/core/test/suites/object-store.suite.ts";
@@ -153,14 +156,32 @@ test("an R2 failure carries no detail from its cause", async () => {
   }
 });
 
-// Known failure, reported in Task 2.15: workerd's DecompressionStream rejects a second gzip member with "Trailing bytes after end of compressed data".
-test.fails("two concatenated gzip members decode to both rows inside workerd", async () => {
-  const rowA = toArchiveRow({ id: "bus-a", lat: 6.9, lng: 79.86, receivedAt: 1_791_685_800_100, route_id: "route-1", timestamp: 1_791_685_800_000 });
-  const rowB = toArchiveRow({ id: "bus-b", lat: 6.8, lng: 79.9, receivedAt: 1_791_685_802_100, current_capacity: 5, total_capacity: 60 });
+const rowA = toArchiveRow({ id: "bus-a", lat: 6.9, lng: 79.86, receivedAt: 1_791_685_800_100, route_id: "route-1", timestamp: 1_791_685_800_000 });
+const rowB = toArchiveRow({ id: "bus-b", lat: 6.8, lng: 79.9, receivedAt: 1_791_685_802_100, current_capacity: 5, total_capacity: 60 });
+
+test("workerd rejects two concatenated gzip members", async () => {
   const first = await encodeArchiveChunk([rowA]);
   const second = await encodeArchiveChunk([rowB]);
   const joined = new Uint8Array(first.length + second.length);
   joined.set(first);
   joined.set(second, first.length);
-  assert.deepEqual(await decodeArchiveChunk(joined), [rowA, rowB]);
+  await assert.rejects(decodeArchiveChunk(joined), /Trailing bytes after end of compressed data/);
+});
+
+test("the recorder's live file decodes inside workerd to every row of the last hour", async () => {
+  const start = Date.parse("2026-10-12T08:00:00+05:30");
+  const fix = (id: string, at: number) => ({ id, lat: 6.9, lng: 79.86, receivedAt: at, timestamp: at });
+  const store = memoryObjectStore();
+  await Effect.runPromise(
+    Effect.gen(function* () {
+      const recorder = yield* makeRecorder({ store, instance: "fleet" });
+      recorder.record(fix("a", start));
+      yield* recorder.flush;
+      yield* TestClock.adjust(5 * 60_000);
+      recorder.record(fix("b", start + 5 * 60_000));
+      yield* recorder.flush;
+    }).pipe(Effect.provide(testClockAt(start))),
+  );
+  const live = Option.getOrThrow(await Effect.runPromise(store.get(LIVE_ARCHIVE_KEY)));
+  assert.deepEqual((await decodeArchiveChunk(live.body)).map((row) => row.bus_id), ["a", "b"]);
 });

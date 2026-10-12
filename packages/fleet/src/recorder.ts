@@ -35,16 +35,6 @@ export type RecorderShape = {
   readonly status: Effect.Effect<RecorderStatus>;
 };
 
-const concat = (parts: ReadonlyArray<Uint8Array>) => {
-  const joined = new Uint8Array(parts.reduce((size, part) => size + part.length, 0));
-  let offset = 0;
-  for (const part of parts) {
-    joined.set(part, offset);
-    offset += part.length;
-  }
-  return joined;
-};
-
 export const makeRecorder = (options: {
   readonly store: ObjectStoreShape;
   readonly instance: string;
@@ -54,7 +44,7 @@ export const makeRecorder = (options: {
     const cap = options.maxPendingRows ?? MAX_PENDING_ROWS;
     let buffer: RecordedFix[] = [];
     const pending: { readonly key: string; rows: ArchiveRow[] }[] = [];
-    let recent: { readonly key: string; readonly bytes: Uint8Array }[] = [];
+    let recent: { readonly key: string; readonly rows: ReadonlyArray<ArchiveRow> }[] = [];
     let lastFlushAt = yield* Clock.currentTimeMillis;
     let lastChunkAt = Number.NEGATIVE_INFINITY;
     let lastWriteAt: number | null = null;
@@ -104,7 +94,7 @@ export const makeRecorder = (options: {
           break;
         }
         pending.shift();
-        recent.push({ key: chunk.key, bytes });
+        recent.push({ key: chunk.key, rows: chunk.rows });
         uploaded = true;
         lastWriteAt = now;
         failingSince = null;
@@ -112,7 +102,9 @@ export const makeRecorder = (options: {
       if (!uploaded) return;
       const since = hourStartKey(now - HOUR_MS);
       recent = recent.filter((chunk) => chunk.key >= since);
-      const liveUploaded = yield* upload(LIVE_ARCHIVE_KEY, concat(recent.map((chunk) => chunk.bytes)), LIVE_CACHE);
+      // One gzip member, since workerd's DecompressionStream rejects anything after the first.
+      const live = yield* Effect.promise(() => encodeArchiveChunk(recent.flatMap((chunk) => chunk.rows)));
+      const liveUploaded = yield* upload(LIVE_ARCHIVE_KEY, live, LIVE_CACHE);
       liveFailingSince = liveUploaded ? null : (liveFailingSince ?? now);
     });
 
