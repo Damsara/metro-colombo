@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { directionMatches, isIsoDate, isStopUuid } from "../src/params.js";
+import { directionMatches, isIsoDate, isStopUuid } from "@metro/core";
 
 const forward = { id: "dir-a", start_location: "Makumbura", end_location: "Fort", status: "active", geojson_url: "" };
 const reverse = { id: "dir-b", start_location: "Fort", end_location: "Makumbura", status: "active", geojson_url: "" };

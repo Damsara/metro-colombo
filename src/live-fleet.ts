@@ -14,7 +14,7 @@ import {
 import { WebSocket } from "ws";
 import { Auth } from "./auth.js";
 import { UpstreamConfig } from "./config.js";
-import type * as S from "./schemas.js";
+import type { S } from "@metro/core";
 import { UpstreamApi } from "./upstream.js";
 
 const STALE_AFTER = Duration.seconds(60);

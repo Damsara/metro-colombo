@@ -13,7 +13,7 @@ import {
 import { HttpClient, HttpClientResponse } from "effect/http";
 import { Auth, countFallback, countRequest, type Endpoint } from "./auth.js";
 import { UpstreamConfig } from "./config.js";
-import * as S from "./schemas.js";
+import { S, linkPlaces } from "@metro/core";
 
 export class UpstreamError extends Schema.TaggedError<UpstreamError>()(
   "UpstreamError",
@@ -65,7 +65,6 @@ const LkPlacesResponse = Schema.Struct({
     }),
   ),
 });
-type LkPlace = (typeof LkPlacesResponse.Type)["places"][number];
 
 const LkStopsResponse = Schema.Struct({
   stops: Schema.Array(
@@ -76,27 +75,6 @@ const LkStopsResponse = Schema.Struct({
     }),
   ),
 });
-type LkStop = (typeof LkStopsResponse.Type)["stops"][number];
-
-export function linkPlaces(
-  places: ReadonlyArray<LkPlace>,
-  stops: ReadonlyArray<LkStop>,
-): ReadonlyArray<S.Place> {
-  const byId = new Map(stops.map((stop) => [stop.id, stop]));
-  return places.flatMap(({ nearest_stop_id, ...place }) => {
-    const stop = byId.get(nearest_stop_id);
-    return stop
-      ? [
-          {
-            ...place,
-            name: place.name.trim(),
-            stop_code: stop.stop_code,
-            stop_id: stop.eimsky_id,
-          },
-        ]
-      : [];
-  });
-}
 
 // Stale values are served at once while one background refresh runs; past `serveStaleFor` requests wait on the origin and use the old value only if it errors.
 export const staleCache = Effect.fnUntraced(function* <A>(

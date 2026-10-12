@@ -19,8 +19,8 @@ import { ServerConfig } from "./config.js";
 import { UpstreamHttp } from "./http.js";
 import { LiveFleet } from "./live-fleet.js";
 import { Occasions } from "./occasions.js";
-import { directionMatches, isIsoDate, isStopUuid } from "./params.js";
-import type * as S from "./schemas.js";
+import { directionMatches, isIsoDate, isStopUuid } from "@metro/core";
+import type { S } from "@metro/core";
 import { UpstreamApi, type UpstreamError } from "./upstream.js";
 
 class BadRequest extends Schema.TaggedError<BadRequest>()("BadRequest", {

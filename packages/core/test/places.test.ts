@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { linkPlaces } from "../src/upstream.js";
+import { linkPlaces } from "@metro/core";
 
 test("links each place to its stop code and id, dropping unknown stops", () => {
   const place = {
