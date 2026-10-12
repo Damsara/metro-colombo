@@ -19,6 +19,7 @@ export type PublishInput = {
 export const makeLivePublisher = (store: ObjectStoreShape) =>
   Effect.sync(() => {
     let frozen: ReadonlyArray<S.LiveBus> = [];
+    let frozenAt = 0;
     let lastKey = "";
     let lastWriteAt = Number.NEGATIVE_INFINITY;
     const utf8 = new TextEncoder();
@@ -26,15 +27,23 @@ export const makeLivePublisher = (store: ObjectStoreShape) =>
     const restore = store.get(LIVE_JSON_KEY).pipe(
       Effect.map(Option.flatMap((object) => parseJson(new TextDecoder().decode(object.body)))),
       Effect.map(Option.flatMap(Schema.decodeUnknownOption(S.LiveFeed))),
-      Effect.map(Option.map((previous) => void (frozen = previous.buses))),
+      Effect.map(
+        Option.map((previous) => {
+          frozen = previous.buses;
+          frozenAt = previous.timestamp;
+        }),
+      ),
       Effect.catch((error) => Effect.logWarning("previous live snapshot unreadable", error.message)),
       Effect.asVoid,
     );
 
     const publish = (input: PublishInput) =>
       Effect.gen(function* () {
-        const doc = liveDocument({ ...input, frozen });
-        if (!doc.stale) frozen = doc.buses;
+        const doc = liveDocument({ ...input, frozen, frozenAt });
+        if (!doc.stale && doc.buses.length) {
+          frozen = doc.buses;
+          frozenAt = doc.timestamp;
+        }
         const key = JSON.stringify([doc.buses.length ? doc.timestamp : null, doc.stale, doc.reason ?? null, doc.buses]);
         if (key === lastKey && input.now - lastWriteAt < REPUBLISH_EVERY_MS) return;
         const seconds = Math.floor((doc.timestamp || input.now) / 1000);

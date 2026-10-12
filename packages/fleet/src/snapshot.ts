@@ -20,9 +20,11 @@ export function liveDocument(input: {
   readonly routes: ReadonlyArray<RouteCode>;
   readonly lastBatchAt: number;
   readonly frozen: ReadonlyArray<S.LiveBus>;
+  readonly frozenAt?: number;
   readonly reason: StaleReason | undefined;
 }): LiveDocument {
-  const { now, lastBatchAt, reason } = input;
+  const { now, reason } = input;
+  const lastBatchAt = reason && input.frozen.length && input.frozenAt ? input.frozenAt : input.lastBatchAt;
   const buses = reason
     ? [...input.frozen]
     : withRouteCodes(
