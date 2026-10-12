@@ -50,9 +50,19 @@ ORDER BY avg_load DESC
 LIMIT 10;`,
   },
   {
+    title: "Buses actually running each hour",
+    about:
+      "Buses sit at depots and terminals with their trackers on, so count only those that got around. Change 1000 to whatever counts as running for you.",
+    sql: `SELECT hour, route_code, count(*) AS reporting,
+       count(*) FILTER (WHERE spread_m > 1000) AS running
+FROM bus_hours
+GROUP BY ALL
+ORDER BY hour DESC, route_code;`,
+  },
+  {
     title: "Buses that went quiet the longest",
     about:
-      "Gaps in the daytime on finished days, leaving out the nights when buses are switched off.",
+      "Gaps in the daytime, leaving out the nights when buses are switched off.",
     sql: `SELECT registration, route_code, silent_from, silent_for
 FROM silences
 WHERE hour(silent_from) BETWEEN 5 AND 21
@@ -206,18 +216,16 @@ const TABLES: [string, string][] = [
   ["all_fixes", "Both together: the whole history up to a few minutes ago."],
   ["routes", "Route codes, names, colours and directions."],
   ["stops", "Every stop on every route and direction, in order."],
+  ["load_by_route_hour", "Average and peak load by route and hour of day."],
   [
-    "load_by_route_hour",
-    "Average and peak load by route and hour of day, from finished days.",
+    "bus_hours",
+    "One row per bus per hour: how many reports it sent, how far apart its positions were in metres (spread_m) and its load. Parked buses keep reporting, so spread_m is how to tell them apart.",
   ],
   [
     "buses_per_hour",
-    "How many buses each route ran in each hour of finished days.",
+    "How many buses reported on each route in each hour, and how many moved more than 200 m. Count bus_hours yourself for a different cutoff.",
   ],
-  [
-    "silences",
-    "Gaps of more than two minutes in a bus's reports on finished days.",
-  ],
+  ["silences", "Gaps of more than two minutes in a bus's reports."],
 ];
 
 const COLUMNS: [string, string][] = [

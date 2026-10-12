@@ -144,6 +144,32 @@ def test_an_empty_archive_still_gets_a_catalog():
 
 
 
+def test_summary_views_include_today_and_tell_parked_buses_apart():
+    with tempfile.TemporaryDirectory() as root:
+        minute = 60_000
+        moving = [row("moving", TODAY_MS + 8 * 3_600_000 + i * minute, lat=6.9 + i * 0.001,
+                      passengers=20, capacity=40, route_code="CM01") for i in range(5)]
+        parked = [row("parked", TODAY_MS + 8 * 3_600_000 + i * minute, lat=6.9 + i * 0.00001,
+                      passengers=0, capacity=40, route_code="CM01") for i in range(5)]
+        live_file = os.path.join(root, "live.ndjson.gz")
+        with gzip.open(live_file, "wt") as handle:
+            for item in moving + parked:
+                handle.write(json.dumps(item) + "\n")
+        heard_again = moving[0] | {"reported_at": TODAY_MS + 8 * 3_600_000 + 4 * minute + 10 * minute}
+        with gzip.open(live_file, "at") as handle:
+            handle.write(json.dumps(heard_again) + "\n")
+
+        run(root, live_file, hour=8)
+        con = duckdb.connect()
+        con.execute(f"ATTACH '{root}/catalog/metro.duckdb' AS metro (READ_ONLY)")
+        assert con.execute("SELECT buses, moving_buses FROM metro.buses_per_hour").fetchall() == [(2, 1)]
+        spreads = con.execute("SELECT bus_id, fixes, spread_m FROM metro.bus_hours ORDER BY ALL").fetchall()
+        assert spreads == [("moving", 6, 445.0), ("parked", 5, 4.0)], spreads
+        assert con.execute("SELECT hour, fixes FROM metro.load_by_route_hour").fetchall() == [(8, 11)]
+        assert con.execute("SELECT bus_id FROM metro.silences").fetchall() == [("moving",)]
+        con.close()
+
+
 def test_a_plain_path_is_found_only_when_the_file_exists():
     with tempfile.TemporaryDirectory() as root:
         os.makedirs(f"{root}/a")
