@@ -17,7 +17,10 @@ import {
 export type Register = (name: string, body: () => Promise<void>) => void;
 
 export const memoryObjectStore = (objects = new Map<string, StoredObject>()): ObjectStoreShape => ({
-  get: (key) => Effect.sync(() => Option.fromUndefinedOr(objects.get(key))),
+  get: (key) =>
+    Effect.sync(() =>
+      Option.map(Option.fromUndefinedOr(objects.get(key)), (stored): StoredObject => ({ ...stored, body: stored.body.slice() })),
+    ),
   put: (key, body, { contentType, cacheControl }) =>
     Effect.sync(() => void objects.set(key, { body: body.slice(), contentType, cacheControl })),
   list: (prefix) => Effect.sync(() => [...objects.keys()].filter((key) => key.startsWith(prefix)).sort()),
@@ -116,7 +119,10 @@ export type FakeReply = {
 export const fakeHttpClient = (handle: (request: FakeRequest) => FakeReply) => {
   const requests: FakeRequest[] = [];
   const client = HttpClient.make((request, url) =>
-    Effect.sync(() => {
+    Effect.suspend(() => {
+      if (request.body._tag !== "Empty" && request.body._tag !== "Uint8Array") {
+        return Effect.die(new Error(`fakeHttpClient cannot record a ${request.body._tag} body`));
+      }
       const bytes = request.body._tag === "Uint8Array" ? request.body.body : new Uint8Array();
       const seen: FakeRequest = {
         method: request.method,
@@ -135,7 +141,9 @@ export const fakeHttpClient = (handle: (request: FakeRequest) => FakeReply) => {
             : reply.json !== undefined
               ? JSON.stringify(reply.json)
               : (reply.text ?? null);
-      return HttpClientResponse.fromWeb(request, new Response(body, { status: reply.status, headers: reply.headers }));
+      const headers = new Headers(reply.headers);
+      if (reply.json !== undefined && !headers.has("content-type")) headers.set("content-type", "application/json");
+      return Effect.succeed(HttpClientResponse.fromWeb(request, new Response(body, { status: reply.status, headers })));
     }),
   );
   return { client, requests };

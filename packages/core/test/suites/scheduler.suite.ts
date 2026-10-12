@@ -23,4 +23,15 @@ export function schedulerSuite(test: Register, name: string, withScheduler: With
       const gap = second.value - first.value;
       assert.ok(gap >= 54_000 && gap <= 56_000, `gap was ${gap}`);
     }));
+
+  test(`${name}: a sooner wake-up replaces a later one`, () =>
+    withScheduler(async (scheduler) => {
+      await run(scheduler.wakeAfter(60_000));
+      const first = await run(scheduler.next);
+      await run(scheduler.wakeAfter(5_000));
+      const second = await run(scheduler.next);
+      assert.ok(Option.isSome(first) && Option.isSome(second));
+      const gap = first.value - second.value;
+      assert.ok(gap >= 54_000 && gap <= 56_000, `gap was ${gap}`);
+    }));
 }
