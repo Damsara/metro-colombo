@@ -11,6 +11,7 @@ COPY package.json package-lock.json ./
 COPY packages/core/package.json ./packages/core/
 COPY packages/upstream/package.json ./packages/upstream/
 COPY packages/fleet/package.json ./packages/fleet/
+COPY apps/node/package.json ./apps/node/
 RUN npm ci
 COPY tsconfig.json ./
 COPY packages/core/tsconfig.json ./packages/core/

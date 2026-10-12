@@ -9,7 +9,8 @@
     "node": ">=22.19"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/node"
   ],
   "scripts": {
     "build:core": "tsc -b packages/core",
@@ -17,9 +18,9 @@
     "start": "npm run build:core && tsx --env-file-if-exists=.env src/server.ts",
     "build": "npm run build:core && tsc -p tsconfig.json",
     "build:packages": "tsc -b packages/core packages/upstream packages/fleet",
-    "typecheck": "npm run build:packages && tsc -p tsconfig.json --noEmit",
+    "typecheck": "npm run build:packages && tsc -p tsconfig.json --noEmit && tsc -p apps/node --noEmit",
     "pretest": "npm run build:packages",
-    "test": "node --import tsx --test tests/*.test.ts packages/*/test/*.test.ts"
+    "test": "node --import tsx --test tests/*.test.ts packages/*/test/*.test.ts apps/node/test/*.test.ts"
   },
   "dependencies": {
     "@effect/platform-node": "^4.0.1",
