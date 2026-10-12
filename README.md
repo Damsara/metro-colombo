@@ -16,16 +16,30 @@ Not affiliated with Lanka Metro Transit, Smart Metro or the official LMT GO app.
   times in Sri Lanka time, fares, transfers and step-by-step boarding.
 - **See your bus:** when a journey's assigned bus is live and running that
   trip, show it on the map; if it's still on another run, the card says so.
+- **Track your trip:** a bus card shows the stops ahead of the bus you're
+  riding and notices when the operator swaps in another bus. A shared link
+  restores the tracking.
 - **Browse routes:** each route's two directions, its stops in order, its
   path, and live buses placed at their nearest stop.
-- **Live map:** buses are 3D models on a tilted MapLibre map, moving along
-  their route between GPS fixes. Tap one to follow it; drag the map to look
-  around and **Follow** to pick it up again.
-- **Three languages:** English, Sinhala and Tamil, starting in the browser's
-  language. Stop search matches names in all three and stop codes. Route
-  names stay in English, because the available translations are unreliable.
+- **Live map:** buses are 3D models moving along their route between GPS
+  fixes, bouncing more the fuller they are. The map tilts as you zoom in and
+  shows 3D buildings on capable devices; a 2D/3D switch turns that off. Tap a
+  bus to follow it, or switch to the **driver view** to ride behind it.
+- **Festive touches:** on Sri Lankan holidays the map greets riders and
+  decorates the stops, from Vesak lanterns on bamboo poles to Christmas
+  trees. Riders can turn the touches off.
+- **Fleet archive:** every live position is recorded and published as a
+  public DuckDB database; the **Data** page shows how to query it. See
+  [Fleet archive](#fleet-archive).
+- **Ten languages:** English, Sinhala, Tamil, Hindi, Russian, Chinese,
+  Japanese, German, French and (as a joke) Latin, starting in the browser's
+  language. Stop search matches names in English, Sinhala and Tamil and stop
+  codes. Route names stay in English, because the available translations are
+  unreliable.
 - On phones the map opens full screen, and the Back button steps back
   through map, results and form.
+- Add `?crowding=roomy`, `filling`, `crowded` or `mixed` to the URL to preview
+  the bus bounce.
 
 ## Quick start
 
@@ -58,9 +72,15 @@ never prints the token.
 
 ```bash
 node scripts/otp-login.mjs <phone>                  # 07XXXXXXXX, 94XXXXXXXXX or +94XXXXXXXXX
+node scripts/otp-login.mjs --send <phone>           # or in two steps: text the code…
+node scripts/otp-login.mjs --verify <code>          # …then sign in with it
 node scripts/otp-login.mjs --token <refresh_token>  # save a refresh token you already have
 node scripts/otp-login.mjs --refresh                # swap the token in .env for a new one
 ```
+
+The two-step form suits shells that can't answer a prompt. `--send` keeps the
+code's reference in `.otp-reference` (gitignored) until `--verify` uses it.
+New accounts have to register with the interactive form.
 
 From then on the server renews its own access. A refresh token works once, so
 after each renewal the server saves the new one to `.auth-state` (or
@@ -92,8 +112,8 @@ After adding or changing any English text, update the catalogs:
 npm --prefix web run i18n:extract  # syncs web/src/locales/*/messages.po
 ```
 
-Translate each new entry in `web/src/locales/si/messages.po` and
-`web/src/locales/ta/messages.po` (any gettext editor works). Keep every
+Translate each new entry in every catalog under `web/src/locales/`, one per
+language (any gettext editor works). Keep every
 `{placeholder}` and `<0>tag</0>`; the order may change to suit the language.
 Plurals use ICU syntax, e.g. `{count, plural, one {# stop} other {# stops}}`.
 
@@ -114,6 +134,9 @@ the catalogs.
 | `HOST` / `PORT`          | `127.0.0.1` / `8788`                 | listen address; set `HOST=0.0.0.0` to accept other machines |
 | `WEB_DIST`               | `web/dist`                           | built UI served next to the API                             |
 | `VITE_GA_MEASUREMENT_ID` | unset (no analytics)                 | GA4 id baked into the UI at build time                      |
+| `OCCASIONS_ICS_URL`      | calendarlabs Sri Lanka holidays      | holiday calendar for the festive touches                    |
+| `ARCHIVE_R2_*`           | unset (archive off)                  | Cloudflare R2 bucket for the fleet archive; see below       |
+| `OTEL_*`                 | unset (no telemetry)                 | traces, logs and metrics over OTLP; see `.env.example`      |
 
 `npm start` and `npm run dev` load `.env` when present; `.env.example` lists
 the variables.
@@ -154,6 +177,7 @@ Stop references accept a `stop_code` (e.g. `MMC-1`) or a stop UUID. Errors are
 | `/api/journey?from=&to=&date=` | 60 s → 10 min         | journey options; `date` is optional `YYYY-MM-DD` (default today)                |
 | `/api/live`                    | live snapshot         | latest bus positions, and `age_ms` since the last update                        |
 | `/api/places`                  | 24 h → 7 d            | landmarks with their nearest stop (`stop_code`, `stop_id`) and walking distance |
+| `/api/occasions`               | 24 h → 30 d           | upcoming Sri Lankan holidays and the festive theme for each                     |
 
 ```bash
 curl http://127.0.0.1:8788/api/routes
@@ -183,6 +207,34 @@ long ago the server received the current positions: polling `5000 − age_ms`
 later picks up the next update as it lands, which is what the UI does. The
 server also corrects a known upstream fault that offsets some fixes by one
 degree, and adds `route_code` from `route_id`.
+
+## Fleet archive
+
+Every live position is kept and published so anyone can study how the buses
+really run. The server records the feed into gzipped five-minute chunks on
+Cloudflare R2, plus a rolling `today/live.ndjson.gz`, and never reads them
+back. An hourly job (`ops/archive/`, Python and DuckDB) compacts finished days
+into zstd Parquet, writes today's earlier hours to one file, and publishes a
+small DuckDB catalog of views over all of it. Readers fetch Parquet straight
+from R2's public domain, so queries cost the API server almost nothing.
+
+```sql
+ATTACH 'https://metro.manasa.ai/' AS metro;  -- the site root serves the catalog to DuckDB
+SELECT route_code, count(DISTINCT bus_id) FROM metro.fixes_today GROUP BY ALL;
+```
+
+The **Data** page (`/data`) lists the tables and columns, links each example
+to the DuckDB web shell, and suggests things to try, such as bus bunching and
+real gaps between buses at a stop.
+
+To run your own, set `ARCHIVE_R2_ACCOUNT_ID`, `ARCHIVE_R2_ACCESS_KEY_ID`,
+`ARCHIVE_R2_SECRET_ACCESS_KEY`, `ARCHIVE_R2_BUCKET` (default `metro-data`)
+and `ARCHIVE_PUBLIC_URL` (the bucket's public domain) for the server, and run
+`ops/archive/compact.py` hourly (its `Dockerfile` builds an image) with the
+same variables and `ARCHIVE_ROOT=r2://<bucket>`. Without the R2 variables the
+recorder stays off. Give the bucket a CORS rule allowing `GET` and `HEAD` with
+`Range` from any origin so the browser shell can read it, and don't let your
+CDN cache 404s for `.parquet` files.
 
 ### Example journey response
 
@@ -319,11 +371,14 @@ src/                 Effect API server
   upstream.ts        UpstreamApi service: upstream clients + stale-on-error caches
   live-fleet.ts      LiveFleet service: persistent GPS feed connection
   auth.ts            Auth service: renews and saves the upstream token
+  occasions.ts       holiday feed and /api/occasions
+  archive/           fleet archive: R2 store, recorder, catalog serving
   config.ts          environment configuration
   params.ts          request parameter parsing
   schemas.ts         domain schemas
 tests/               API tests
 scripts/otp-login.mjs  one-time phone-OTP sign-in
+ops/archive/         hourly compactor: daily Parquet and the DuckDB catalog
 deploy/k8s/          Kustomize manifests: base, an example overlay, a Cloudflare Tunnel rule
 web/                 React + Vite UI (TanStack Router/Query, MapLibre, three.js, Tailwind CSS v4, Lingui)
   src/App.tsx        page layout: side panel and map
@@ -331,9 +386,11 @@ web/                 React + Vite UI (TanStack Router/Query, MapLibre, three.js,
   src/components/    panels, journey results, stop picker, map (MapView, BusModelLayer)
   src/components/ui/ shared primitives: Button, IconButton, Badge, Notice, Field, Tabs, …
   src/busMotion.ts   smooth bus movement along route lines between GPS fixes
+  src/occasions/     festive themes, moments and stop decorations
+  src/DataDocs.tsx   the /data page for the fleet archive
   src/api.ts         API client and queries
   src/i18n.ts        Lingui setup, dates, times and units
-  src/locales/       translation catalogs (English source, Sinhala, Tamil)
+  src/locales/       translation catalogs (English source and nine translations)
   src/styles.css     design tokens (colours, type scale, radii) and base styles
   tests/             frontend tests
 ```
