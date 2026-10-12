@@ -103,7 +103,7 @@ const makeFleet = Effect.gen(function* () {
       if (running && fiber && (mustStop || now - lastMessageAt > SILENT_AFTER_MS)) yield* Fiber.interrupt(fiber);
       if (shutDown || running || now < reconnectAt) return;
       if (feed.needsLogin && Option.isNone(current)) return;
-      fiber = yield* Effect.uninterruptibleMask((restore) => {
+      yield* Effect.uninterruptibleMask((restore) => {
         running = true;
         sessionHadData = false;
         sessionHeardFrom = false;
@@ -111,6 +111,7 @@ const makeFleet = Effect.gen(function* () {
         return restore(feed.run(current, handlers).pipe(Effect.catch((error) => Effect.logWarning("live feed closed", error.message)))).pipe(
           Effect.ensuring(closed),
           Effect.forkIn(scope, { startImmediately: true }),
+          Effect.tap((forked) => Effect.sync(() => void (fiber = forked))),
         );
       });
     });
@@ -172,7 +173,7 @@ const makeFleet = Effect.gen(function* () {
     Effect.catchCause((cause) => Effect.logError("fleet tick failed", cause)),
   );
 
-  // Overlapping ticks would race the publisher, so a tick that finds one running only reschedules; after shutdown a tick does nothing.
+  // Overlapping ticks would race the publisher, so a tick that finds one running only reschedules.
   const tick = Effect.suspend(() =>
     shutDown
       ? Effect.void
