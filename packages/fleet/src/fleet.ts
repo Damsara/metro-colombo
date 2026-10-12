@@ -15,6 +15,8 @@ export const ROUTES_EVERY_MS = 3_600_000;
 export const ROUTES_RETRY_MS = 60_000;
 export const ARCHIVE_ALERT_AFTER_MS = 15 * 60_000;
 export const SHUTDOWN_FLUSH_MS = 10_000;
+export const ROUTES_TIMEOUT_MS = 15_000;
+export const TICK_DEADLINE_MS = 30_000;
 
 // Only a session that delivered positions resets the backoff, so an upstream that keeps hanging up isn't redialled in a tight loop.
 export const reconnectDelay = (failures: number) => (failures === 0 ? 1_000 : Math.min(60_000, 1_000 * 2 ** failures));
@@ -58,16 +60,19 @@ const makeFleet = Effect.gen(function* () {
   let lastMessageAt = 0;
   let lastBatchAt = 0;
   let sessionHadData = false;
+  let sessionHeardFrom = false;
   let failures = 0;
   let reconnectAt = 0;
   let restored = false;
   let shutDown = false;
+  let ticking = false;
   const startedAt = clock.currentTimeMillisUnsafe();
 
   // Any gps frame counts, even an empty one, so a quiet night on a live feed doesn't read as the feed being down.
   const handlers = {
     onMessage: () => {
       lastMessageAt = clock.currentTimeMillisUnsafe();
+      sessionHeardFrom = true;
     },
     onBatch: (payload: ReadonlyArray<unknown>) => {
       const receivedAt = clock.currentTimeMillisUnsafe();
@@ -92,14 +97,15 @@ const makeFleet = Effect.gen(function* () {
     reconnectAt = clock.currentTimeMillisUnsafe() + reconnectDelay(failures);
   });
 
-  const superviseFeed = (current: Option.Option<Redacted.Redacted<string>>) =>
+  const superviseFeed = (current: Option.Option<Redacted.Redacted<string>>, mustStop: boolean) =>
     Effect.gen(function* () {
       const now = yield* Clock.currentTimeMillis;
-      if (running && fiber && now - lastMessageAt > SILENT_AFTER_MS) yield* Fiber.interrupt(fiber);
-      if (running || now < reconnectAt) return;
+      if (running && fiber && (mustStop || now - lastMessageAt > SILENT_AFTER_MS)) yield* Fiber.interrupt(fiber);
+      if (shutDown || running || now < reconnectAt) return;
       if (feed.needsLogin && Option.isNone(current)) return;
       running = true;
       sessionHadData = false;
+      sessionHeardFrom = false;
       lastMessageAt = now;
       fiber = yield* feed.run(current, handlers).pipe(
         Effect.catch((error) => Effect.logWarning("live feed closed", error.message)),
@@ -114,9 +120,12 @@ const makeFleet = Effect.gen(function* () {
       if (now < routesDueAt) return;
       if (feed.needsLogin && Option.isNone(current)) return;
       routesDueAt = now + ROUTES_RETRY_MS;
-      routes = yield* feed.routes(current);
+      routes = yield* feed.routes(current).pipe(Effect.timeout(ROUTES_TIMEOUT_MS));
       routesDueAt = now + ROUTES_EVERY_MS;
-    }).pipe(Effect.catch((error) => Effect.logWarning("route codes not refreshed", error.message)));
+    }).pipe(
+      Effect.catchTag("TimeoutError", () => Effect.logWarning("route codes not refreshed", "timed out")),
+      Effect.catch((error) => Effect.logWarning("route codes not refreshed", error.message)),
+    );
 
   const publish = Effect.gen(function* () {
     const now = yield* Clock.currentTimeMillis;
@@ -150,18 +159,24 @@ const makeFleet = Effect.gen(function* () {
     }
   });
 
-  const tick = Effect.gen(function* () {
+  const work = Effect.gen(function* () {
     const current = yield* token;
-    yield* superviseFeed(current);
+    yield* superviseFeed(current, yield* loginNeeded);
     yield* refreshRoutes(current);
     yield* publish;
     yield* recorder.flushIfDue;
     yield* checkAlerts;
   }).pipe(
+    Effect.timeout(TICK_DEADLINE_MS),
     Effect.catchCause((cause) => Effect.logError("fleet tick failed", cause)),
-    Effect.ensuring(scheduler.wakeAfter(TICK_MS)),
-    Effect.withSpan("Fleet.tick"),
   );
+
+  // Overlapping ticks would race the publisher, so a tick that finds one running only reschedules.
+  const tick = Effect.suspend(() => {
+    if (ticking) return Effect.void;
+    ticking = true;
+    return Effect.ensuring(work, Effect.sync(() => void (ticking = false)));
+  }).pipe(Effect.ensuring(scheduler.wakeAfter(TICK_MS)), Effect.withSpan("Fleet.tick"));
 
   const start = Effect.gen(function* () {
     if (!restored) {
@@ -175,7 +190,7 @@ const makeFleet = Effect.gen(function* () {
     const now = yield* Clock.currentTimeMillis;
     const archive = yield* recorder.status;
     const login: FleetStatus["login"] = feed.needsLogin ? yield* session.status : "not_used";
-    const state: FeedState = !running ? "down" : now - lastBatchAt <= SILENT_AFTER_MS ? "connected" : "connecting";
+    const state: FeedState = !running ? "down" : sessionHeardFrom ? "connected" : "connecting";
     const result: FleetStatus = {
       login,
       feed: state,
@@ -191,8 +206,10 @@ const makeFleet = Effect.gen(function* () {
   const shutdown = Effect.gen(function* () {
     if (shutDown) return;
     shutDown = true;
-    if (fiber) yield* Fiber.interrupt(fiber);
-    yield* recorder.flush.pipe(Effect.timeoutOption(SHUTDOWN_FLUSH_MS), Effect.asVoid);
+    yield* Effect.andThen(fiber ? Fiber.interrupt(fiber) : Effect.void, recorder.flush).pipe(
+      Effect.timeoutOption(SHUTDOWN_FLUSH_MS),
+      Effect.asVoid,
+    );
   });
 
   yield* Effect.addFinalizer(() => shutdown);

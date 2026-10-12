@@ -77,19 +77,48 @@ const decodeVehicles = (body: Uint8Array) => {
   };
 };
 
+const failingGets = (inner: ObjectStoreShape): ObjectStoreShape => ({
+  get: () => Effect.fail(new StoreError({ message: "get refused" })),
+  put: (key, body, options) => inner.put(key, body, options),
+  list: (prefix) => inner.list(prefix),
+  delete: (key) => inner.delete(key),
+});
+
+type Controls = { hangRoutes: boolean; hangLivePuts: boolean; yieldingPuts: boolean; tickMayFail: boolean };
+
+const controlledStore = (inner: ObjectStoreShape, controls: Controls): ObjectStoreShape => ({
+  get: (key) => inner.get(key),
+  put: (key, body, options) =>
+    controls.hangLivePuts && key === LIVE_JSON_KEY
+      ? Effect.never
+      : controls.yieldingPuts
+        ? Effect.andThen(Effect.yieldNow, inner.put(key, body, options))
+        : inner.put(key, body, options),
+  list: (prefix) => inner.list(prefix),
+  delete: (key) => inner.delete(key),
+});
+
+const TOKENS = /\b(stored|dead|seed)\b|webview-|access-|refresh-(otp|\d)/;
+
 const harness = (wiring: FleetWiring, env: Record<string, string> = {}) => {
   const upstream = fakeLankaMetro();
   const socket = scriptedSocket();
   const alerts = recordingAlerts();
-  const objects = spyObjectStore(wiring.objects);
+  const controls: Controls = { hangRoutes: false, hangLivePuts: false, yieldingPuts: false, tickMayFail: false };
+  const objects = spyObjectStore(controlledStore(wiring.objects, controls));
   const logs = capturedLogs();
+  const client = upstream.client.pipe(
+    HttpClient.transform((response, request) =>
+      controls.hangRoutes && request.url.endsWith("/routes/geo") ? Effect.andThen(response, Effect.never) : response,
+    ),
+  );
   const fleetAt = (at: number) =>
     Fleet.layer.pipe(
       Layer.provide(Layer.mergeAll(LankaMetroFeed, AuthClient.layer)),
       Layer.provide(
         Layer.mergeAll(
           Layer.succeed(Socket, socket.socket),
-          Layer.succeed(HttpClient.HttpClient, upstream.client),
+          Layer.succeed(HttpClient.HttpClient, client),
           Layer.succeed(ObjectStore, objects.store),
           Layer.succeed(StateStore, wiring.openState()),
           Layer.succeed(Scheduler, wiring.scheduler),
@@ -100,11 +129,15 @@ const harness = (wiring: FleetWiring, env: Record<string, string> = {}) => {
       Layer.provideMerge(testClockAt(at)),
       Layer.provideMerge(logs.layer),
     );
-  const runFleet = <A>(at: number, use: (fleet: FleetShape) => Effect.Effect<A>) =>
-    run(Effect.gen(function* () { return yield* use(yield* Fleet); }).pipe(Effect.provide(fleetAt(at))));
+  const runFleet = async <A>(at: number, use: (fleet: FleetShape) => Effect.Effect<A>) => {
+    const result = await run(Effect.gen(function* () { return yield* use(yield* Fleet); }).pipe(Effect.provide(fleetAt(at))));
+    if (!controls.tickMayFail) assert.deepEqual(logs.lines.filter((line) => line.includes("fleet tick failed")), []);
+    assert.deepEqual(logs.lines.filter((line) => TOKENS.test(line)), []);
+    return result;
+  };
   const seed = (key: string, value: unknown) => run(wiring.openState().set(key, value));
   const putsTo = (key: string) => objects.puts.filter((put) => put.key === key);
-  return { upstream, socket, alerts, objects, logs, runFleet, seed, putsTo };
+  return { upstream, socket, alerts, objects, logs, controls, runFleet, seed, putsTo };
 };
 
 export function fleetSuite(test: Register, name: string, withWiring: WithFleetWiring) {
@@ -202,7 +235,6 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       const stored = Option.getOrUndefined(await run(wiring.openState().get("session"))) as { refreshToken: string };
       assert.equal(stored.refreshToken, "refresh-otp");
       assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Live buses are down: login needed", "Live buses: login restored"]);
-      assert.equal(h.logs.lines.some((line) => /access-|refresh-otp|webview-\d/.test(line)), false);
     }));
 
   test(`${name}: the live socket reconnects with backoff that stops growing at 60 s`, () =>
@@ -398,7 +430,7 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       const cases: ReadonlyArray<[string, FleetWiring]> = [
         ["missing", wiring],
         ["corrupt", wiring],
-        ["unreadable", { ...wiring, objects: { ...wiring.objects, get: () => Effect.fail(new StoreError({ message: "get refused" })) } }],
+        ["unreadable", { ...wiring, objects: failingGets(wiring.objects) }],
       ];
       for (const [label, variant] of cases) {
         if (label === "corrupt") {
@@ -406,8 +438,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
         }
         const h = harness(variant);
         await h.seed("session", validSession);
-        const next = await h.runFleet(T0, (fleet) => Effect.andThen(fleet.start, Effect.andThen(fleet.tick, wiring.scheduler.next)));
-        assert.equal(Option.isSome(next), true, label);
+        const next = await h.runFleet(T0, (fleet) => Effect.andThen(fleet.start, wiring.scheduler.next));
+        if (label === "missing") assert.deepEqual(next, Option.some(T0 + SECOND));
+        else assert.equal(Option.isSome(next), true, label);
+        await h.runFleet(T0, (fleet) => Effect.andThen(fleet.start, fleet.tick));
         const published = h.putsTo(LIVE_JSON_KEY).at(-1);
         assert.ok(published, label);
         const doc = decodeJson(published.body);
@@ -603,5 +637,124 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
         }),
       );
       assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Live buses: feed stale", "Live buses: feed back"]);
+    }));
+
+  test(`${name}: an open socket is closed once login is needed, and isn't reopened`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      await h.seed("session", { ...validSession, expiresAt: T0 + 3 * MINUTE });
+      const status = await h.runFleet(T0, (fleet) =>
+        Effect.gen(function* () {
+          yield* fleet.tick;
+          assert.equal(h.socket.connections[0].isOpen(), true);
+          h.upstream.settings.refreshStatus = 400;
+          for (let elapsed = 0; elapsed < 3 * MINUTE; elapsed += 5 * SECOND) {
+            h.socket.connections[0].send(JSON.stringify({ type: "ping" }));
+            yield* TestClock.adjust(5 * SECOND);
+            yield* fleet.tick;
+          }
+          return yield* fleet.status;
+        }),
+      );
+      assert.equal(status.login, "login_needed");
+      assert.equal(status.feed, "down");
+      assert.equal(h.socket.connections.length, 1);
+      assert.equal(h.socket.connections[0].isOpen(), false);
+    }));
+
+  test(`${name}: two ticks at once publish once and still reschedule`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      h.controls.yieldingPuts = true;
+      await h.seed("session", validSession);
+      const next = await h.runFleet(T0, (fleet) =>
+        Effect.andThen(Effect.all([fleet.tick, fleet.tick], { concurrency: "unbounded" }), wiring.scheduler.next),
+      );
+      assert.equal(h.putsTo(LIVE_JSON_KEY).length, 1);
+      assert.equal(h.putsTo(VEHICLES_PB_KEY).length, 1);
+      assert.equal(h.socket.connections.length, 1);
+      assert.deepEqual(next, Option.some(T0 + 5 * SECOND));
+    }));
+
+  test(`${name}: hung route codes don't stop publishing or the feed alert`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      h.controls.hangRoutes = true;
+      await h.seed("session", validSession);
+      await h.runFleet(T0, (fleet) =>
+        Effect.gen(function* () {
+          yield* Effect.forkChild(fleet.tick);
+          yield* TestClock.adjust(15 * SECOND);
+          yield* settle;
+          assert.equal(h.putsTo(LIVE_JSON_KEY).length, 1);
+          for (let elapsed = 15 * SECOND; elapsed < 4 * MINUTE; elapsed += 5 * SECOND) {
+            h.socket.connections.at(-1)?.send(JSON.stringify({ type: "ping" }));
+            yield* Effect.forkChild(fleet.tick);
+            yield* TestClock.adjust(5 * SECOND);
+            yield* settle;
+          }
+        }),
+      );
+      assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Live buses: feed stale"]);
+      assert.ok(h.putsTo(LIVE_JSON_KEY).length >= 4);
+    }));
+
+  test(`${name}: a tick that hangs is cut off after 30 s and still reschedules`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      h.controls.tickMayFail = true;
+      h.controls.hangLivePuts = true;
+      await h.seed("session", validSession);
+      const next = await h.runFleet(T0, (fleet) =>
+        Effect.gen(function* () {
+          yield* Effect.forkChild(fleet.tick);
+          yield* TestClock.adjust(30 * SECOND);
+          yield* settle;
+          const next = yield* wiring.scheduler.next;
+          h.controls.hangLivePuts = false;
+          yield* fleet.tick;
+          return next;
+        }),
+      );
+      assert.deepEqual(next, Option.some(T0 + 35 * SECOND));
+      assert.equal(h.putsTo(LIVE_JSON_KEY).length, 1);
+      assert.equal(h.logs.lines.some((line) => line.includes("fleet tick failed")), true);
+    }));
+
+  test(`${name}: after shutdown, ticks don't reopen the feed`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      await h.seed("session", validSession);
+      await h.runFleet(T0, (fleet) =>
+        Effect.gen(function* () {
+          yield* fleet.tick;
+          yield* fleet.shutdown;
+          yield* TestClock.adjust(2 * MINUTE);
+          yield* fleet.tick;
+          yield* fleet.tick;
+        }),
+      );
+      assert.equal(h.socket.connections.length, 1);
+      assert.equal(h.socket.connections[0].isOpen(), false);
+    }));
+
+  test(`${name}: an open socket that only sends pings counts as connected`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      await h.seed("session", validSession);
+      const result = await h.runFleet(T0, (fleet) =>
+        Effect.gen(function* () {
+          yield* fleet.tick;
+          const opened = yield* fleet.status;
+          for (let elapsed = 0; elapsed < MINUTE; elapsed += 5 * SECOND) {
+            h.socket.connections[0].send(JSON.stringify({ type: "ping" }));
+            yield* TestClock.adjust(5 * SECOND);
+            yield* fleet.tick;
+          }
+          return { opened, pinging: yield* fleet.status };
+        }),
+      );
+      assert.equal(result.opened.feed, "connecting");
+      assert.equal(result.pinging.feed, "connected");
     }));
 }
