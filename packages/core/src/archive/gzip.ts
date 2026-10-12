@@ -7,7 +7,7 @@ export const gzip = (bytes: Uint8Array) => through(bytes, new CompressionStream(
 
 export const gunzip = (bytes: Uint8Array) => through(bytes, new DecompressionStream("gzip"));
 
-// workerd's DecompressionStream rejects anything after the first gzip member, so parts are re-gzipped as one, streamed a part at a time.
+// workerd's DecompressionStream rejects anything after the first gzip member, so parts are re-gzipped as one.
 export const concatAsOneMember = (parts: ReadonlyArray<Uint8Array>) => {
   let next = 0;
   let reader: ReadableStreamDefaultReader<Uint8Array<ArrayBuffer>> | undefined;

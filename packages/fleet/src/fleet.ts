@@ -18,7 +18,7 @@ export const SHUTDOWN_FLUSH_MS = 10_000;
 export const ROUTES_TIMEOUT_MS = 15_000;
 export const TICK_DEADLINE_MS = 30_000;
 
-// Only a session that delivered positions resets the backoff, so an upstream that keeps hanging up isn't redialled in a tight loop.
+// Only a session that delivered gps frames resets the backoff, so an upstream that keeps hanging up isn't redialled in a tight loop.
 export const reconnectDelay = (failures: number) => (failures === 0 ? 1_000 : Math.min(60_000, 1_000 * 2 ** failures));
 
 export type FeedState = "connected" | "connecting" | "down";

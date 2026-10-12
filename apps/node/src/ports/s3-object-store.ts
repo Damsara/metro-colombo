@@ -13,7 +13,6 @@ export type S3Settings = {
 
 const REQUEST_TIMEOUT = Duration.seconds(20);
 
-// Network failures, server errors and throttling are worth another try; a refused request isn't.
 const retryable = (error: StoreError) => error.status === undefined || error.status >= 500 || error.status === 429;
 
 const unescapeXml = (text: string) =>
