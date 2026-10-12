@@ -106,10 +106,6 @@ msgstr "{plate} ist bei {board}"
 msgid "{plate} is on its way to {board}"
 msgstr "{plate} ist auf dem Weg zu {board}"
 
-#: src/components/LiveBusList.tsx:110
-msgid "{selectedLabel} is selected. Tap it again to stop following."
-msgstr "{selectedLabel} ist ausgewählt. Tippe erneut, um nicht mehr zu folgen."
-
 #: src/components/StopPicker.tsx:216
 msgid "{stopCount, plural, one {# stop. Tap one to select.} other {# stops. Tap one to select.}}"
 msgstr "{stopCount, plural, one {# Haltestelle. Zum Auswählen antippen.} other {# Haltestellen. Zum Auswählen eine antippen.}}"
@@ -141,7 +137,7 @@ msgstr "<0>Einsteigen:</0> {boardName}"
 msgid "A peaceful Poya day"
 msgstr "Einen friedlichen Poya-Tag"
 
-#: src/components/MapView.tsx:1592
+#: src/components/MapView.tsx:1602
 msgid "A: Start · B: Destination"
 msgstr "A: Start · B: Ziel"
 
@@ -205,9 +201,7 @@ msgstr "Gesegnetes Milad-un-Nabi"
 
 #: src/components/BusCard.tsx:310
 #: src/components/BusCard.tsx:397
-#: src/components/LiveBusList.tsx:50
-#: src/components/LiveBusList.tsx:88
-#: src/components/RoutesPanel.tsx:340
+#: src/components/RoutesPanel.tsx:336
 msgid "Bus"
 msgstr "Bus"
 
@@ -220,7 +214,7 @@ msgstr "Bus ist da"
 msgid "Bus live"
 msgstr "Bus live"
 
-#: src/App.tsx:921
+#: src/App.tsx:936
 msgid "Bus route map"
 msgstr "Buslinienkarte"
 
@@ -279,7 +273,7 @@ msgstr "Löschen"
 msgid "Clear {label}"
 msgstr "{label} löschen"
 
-#: src/App.tsx:1032
+#: src/App.tsx:1047
 #: src/components/StopPicker.tsx:435
 msgid "Close"
 msgstr "Schließen"
@@ -292,7 +286,7 @@ msgstr "Haltestellendetails schließen"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "Nächste Haltestelle: {nearestName} · {nearestDistance} Luftlinie. Prüfe deinen Fußweg."
 
-#: src/App.tsx:996
+#: src/App.tsx:1011
 msgid "Colombo & beyond"
 msgstr "Colombo & darüber hinaus"
 
@@ -313,7 +307,7 @@ msgstr "Dez"
 msgid "Decorations"
 msgstr "Dekoration"
 
-#: src/components/MapView.tsx:1492
+#: src/components/MapView.tsx:1502
 msgid "Destination: {stopLabel}"
 msgstr "Ziel: {stopLabel}"
 
@@ -393,7 +387,7 @@ msgstr "Meinen Bus finden"
 msgid "Find my location"
 msgstr "Meinen Standort finden"
 
-#: src/App.tsx:1001
+#: src/App.tsx:1016
 msgid "Find your way around."
 msgstr "Finde dich zurecht."
 
@@ -414,7 +408,7 @@ msgid "Finding your location…"
 msgstr "Dein Standort wird gesucht…"
 
 #: src/components/BusCard.tsx:160
-#: src/components/RoutesPanel.tsx:346
+#: src/components/RoutesPanel.tsx:342
 #: src/components/TrackingPanel.tsx:255
 msgid "Follow"
 msgstr "Folgen"
@@ -549,7 +543,7 @@ msgstr "Jan"
 msgid "Journey steps"
 msgstr "Etappen der Verbindung"
 
-#: src/components/MapView.tsx:1583
+#: src/components/MapView.tsx:1593
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "Haltestellen der Verbindung; Ringe zeigen Ein- und Ausstieg"
 
@@ -572,7 +566,7 @@ msgstr "Meine aktuelle Auswahl behalten"
 msgid "Language"
 msgstr "Sprache"
 
-#: src/App.tsx:1021
+#: src/App.tsx:1036
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro sendet diese Linienführung gerade nicht."
 
@@ -600,17 +594,13 @@ msgstr "Live-Schätzung der Ankunft"
 msgid "Live bus"
 msgstr "Live-Bus"
 
-#: src/components/LiveBusList.tsx:64
+#: src/components/LiveBusNotice.tsx:40
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "Live-Positionen der Busse sind gerade nicht verfügbar. Fahrpläne funktionieren weiterhin."
 
-#: src/components/MapView.tsx:1589
+#: src/components/MapView.tsx:1599
 msgid "Live bus; tap to select and follow"
 msgstr "Live-Bus; antippen zum Auswählen und Folgen"
-
-#: src/components/LiveBusList.tsx:53
-msgid "Live buses on this route"
-msgstr "Live-Busse auf dieser Linie"
 
 #: src/components/JourneyResults.tsx:398
 msgid "Live departure estimate"
@@ -619,10 +609,6 @@ msgstr "Live-Schätzung der Abfahrt"
 #: src/components/JourneyResults.tsx:541
 msgid "Live estimate"
 msgstr "Live-Schätzung"
-
-#: src/components/LiveBusList.tsx:57
-msgid "Live on this direction"
-msgstr "Live in dieser Richtung"
 
 #: src/components/TrackingPanel.tsx:181
 #: src/components/TrackingPanel.tsx:213
@@ -638,8 +624,8 @@ msgstr "Fehlende Haltestellen laden"
 msgid "Loading bus routes…"
 msgstr "Buslinien werden geladen…"
 
-#: src/App.tsx:926
-#: src/components/MapView.tsx:1529
+#: src/App.tsx:941
+#: src/components/MapView.tsx:1539
 msgid "Loading map…"
 msgstr "Karte wird geladen…"
 
@@ -647,11 +633,11 @@ msgstr "Karte wird geladen…"
 msgid "Loading stops…"
 msgstr "Haltestellen werden geladen…"
 
-#: src/components/RoutesPanel.tsx:230
+#: src/components/RoutesPanel.tsx:226
 msgid "Loading the stops…"
 msgstr "Haltestellen werden geladen…"
 
-#: src/components/MapView.tsx:1509
+#: src/components/MapView.tsx:1519
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "Standortzugriff wurde nicht erlaubt. Du kannst deine Haltestellen trotzdem wählen."
 
@@ -671,15 +657,15 @@ msgstr "Freie Ansicht"
 msgid "Map credits"
 msgstr "Kartennachweise"
 
-#: src/components/MapView.tsx:1575
+#: src/components/MapView.tsx:1585
 msgid "Map key"
 msgstr "Kartenlegende"
 
-#: src/components/MapView.tsx:1513
+#: src/components/MapView.tsx:1523
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "Kartenkacheln konnten vom externen Kartenanbieter nicht geladen werden. Prüfe deine Internetverbindung. Du kannst deine Fahrt trotzdem planen."
 
-#: src/components/MapView.tsx:1539
+#: src/components/MapView.tsx:1549
 msgid "Map unavailable"
 msgstr "Karte nicht verfügbar"
 
@@ -697,7 +683,7 @@ msgstr "Mai"
 msgid "Merry Christmas"
 msgstr "Frohe Weihnachten"
 
-#: src/App.tsx:881
+#: src/App.tsx:886
 msgid "Metro home"
 msgstr "Metro-Startseite"
 
@@ -706,7 +692,7 @@ msgctxt "weekday"
 msgid "Mon"
 msgstr "Mo"
 
-#: src/components/RoutesPanel.tsx:342
+#: src/components/RoutesPanel.tsx:338
 msgid "near {nearName}"
 msgstr "nahe {nearName}"
 
@@ -743,7 +729,7 @@ msgstr "Noch kein Bus zugewiesen"
 msgid "No bus assigned yet, so it can’t be followed live."
 msgstr "Noch kein Bus zugewiesen, daher ist kein Live-Folgen möglich."
 
-#: src/components/LiveBusList.tsx:80
+#: src/components/LiveBusNotice.tsx:58
 msgid "No buses reporting here right now."
 msgstr "Hier melden gerade keine Busse ihre Position."
 
@@ -763,7 +749,7 @@ msgstr "Keine geplanten Verbindungen gefunden"
 msgid "No thanks"
 msgstr "Nein, danke"
 
-#: src/components/LiveBusList.tsx:70
+#: src/components/LiveBusNotice.tsx:48
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "Gerade keiner in diese Richtung · {elsewhere} in der Gegenrichtung"
 
@@ -793,7 +779,7 @@ msgstr "OK"
 msgid "On another trip · follow on map"
 msgstr "Auf einer anderen Fahrt · auf der Karte folgen"
 
-#: src/components/RoutesPanel.tsx:346
+#: src/components/RoutesPanel.tsx:342
 msgid "On map"
 msgstr "Auf Karte"
 
@@ -897,7 +883,7 @@ msgstr "Linien- und Haltestellencodes und wie viele Tage im Voraus du suchst."
 msgid "Routes"
 msgstr "Linien"
 
-#: src/components/MapView.tsx:1518
+#: src/components/MapView.tsx:1528
 msgid "Routes and stops map"
 msgstr "Karte der Linien und Haltestellen"
 
@@ -937,7 +923,7 @@ msgstr "Sep"
 msgid "Served by"
 msgstr "Bedient von"
 
-#: src/App.tsx:851
+#: src/App.tsx:856
 msgid "Service status"
 msgstr "Betriebsstatus"
 
@@ -965,7 +951,7 @@ msgstr "Mehr Verbindungen anzeigen ({remaining} weitere)"
 msgid "Show stops"
 msgstr "Haltestellen anzeigen"
 
-#: src/components/LiveBusList.tsx:76
+#: src/components/LiveBusNotice.tsx:54
 msgid "Show that direction"
 msgstr "Diese Richtung anzeigen"
 
@@ -977,7 +963,7 @@ msgstr "Nächsten Tag anzeigen"
 msgid "Show tomorrow’s buses"
 msgstr "Busse von morgen anzeigen"
 
-#: src/components/MapView.tsx:1514
+#: src/components/MapView.tsx:1524
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "Einige Karteninhalte konnten nicht geladen werden. Karte oder Netzverbindung sind möglicherweise nicht verfügbar. Du kannst deine Fahrt trotzdem planen."
 
@@ -989,11 +975,11 @@ msgstr "Einige Haltestellen konnten nicht geladen werden. Die Suche ist eventuel
 msgid "Start here"
 msgstr "Hier starten"
 
-#: src/components/MapView.tsx:1492
+#: src/components/MapView.tsx:1502
 msgid "Start: {stopLabel}"
 msgstr "Start: {stopLabel}"
 
-#: src/components/MapView.tsx:1578
+#: src/components/MapView.tsx:1588
 msgid "Stop"
 msgstr "Haltestelle"
 
@@ -1027,11 +1013,11 @@ msgstr "Haltestelle antippen zum Planen · Bus antippen zum Folgen"
 msgid "Tap a stop to plan a trip"
 msgstr "Haltestelle antippen, um eine Fahrt zu planen"
 
-#: src/components/MapView.tsx:1542
+#: src/components/MapView.tsx:1552
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "Die Karte braucht eine Internetverbindung und WebGL-Unterstützung im Browser. Du kannst trotzdem Haltestellen wählen und deine Fahrt planen."
 
-#: src/components/RoutesPanel.tsx:242
+#: src/components/RoutesPanel.tsx:238
 msgid "The stops couldn’t be loaded."
 msgstr "Die Haltestellen konnten nicht geladen werden."
 
@@ -1096,14 +1082,14 @@ msgid "Trip from this stop to {end}"
 msgstr "Fahrt von dieser Haltestelle nach {end}"
 
 #: src/App.tsx:798
-#: src/App.tsx:1027
+#: src/App.tsx:1042
 #: src/components/JourneyResults.tsx:774
-#: src/components/RoutesPanel.tsx:238
+#: src/components/RoutesPanel.tsx:234
 msgid "Try again"
 msgstr "Erneut versuchen"
 
-#: src/components/MapView.tsx:1550
-#: src/components/MapView.tsx:1567
+#: src/components/MapView.tsx:1560
+#: src/components/MapView.tsx:1577
 msgid "Try map again"
 msgstr "Karte erneut versuchen"
 
@@ -1206,7 +1192,7 @@ msgstr "Dein Bus ist jetzt {plate}"
 msgid "Your destination"
 msgstr "Dein Ziel"
 
-#: src/components/MapView.tsx:1511
+#: src/components/MapView.tsx:1521
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "Dein Standort konnte nicht gefunden werden. Wähle stattdessen deine Haltestellen."
 

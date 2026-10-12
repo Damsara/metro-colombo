@@ -13,7 +13,7 @@ import {
   stopName,
 } from "../types";
 import type { CatalogStop, Language, LiveBus, Route, Stop } from "../types";
-import LiveBusList from "./LiveBusList";
+import LiveBusNotice from "./LiveBusNotice";
 import { OccupancyBadge } from "./OccupancyBadge";
 import { RouteChip } from "./RouteChip";
 import { Badge } from "./ui/Badge";
@@ -215,17 +215,13 @@ export function RouteDetail({
         })}
       </div>
 
-      <div className="mb-6 rounded-lg border border-line bg-card p-3.5">
-        <LiveBusList
-          buses={buses}
-          selectedBusId={selectedBusId}
-          route={route}
-          directionId={directionId}
-          unavailable={liveUnavailable}
-          onBusSelect={onBusSelect}
-          onShowOtherDirection={() => onDirectionChange(otherDirectionIndex)}
-        />
-      </div>
+      <LiveBusNotice
+        buses={buses}
+        route={route}
+        directionId={directionId}
+        unavailable={liveUnavailable}
+        onShowOtherDirection={() => onDirectionChange(otherDirectionIndex)}
+      />
 
       {stopsPending && <p role="status">{t`Loading the stops…`}</p>}
       {stopsError && (

@@ -106,10 +106,6 @@ msgstr "{plate} est ad {board}"
 msgid "{plate} is on its way to {board}"
 msgstr "{plate} ad {board} iter facit"
 
-#: src/components/LiveBusList.tsx:110
-msgid "{selectedLabel} is selected. Tap it again to stop following."
-msgstr "{selectedLabel} electum est. Iterum tange ut sequi desinas."
-
 #: src/components/StopPicker.tsx:216
 msgid "{stopCount, plural, one {# stop. Tap one to select.} other {# stops. Tap one to select.}}"
 msgstr "{stopCount, plural, one {# statio. Unam tange ut eligas.} other {# stationes. Unam tange ut eligas.}}"
@@ -141,7 +137,7 @@ msgstr "<0>Conscende ad</0> {boardName}"
 msgid "A peaceful Poya day"
 msgstr "Pax tibi die Poya"
 
-#: src/components/MapView.tsx:1592
+#: src/components/MapView.tsx:1602
 msgid "A: Start · B: Destination"
 msgstr "A: Initium · B: Meta"
 
@@ -205,9 +201,7 @@ msgstr "Felix Milad-un-Nabi"
 
 #: src/components/BusCard.tsx:310
 #: src/components/BusCard.tsx:397
-#: src/components/LiveBusList.tsx:50
-#: src/components/LiveBusList.tsx:88
-#: src/components/RoutesPanel.tsx:340
+#: src/components/RoutesPanel.tsx:336
 msgid "Bus"
 msgstr "Omnibus"
 
@@ -220,7 +214,7 @@ msgstr "Omnibus adest"
 msgid "Bus live"
 msgstr "Omnibus in vivo"
 
-#: src/App.tsx:921
+#: src/App.tsx:936
 msgid "Bus route map"
 msgstr "Tabula linearum omnibus"
 
@@ -279,7 +273,7 @@ msgstr "Dele"
 msgid "Clear {label}"
 msgstr "{label} dele"
 
-#: src/App.tsx:1032
+#: src/App.tsx:1047
 #: src/components/StopPicker.tsx:435
 msgid "Close"
 msgstr "Claude"
@@ -292,7 +286,7 @@ msgstr "Singula stationis claude"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "Statio proxima: {nearestName} · {nearestDistance} recta linea. Iter pedestre tuum inspice."
 
-#: src/App.tsx:996
+#: src/App.tsx:1011
 msgid "Colombo & beyond"
 msgstr "Colombo et plus ultra"
 
@@ -313,7 +307,7 @@ msgstr "Dec"
 msgid "Decorations"
 msgstr "Ornamenta"
 
-#: src/components/MapView.tsx:1492
+#: src/components/MapView.tsx:1502
 msgid "Destination: {stopLabel}"
 msgstr "Meta: {stopLabel}"
 
@@ -393,7 +387,7 @@ msgstr "Omnibum meum quaere"
 msgid "Find my location"
 msgstr "Ubi sum?"
 
-#: src/App.tsx:1001
+#: src/App.tsx:1016
 msgid "Find your way around."
 msgstr "Aut viam invenies aut facies."
 
@@ -414,7 +408,7 @@ msgid "Finding your location…"
 msgstr "Locus tuus quaeritur…"
 
 #: src/components/BusCard.tsx:160
-#: src/components/RoutesPanel.tsx:346
+#: src/components/RoutesPanel.tsx:342
 #: src/components/TrackingPanel.tsx:255
 msgid "Follow"
 msgstr "Sequere"
@@ -549,7 +543,7 @@ msgstr "Ian"
 msgid "Journey steps"
 msgstr "Gradus itineris"
 
-#: src/components/MapView.tsx:1583
+#: src/components/MapView.tsx:1593
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "Stationes itineris; circuli ascensum et descensum monstrant"
 
@@ -572,7 +566,7 @@ msgstr "Electionem meam serva"
 msgid "Language"
 msgstr "Lingua"
 
-#: src/App.tsx:1021
+#: src/App.tsx:1036
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro hanc lineam nunc non mittit."
 
@@ -600,17 +594,13 @@ msgstr "Adventus in vivo aestimatus"
 msgid "Live bus"
 msgstr "Omnibus in vivo"
 
-#: src/components/LiveBusList.tsx:64
+#: src/components/LiveBusNotice.tsx:40
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "Loca omnibus in vivo nunc desunt. Horaria tamen valent."
 
-#: src/components/MapView.tsx:1589
+#: src/components/MapView.tsx:1599
 msgid "Live bus; tap to select and follow"
 msgstr "Omnibus in vivo; tange ut eligas et sequaris"
-
-#: src/components/LiveBusList.tsx:53
-msgid "Live buses on this route"
-msgstr "Omnibus in vivo in hac linea"
 
 #: src/components/JourneyResults.tsx:398
 msgid "Live departure estimate"
@@ -619,10 +609,6 @@ msgstr "Profectio in vivo aestimata"
 #: src/components/JourneyResults.tsx:541
 msgid "Live estimate"
 msgstr "Aestimatio in vivo"
-
-#: src/components/LiveBusList.tsx:57
-msgid "Live on this direction"
-msgstr "In vivo hoc cursu"
 
 #: src/components/TrackingPanel.tsx:181
 #: src/components/TrackingPanel.tsx:213
@@ -638,8 +624,8 @@ msgstr "Stationes deficientes onera"
 msgid "Loading bus routes…"
 msgstr "Lineae omnibus onerantur…"
 
-#: src/App.tsx:926
-#: src/components/MapView.tsx:1529
+#: src/App.tsx:941
+#: src/components/MapView.tsx:1539
 msgid "Loading map…"
 msgstr "Tabula oneratur…"
 
@@ -647,11 +633,11 @@ msgstr "Tabula oneratur…"
 msgid "Loading stops…"
 msgstr "Stationes onerantur…"
 
-#: src/components/RoutesPanel.tsx:230
+#: src/components/RoutesPanel.tsx:226
 msgid "Loading the stops…"
 msgstr "Stationes onerantur…"
 
-#: src/components/MapView.tsx:1509
+#: src/components/MapView.tsx:1519
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "Licentia loci non data est. Stationes tamen eligere potes."
 
@@ -671,15 +657,15 @@ msgstr "Circumspicis"
 msgid "Map credits"
 msgstr "Auctores tabulae"
 
-#: src/components/MapView.tsx:1575
+#: src/components/MapView.tsx:1585
 msgid "Map key"
 msgstr "Clavis tabulae"
 
-#: src/components/MapView.tsx:1513
+#: src/components/MapView.tsx:1523
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "Tesserae tabulae a provisore externo onerari non potuerunt. Conexum interretialem inspice. Iter tamen parare potes."
 
-#: src/components/MapView.tsx:1539
+#: src/components/MapView.tsx:1549
 msgid "Map unavailable"
 msgstr "Tabula deest"
 
@@ -697,7 +683,7 @@ msgstr "Mai"
 msgid "Merry Christmas"
 msgstr "Felicem Natalem Christi"
 
-#: src/App.tsx:881
+#: src/App.tsx:886
 msgid "Metro home"
 msgstr "Domus Metro"
 
@@ -706,7 +692,7 @@ msgctxt "weekday"
 msgid "Mon"
 msgstr "Lun"
 
-#: src/components/RoutesPanel.tsx:342
+#: src/components/RoutesPanel.tsx:338
 msgid "near {nearName}"
 msgstr "prope {nearName}"
 
@@ -743,7 +729,7 @@ msgstr "Nullum omnibus adhuc assignatum"
 msgid "No bus assigned yet, so it can’t be followed live."
 msgstr "Nullum omnibus adhuc assignatum, itaque in vivo sequi non potes."
 
-#: src/components/LiveBusList.tsx:80
+#: src/components/LiveBusNotice.tsx:58
 msgid "No buses reporting here right now."
 msgstr "Nulla omnibus hic nunc se nuntiant."
 
@@ -763,7 +749,7 @@ msgstr "Nulla itinera statuta inventa"
 msgid "No thanks"
 msgstr "Minime, gratias"
 
-#: src/components/LiveBusList.tsx:70
+#: src/components/LiveBusNotice.tsx:48
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "Nullum nunc huc tendit · {elsewhere} in cursu altero"
 
@@ -793,7 +779,7 @@ msgstr "Fiat"
 msgid "On another trip · follow on map"
 msgstr "In alio itinere · in tabula sequere"
 
-#: src/components/RoutesPanel.tsx:346
+#: src/components/RoutesPanel.tsx:342
 msgid "On map"
 msgstr "In tabula"
 
@@ -897,7 +883,7 @@ msgstr "Notae linearum et stationum, et quot dies in futurum quaeras."
 msgid "Routes"
 msgstr "Lineae"
 
-#: src/components/MapView.tsx:1518
+#: src/components/MapView.tsx:1528
 msgid "Routes and stops map"
 msgstr "Tabula linearum et stationum"
 
@@ -937,7 +923,7 @@ msgstr "Sep"
 msgid "Served by"
 msgstr "Ministratur a"
 
-#: src/App.tsx:851
+#: src/App.tsx:856
 msgid "Service status"
 msgstr "Status servitii"
 
@@ -965,7 +951,7 @@ msgstr "Plura itinera monstra ({remaining} amplius)"
 msgid "Show stops"
 msgstr "Stationes monstra"
 
-#: src/components/LiveBusList.tsx:76
+#: src/components/LiveBusNotice.tsx:54
 msgid "Show that direction"
 msgstr "Illum cursum monstra"
 
@@ -977,7 +963,7 @@ msgstr "Diem sequentem monstra"
 msgid "Show tomorrow’s buses"
 msgstr "Omnibus crastina monstra"
 
-#: src/components/MapView.tsx:1514
+#: src/components/MapView.tsx:1524
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "Quaedam tabulae onerari non potuerunt. Tabula aut conexus fortasse deest. Iter tamen parare potes."
 
@@ -989,11 +975,11 @@ msgstr "Quaedam stationes onerari non potuerunt. Quaestio fortasse imperfecta es
 msgid "Start here"
 msgstr "Hinc incipe"
 
-#: src/components/MapView.tsx:1492
+#: src/components/MapView.tsx:1502
 msgid "Start: {stopLabel}"
 msgstr "Initium: {stopLabel}"
 
-#: src/components/MapView.tsx:1578
+#: src/components/MapView.tsx:1588
 msgid "Stop"
 msgstr "Statio"
 
@@ -1027,11 +1013,11 @@ msgstr "Stationem tange ut iter pares · omnibus tange ut sequaris"
 msgid "Tap a stop to plan a trip"
 msgstr "Stationem tange ut iter pares"
 
-#: src/components/MapView.tsx:1542
+#: src/components/MapView.tsx:1552
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "Tabula conexum interretialem et WebGL in navigatro postulat. Stationes tamen eligere et iter parare potes."
 
-#: src/components/RoutesPanel.tsx:242
+#: src/components/RoutesPanel.tsx:238
 msgid "The stops couldn’t be loaded."
 msgstr "Stationes onerari non potuerunt."
 
@@ -1096,14 +1082,14 @@ msgid "Trip from this stop to {end}"
 msgstr "Iter ab hac statione ad {end}"
 
 #: src/App.tsx:798
-#: src/App.tsx:1027
+#: src/App.tsx:1042
 #: src/components/JourneyResults.tsx:774
-#: src/components/RoutesPanel.tsx:238
+#: src/components/RoutesPanel.tsx:234
 msgid "Try again"
 msgstr "Iterum tempta"
 
-#: src/components/MapView.tsx:1550
-#: src/components/MapView.tsx:1567
+#: src/components/MapView.tsx:1560
+#: src/components/MapView.tsx:1577
 msgid "Try map again"
 msgstr "Tabulam iterum tempta"
 
@@ -1206,7 +1192,7 @@ msgstr "Omnibus tuum nunc est {plate}"
 msgid "Your destination"
 msgstr "Meta tua"
 
-#: src/components/MapView.tsx:1511
+#: src/components/MapView.tsx:1521
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "Locus tuus inveniri non potuit. Stationes potius elige."
 

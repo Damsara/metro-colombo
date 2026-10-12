@@ -106,10 +106,6 @@ msgstr "{plate} 已到 {board}"
 msgid "{plate} is on its way to {board}"
 msgstr "{plate} 正驶向 {board}"
 
-#: src/components/LiveBusList.tsx:110
-msgid "{selectedLabel} is selected. Tap it again to stop following."
-msgstr "已选择 {selectedLabel}。再点一次可停止跟随。"
-
 #: src/components/StopPicker.tsx:216
 msgid "{stopCount, plural, one {# stop. Tap one to select.} other {# stops. Tap one to select.}}"
 msgstr "{stopCount, plural, other {# 个站点。点按一个即可选择。}}"
@@ -141,7 +137,7 @@ msgstr "<0>在此上车:</0>{boardName}"
 msgid "A peaceful Poya day"
 msgstr "祝波亚日安宁"
 
-#: src/components/MapView.tsx:1592
+#: src/components/MapView.tsx:1602
 msgid "A: Start · B: Destination"
 msgstr "A:起点 · B:目的地"
 
@@ -205,9 +201,7 @@ msgstr "圣纪节吉祥"
 
 #: src/components/BusCard.tsx:310
 #: src/components/BusCard.tsx:397
-#: src/components/LiveBusList.tsx:50
-#: src/components/LiveBusList.tsx:88
-#: src/components/RoutesPanel.tsx:340
+#: src/components/RoutesPanel.tsx:336
 msgid "Bus"
 msgstr "公交车"
 
@@ -220,7 +214,7 @@ msgstr "公交车已到"
 msgid "Bus live"
 msgstr "公交车实时"
 
-#: src/App.tsx:921
+#: src/App.tsx:936
 msgid "Bus route map"
 msgstr "公交线路地图"
 
@@ -279,7 +273,7 @@ msgstr "清除"
 msgid "Clear {label}"
 msgstr "清除{label}"
 
-#: src/App.tsx:1032
+#: src/App.tsx:1047
 #: src/components/StopPicker.tsx:435
 msgid "Close"
 msgstr "关闭"
@@ -292,7 +286,7 @@ msgstr "关闭站点详情"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "最近的站点:{nearestName} · 直线距离 {nearestDistance}。请确认步行路线。"
 
-#: src/App.tsx:996
+#: src/App.tsx:1011
 msgid "Colombo & beyond"
 msgstr "科伦坡及周边"
 
@@ -313,7 +307,7 @@ msgstr "12月"
 msgid "Decorations"
 msgstr "装饰"
 
-#: src/components/MapView.tsx:1492
+#: src/components/MapView.tsx:1502
 msgid "Destination: {stopLabel}"
 msgstr "目的地:{stopLabel}"
 
@@ -393,7 +387,7 @@ msgstr "查找公交车"
 msgid "Find my location"
 msgstr "定位我的位置"
 
-#: src/App.tsx:1001
+#: src/App.tsx:1016
 msgid "Find your way around."
 msgstr "轻松找到出行路线。"
 
@@ -414,7 +408,7 @@ msgid "Finding your location…"
 msgstr "正在定位你的位置…"
 
 #: src/components/BusCard.tsx:160
-#: src/components/RoutesPanel.tsx:346
+#: src/components/RoutesPanel.tsx:342
 #: src/components/TrackingPanel.tsx:255
 msgid "Follow"
 msgstr "跟随"
@@ -549,7 +543,7 @@ msgstr "1月"
 msgid "Journey steps"
 msgstr "行程步骤"
 
-#: src/components/MapView.tsx:1583
+#: src/components/MapView.tsx:1593
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "行程站点;圆环标出上车和下车位置"
 
@@ -572,7 +566,7 @@ msgstr "保持当前选择"
 msgid "Language"
 msgstr "语言"
 
-#: src/App.tsx:1021
+#: src/App.tsx:1036
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro 目前没有提供这条线路的路线图。"
 
@@ -600,17 +594,13 @@ msgstr "实时到达预估"
 msgid "Live bus"
 msgstr "实时公交车"
 
-#: src/components/LiveBusList.tsx:64
+#: src/components/LiveBusNotice.tsx:40
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "暂时无法获取公交车实时位置,时刻表仍可使用。"
 
-#: src/components/MapView.tsx:1589
+#: src/components/MapView.tsx:1599
 msgid "Live bus; tap to select and follow"
 msgstr "实时公交车;点按即可选择并跟随"
-
-#: src/components/LiveBusList.tsx:53
-msgid "Live buses on this route"
-msgstr "这条线路上的实时公交车"
 
 #: src/components/JourneyResults.tsx:398
 msgid "Live departure estimate"
@@ -619,10 +609,6 @@ msgstr "实时发车预估"
 #: src/components/JourneyResults.tsx:541
 msgid "Live estimate"
 msgstr "实时预估"
-
-#: src/components/LiveBusList.tsx:57
-msgid "Live on this direction"
-msgstr "此方向有实时车辆"
 
 #: src/components/TrackingPanel.tsx:181
 #: src/components/TrackingPanel.tsx:213
@@ -638,8 +624,8 @@ msgstr "加载缺失的站点"
 msgid "Loading bus routes…"
 msgstr "正在加载公交线路…"
 
-#: src/App.tsx:926
-#: src/components/MapView.tsx:1529
+#: src/App.tsx:941
+#: src/components/MapView.tsx:1539
 msgid "Loading map…"
 msgstr "正在加载地图…"
 
@@ -647,11 +633,11 @@ msgstr "正在加载地图…"
 msgid "Loading stops…"
 msgstr "正在加载站点…"
 
-#: src/components/RoutesPanel.tsx:230
+#: src/components/RoutesPanel.tsx:226
 msgid "Loading the stops…"
 msgstr "正在加载站点…"
 
-#: src/components/MapView.tsx:1509
+#: src/components/MapView.tsx:1519
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "未获得位置权限。你仍可自行选择站点。"
 
@@ -671,15 +657,15 @@ msgstr "正在浏览周围"
 msgid "Map credits"
 msgstr "地图版权信息"
 
-#: src/components/MapView.tsx:1575
+#: src/components/MapView.tsx:1585
 msgid "Map key"
 msgstr "地图图例"
 
-#: src/components/MapView.tsx:1513
+#: src/components/MapView.tsx:1523
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "无法从外部地图服务加载地图图块。请检查网络连接。你仍可规划行程。"
 
-#: src/components/MapView.tsx:1539
+#: src/components/MapView.tsx:1549
 msgid "Map unavailable"
 msgstr "地图不可用"
 
@@ -697,7 +683,7 @@ msgstr "5月"
 msgid "Merry Christmas"
 msgstr "圣诞快乐"
 
-#: src/App.tsx:881
+#: src/App.tsx:886
 msgid "Metro home"
 msgstr "Metro 首页"
 
@@ -706,7 +692,7 @@ msgctxt "weekday"
 msgid "Mon"
 msgstr "周一"
 
-#: src/components/RoutesPanel.tsx:342
+#: src/components/RoutesPanel.tsx:338
 msgid "near {nearName}"
 msgstr "靠近 {nearName}"
 
@@ -743,7 +729,7 @@ msgstr "尚未分配公交车"
 msgid "No bus assigned yet, so it can’t be followed live."
 msgstr "尚未分配公交车,因此无法实时跟随。"
 
-#: src/components/LiveBusList.tsx:80
+#: src/components/LiveBusNotice.tsx:58
 msgid "No buses reporting here right now."
 msgstr "目前这里没有公交车上报位置。"
 
@@ -763,7 +749,7 @@ msgstr "未找到班次行程"
 msgid "No thanks"
 msgstr "不用了"
 
-#: src/components/LiveBusList.tsx:70
+#: src/components/LiveBusNotice.tsx:48
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "目前没有开往这个方向的车 · 另一方向有 {elsewhere} 辆"
 
@@ -793,7 +779,7 @@ msgstr "好的"
 msgid "On another trip · follow on map"
 msgstr "正在执行其他行程 · 在地图上跟随"
 
-#: src/components/RoutesPanel.tsx:346
+#: src/components/RoutesPanel.tsx:342
 msgid "On map"
 msgstr "已在地图上"
 
@@ -897,7 +883,7 @@ msgstr "线路和站点编号,以及你提前搜索的天数。"
 msgid "Routes"
 msgstr "线路"
 
-#: src/components/MapView.tsx:1518
+#: src/components/MapView.tsx:1528
 msgid "Routes and stops map"
 msgstr "线路和站点地图"
 
@@ -937,7 +923,7 @@ msgstr "9月"
 msgid "Served by"
 msgstr "途经线路"
 
-#: src/App.tsx:851
+#: src/App.tsx:856
 msgid "Service status"
 msgstr "服务状态"
 
@@ -965,7 +951,7 @@ msgstr "显示更多行程(还有 {remaining} 个)"
 msgid "Show stops"
 msgstr "显示站点"
 
-#: src/components/LiveBusList.tsx:76
+#: src/components/LiveBusNotice.tsx:54
 msgid "Show that direction"
 msgstr "显示那个方向"
 
@@ -977,7 +963,7 @@ msgstr "显示第二天"
 msgid "Show tomorrow’s buses"
 msgstr "显示明天的公交车"
 
-#: src/components/MapView.tsx:1514
+#: src/components/MapView.tsx:1524
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "部分地图内容无法加载。地图或网络连接可能不可用。你仍可规划行程。"
 
@@ -989,11 +975,11 @@ msgstr "部分站点无法加载,搜索结果可能不完整。"
 msgid "Start here"
 msgstr "从这里出发"
 
-#: src/components/MapView.tsx:1492
+#: src/components/MapView.tsx:1502
 msgid "Start: {stopLabel}"
 msgstr "起点:{stopLabel}"
 
-#: src/components/MapView.tsx:1578
+#: src/components/MapView.tsx:1588
 msgid "Stop"
 msgstr "站点"
 
@@ -1027,11 +1013,11 @@ msgstr "点按站点规划行程 · 点按公交车进行跟随"
 msgid "Tap a stop to plan a trip"
 msgstr "点按站点即可规划行程"
 
-#: src/components/MapView.tsx:1542
+#: src/components/MapView.tsx:1552
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "地图需要网络连接和浏览器的 WebGL 支持。你仍可选择站点并规划行程。"
 
-#: src/components/RoutesPanel.tsx:242
+#: src/components/RoutesPanel.tsx:238
 msgid "The stops couldn’t be loaded."
 msgstr "无法加载站点。"
 
@@ -1096,14 +1082,14 @@ msgid "Trip from this stop to {end}"
 msgstr "从这个站点到 {end} 的行程"
 
 #: src/App.tsx:798
-#: src/App.tsx:1027
+#: src/App.tsx:1042
 #: src/components/JourneyResults.tsx:774
-#: src/components/RoutesPanel.tsx:238
+#: src/components/RoutesPanel.tsx:234
 msgid "Try again"
 msgstr "重试"
 
-#: src/components/MapView.tsx:1550
-#: src/components/MapView.tsx:1567
+#: src/components/MapView.tsx:1560
+#: src/components/MapView.tsx:1577
 msgid "Try map again"
 msgstr "重新加载地图"
 
@@ -1206,7 +1192,7 @@ msgstr "你的公交车已换成 {plate}"
 msgid "Your destination"
 msgstr "你的目的地"
 
-#: src/components/MapView.tsx:1511
+#: src/components/MapView.tsx:1521
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "无法获取你的位置。请自行选择站点。"
 

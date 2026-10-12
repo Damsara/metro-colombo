@@ -106,10 +106,6 @@ msgstr "{plate} は {board} にいます"
 msgid "{plate} is on its way to {board}"
 msgstr "{plate} は {board} に向かっています"
 
-#: src/components/LiveBusList.tsx:110
-msgid "{selectedLabel} is selected. Tap it again to stop following."
-msgstr "{selectedLabel} を選択中です。もう一度タップすると追うのをやめます。"
-
 #: src/components/StopPicker.tsx:216
 msgid "{stopCount, plural, one {# stop. Tap one to select.} other {# stops. Tap one to select.}}"
 msgstr "{stopCount, plural, other {# 停留所。タップして選択します。}}"
@@ -141,7 +137,7 @@ msgstr "<0>乗る停留所:</0>{boardName}"
 msgid "A peaceful Poya day"
 msgstr "穏やかなポーヤデーを"
 
-#: src/components/MapView.tsx:1592
+#: src/components/MapView.tsx:1602
 msgid "A: Start · B: Destination"
 msgstr "A:出発 · B:目的地"
 
@@ -205,9 +201,7 @@ msgstr "ミーラード・ウン・ナビーをお祝いします"
 
 #: src/components/BusCard.tsx:310
 #: src/components/BusCard.tsx:397
-#: src/components/LiveBusList.tsx:50
-#: src/components/LiveBusList.tsx:88
-#: src/components/RoutesPanel.tsx:340
+#: src/components/RoutesPanel.tsx:336
 msgid "Bus"
 msgstr "バス"
 
@@ -220,7 +214,7 @@ msgstr "バスが到着"
 msgid "Bus live"
 msgstr "バス運行中"
 
-#: src/App.tsx:921
+#: src/App.tsx:936
 msgid "Bus route map"
 msgstr "バス路線図"
 
@@ -279,7 +273,7 @@ msgstr "クリア"
 msgid "Clear {label}"
 msgstr "{label} をクリア"
 
-#: src/App.tsx:1032
+#: src/App.tsx:1047
 #: src/components/StopPicker.tsx:435
 msgid "Close"
 msgstr "閉じる"
@@ -292,7 +286,7 @@ msgstr "停留所の詳細を閉じる"
 msgid "Closest stop: {nearestName} · {nearestDistance} away in a straight line. Check your walking route."
 msgstr "最寄りの停留所:{nearestName} · 直線距離 {nearestDistance}。歩くルートを確認してください。"
 
-#: src/App.tsx:996
+#: src/App.tsx:1011
 msgid "Colombo & beyond"
 msgstr "コロンボとその周辺"
 
@@ -313,7 +307,7 @@ msgstr "12月"
 msgid "Decorations"
 msgstr "装飾"
 
-#: src/components/MapView.tsx:1492
+#: src/components/MapView.tsx:1502
 msgid "Destination: {stopLabel}"
 msgstr "目的地:{stopLabel}"
 
@@ -393,7 +387,7 @@ msgstr "バスを探す"
 msgid "Find my location"
 msgstr "現在地を探す"
 
-#: src/App.tsx:1001
+#: src/App.tsx:1016
 msgid "Find your way around."
 msgstr "行き方を調べましょう。"
 
@@ -414,7 +408,7 @@ msgid "Finding your location…"
 msgstr "現在地を探しています…"
 
 #: src/components/BusCard.tsx:160
-#: src/components/RoutesPanel.tsx:346
+#: src/components/RoutesPanel.tsx:342
 #: src/components/TrackingPanel.tsx:255
 msgid "Follow"
 msgstr "追う"
@@ -549,7 +543,7 @@ msgstr "1月"
 msgid "Journey steps"
 msgstr "行程の手順"
 
-#: src/components/MapView.tsx:1583
+#: src/components/MapView.tsx:1593
 msgid "Journey stops; rings show boarding and getting off"
 msgstr "行程の停留所。輪は乗車と降車の場所を示します"
 
@@ -572,7 +566,7 @@ msgstr "今の選択を維持"
 msgid "Language"
 msgstr "言語"
 
-#: src/App.tsx:1021
+#: src/App.tsx:1036
 msgid "Lanka Metro isn’t sending this route line right now."
 msgstr "Lanka Metro は現在、この路線の線を送信していません。"
 
@@ -600,17 +594,13 @@ msgstr "リアルタイムの到着予想"
 msgid "Live bus"
 msgstr "リアルタイムのバス"
 
-#: src/components/LiveBusList.tsx:64
+#: src/components/LiveBusNotice.tsx:40
 msgid "Live bus positions are unavailable right now. Timetables still work."
 msgstr "バスの現在位置は今は表示できません。時刻表は使えます。"
 
-#: src/components/MapView.tsx:1589
+#: src/components/MapView.tsx:1599
 msgid "Live bus; tap to select and follow"
 msgstr "リアルタイムのバス。タップして選択し、追います"
-
-#: src/components/LiveBusList.tsx:53
-msgid "Live buses on this route"
-msgstr "この路線のリアルタイムのバス"
 
 #: src/components/JourneyResults.tsx:398
 msgid "Live departure estimate"
@@ -619,10 +609,6 @@ msgstr "リアルタイムの出発予想"
 #: src/components/JourneyResults.tsx:541
 msgid "Live estimate"
 msgstr "リアルタイム予想"
-
-#: src/components/LiveBusList.tsx:57
-msgid "Live on this direction"
-msgstr "この方面はリアルタイム"
 
 #: src/components/TrackingPanel.tsx:181
 #: src/components/TrackingPanel.tsx:213
@@ -638,8 +624,8 @@ msgstr "不足している停留所を読み込む"
 msgid "Loading bus routes…"
 msgstr "バス路線を読み込み中…"
 
-#: src/App.tsx:926
-#: src/components/MapView.tsx:1529
+#: src/App.tsx:941
+#: src/components/MapView.tsx:1539
 msgid "Loading map…"
 msgstr "地図を読み込み中…"
 
@@ -647,11 +633,11 @@ msgstr "地図を読み込み中…"
 msgid "Loading stops…"
 msgstr "停留所を読み込み中…"
 
-#: src/components/RoutesPanel.tsx:230
+#: src/components/RoutesPanel.tsx:226
 msgid "Loading the stops…"
 msgstr "停留所を読み込み中…"
 
-#: src/components/MapView.tsx:1509
+#: src/components/MapView.tsx:1519
 msgid "Location permission was not granted. You can still choose your stops."
 msgstr "位置情報の許可がありません。停留所は自分で選べます。"
 
@@ -671,15 +657,15 @@ msgstr "周りを見ています"
 msgid "Map credits"
 msgstr "地図のクレジット"
 
-#: src/components/MapView.tsx:1575
+#: src/components/MapView.tsx:1585
 msgid "Map key"
 msgstr "地図の凡例"
 
-#: src/components/MapView.tsx:1513
+#: src/components/MapView.tsx:1523
 msgid "Map tiles could not load from the external map provider. Check your internet connection. You can still plan your journey."
 msgstr "外部の地図提供元から地図タイルを読み込めませんでした。インターネット接続を確認してください。行程は引き続き計画できます。"
 
-#: src/components/MapView.tsx:1539
+#: src/components/MapView.tsx:1549
 msgid "Map unavailable"
 msgstr "地図を表示できません"
 
@@ -697,7 +683,7 @@ msgstr "5月"
 msgid "Merry Christmas"
 msgstr "メリークリスマス"
 
-#: src/App.tsx:881
+#: src/App.tsx:886
 msgid "Metro home"
 msgstr "Metro ホーム"
 
@@ -706,7 +692,7 @@ msgctxt "weekday"
 msgid "Mon"
 msgstr "月"
 
-#: src/components/RoutesPanel.tsx:342
+#: src/components/RoutesPanel.tsx:338
 msgid "near {nearName}"
 msgstr "{nearName} の近く"
 
@@ -743,7 +729,7 @@ msgstr "バスはまだ割り当てられていません"
 msgid "No bus assigned yet, so it can’t be followed live."
 msgstr "バスがまだ割り当てられていないため、リアルタイムでは追えません。"
 
-#: src/components/LiveBusList.tsx:80
+#: src/components/LiveBusNotice.tsx:58
 msgid "No buses reporting here right now."
 msgstr "現在、ここで位置を送信しているバスはありません。"
 
@@ -763,7 +749,7 @@ msgstr "時刻表の行程が見つかりません"
 msgid "No thanks"
 msgstr "いいえ"
 
-#: src/components/LiveBusList.tsx:70
+#: src/components/LiveBusNotice.tsx:48
 msgid "None heading this way right now · {elsewhere} on the other direction"
 msgstr "今この方面へ向かうバスはありません · 反対方面に {elsewhere} 台"
 
@@ -793,7 +779,7 @@ msgstr "OK"
 msgid "On another trip · follow on map"
 msgstr "別の運行中 · 地図で追う"
 
-#: src/components/RoutesPanel.tsx:346
+#: src/components/RoutesPanel.tsx:342
 msgid "On map"
 msgstr "地図上"
 
@@ -897,7 +883,7 @@ msgstr "路線と停留所のコード、何日先を検索したか。"
 msgid "Routes"
 msgstr "路線"
 
-#: src/components/MapView.tsx:1518
+#: src/components/MapView.tsx:1528
 msgid "Routes and stops map"
 msgstr "路線と停留所の地図"
 
@@ -937,7 +923,7 @@ msgstr "9月"
 msgid "Served by"
 msgstr "運行路線"
 
-#: src/App.tsx:851
+#: src/App.tsx:856
 msgid "Service status"
 msgstr "運行状況"
 
@@ -965,7 +951,7 @@ msgstr "行程をもっと表示(あと {remaining} 件)"
 msgid "Show stops"
 msgstr "停留所を表示"
 
-#: src/components/LiveBusList.tsx:76
+#: src/components/LiveBusNotice.tsx:54
 msgid "Show that direction"
 msgstr "その方面を表示"
 
@@ -977,7 +963,7 @@ msgstr "翌日を表示"
 msgid "Show tomorrow’s buses"
 msgstr "明日のバスを表示"
 
-#: src/components/MapView.tsx:1514
+#: src/components/MapView.tsx:1524
 msgid "Some map content could not load. The map or network connection may be unavailable. You can still plan your journey."
 msgstr "地図の一部を読み込めませんでした。地図またはネットワーク接続が使えない可能性があります。行程は引き続き計画できます。"
 
@@ -989,11 +975,11 @@ msgstr "一部の停留所を読み込めませんでした。検索結果が不
 msgid "Start here"
 msgstr "ここから出発"
 
-#: src/components/MapView.tsx:1492
+#: src/components/MapView.tsx:1502
 msgid "Start: {stopLabel}"
 msgstr "出発:{stopLabel}"
 
-#: src/components/MapView.tsx:1578
+#: src/components/MapView.tsx:1588
 msgid "Stop"
 msgstr "停留所"
 
@@ -1027,11 +1013,11 @@ msgstr "停留所をタップして計画 · バスをタップして追う"
 msgid "Tap a stop to plan a trip"
 msgstr "停留所をタップして行程を計画"
 
-#: src/components/MapView.tsx:1542
+#: src/components/MapView.tsx:1552
 msgid "The map needs an internet connection and browser WebGL support. You can still choose stops and plan your journey."
 msgstr "地図にはインターネット接続とブラウザの WebGL 対応が必要です。停留所の選択と行程の計画は引き続きできます。"
 
-#: src/components/RoutesPanel.tsx:242
+#: src/components/RoutesPanel.tsx:238
 msgid "The stops couldn’t be loaded."
 msgstr "停留所を読み込めませんでした。"
 
@@ -1096,14 +1082,14 @@ msgid "Trip from this stop to {end}"
 msgstr "この停留所から {end} までの行程"
 
 #: src/App.tsx:798
-#: src/App.tsx:1027
+#: src/App.tsx:1042
 #: src/components/JourneyResults.tsx:774
-#: src/components/RoutesPanel.tsx:238
+#: src/components/RoutesPanel.tsx:234
 msgid "Try again"
 msgstr "もう一度試す"
 
-#: src/components/MapView.tsx:1550
-#: src/components/MapView.tsx:1567
+#: src/components/MapView.tsx:1560
+#: src/components/MapView.tsx:1577
 msgid "Try map again"
 msgstr "地図を再読み込み"
 
@@ -1206,7 +1192,7 @@ msgstr "あなたのバスが {plate} に変わりました"
 msgid "Your destination"
 msgstr "あなたの目的地"
 
-#: src/components/MapView.tsx:1511
+#: src/components/MapView.tsx:1521
 msgid "Your location could not be found. Choose your stops instead."
 msgstr "現在地を取得できませんでした。停留所を選んでください。"
 
