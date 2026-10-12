@@ -9,5 +9,6 @@
   },
   "files": ["dist"],
   "scripts": { "build": "tsc -b" },
-  "dependencies": { "effect": "4.0.1" }
+  "dependencies": { "effect": "4.0.1" },
+  "devDependencies": { "gtfs-realtime-bindings": "2.2.0" }
 }

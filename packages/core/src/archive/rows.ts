@@ -28,7 +28,7 @@ export type ArchiveRow = {
   readonly received_at: number;
 };
 
-const optional = <K extends string, V>(key: K, value: V | undefined) =>
+export const optional = <K extends string, V>(key: K, value: V | undefined) =>
   value === undefined ? {} : ({ [key]: value } as Record<K, V>);
 
 export function toArchiveRow(fix: RecordedFix): ArchiveRow {
@@ -58,7 +58,7 @@ export function dedupe(rows: ReadonlyArray<ArchiveRow>): ArchiveRow[] {
   });
 }
 
-const COLOMBO_UTC_OFFSET_MS = 5.5 * 3_600_000;
+export const COLOMBO_UTC_OFFSET_MS = 5.5 * 3_600_000;
 
 const colombo = (ms: number) =>
   new Date(ms + COLOMBO_UTC_OFFSET_MS).toISOString();

@@ -24,3 +24,7 @@ export {
 } from "./archive/rows.js";
 export { ARCHIVE_COLUMNS } from "./archive/columns.js";
 export * from "./ports.js";
+export { decodeArchiveChunk, encodeArchiveChunk, gunzip, gzip } from "./archive/gzip.js";
+export { COLOMBO_UTC_OFFSET_MS, optional } from "./archive/rows.js";
+export { encodeVehiclePositions } from "./gtfs/realtime.js";
+export { parseJson } from "./json.js";
