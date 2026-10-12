@@ -27,7 +27,9 @@ const timed = async (call: () => Promise<Record<string, unknown>>) => {
 };
 
 export default {
-  async fetch(): Promise<Response> {
+  async fetch(request: Request, env: { SPIKE_KEY?: string }): Promise<Response> {
+    if (!env.SPIKE_KEY || request.headers.get("x-spike-key") !== env.SPIKE_KEY)
+      return new Response("not found", { status: 404 });
     const refresh = await timed(async () => {
       const response = await fetch(`${BASE}/user-service/api/v1/auth/refresh`, {
         method: "POST",

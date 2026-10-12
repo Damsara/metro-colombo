@@ -1,6 +1,6 @@
 import { Container, getContainer } from "@cloudflare/containers";
 
-type Env = { COMPACTOR: DurableObjectNamespace<Compactor> };
+type Env = { COMPACTOR: DurableObjectNamespace<Compactor>; SPIKE_KEY?: string };
 
 export class Compactor extends Container<Env> {
   defaultPort = 8080;
@@ -14,7 +14,9 @@ async function run(env: Env) {
 }
 
 export default {
-  fetch(_request: Request, env: Env) {
+  fetch(request: Request, env: Env) {
+    if (!env.SPIKE_KEY || request.headers.get("x-spike-key") !== env.SPIKE_KEY)
+      return new Response("not found", { status: 404 });
     return run(env).then((body) => new Response(body));
   },
   async scheduled(_event: ScheduledController, env: Env) {
