@@ -1,4 +1,4 @@
-import { Clock, Effect } from "effect";
+import { Clock, Effect, Semaphore } from "effect";
 import {
   type ArchiveRow,
   chunkKey,
@@ -23,6 +23,7 @@ const NDJSON = "application/x-ndjson";
 export type RecorderStatus = {
   readonly lastWriteAt: number | null;
   readonly failingSince: number | null;
+  readonly liveFailingSince: number | null;
   readonly pendingRows: number;
   readonly droppedRows: number;
 };
@@ -58,7 +59,9 @@ export const makeRecorder = (options: {
     let lastChunkAt = Number.NEGATIVE_INFINITY;
     let lastWriteAt: number | null = null;
     let failingSince: number | null = null;
+    let liveFailingSince: number | null = null;
     let droppedRows = 0;
+    const lock = yield* Semaphore.make(1);
 
     const pendingTotal = () => pending.reduce((sum, chunk) => sum + chunk.rows.length, 0);
 
@@ -80,7 +83,7 @@ export const makeRecorder = (options: {
         Effect.catch((error) => Effect.as(Effect.logWarning("archive upload failed", { key, error: error.message }), false)),
       );
 
-    const flush = Effect.gen(function* () {
+    const flushNow = Effect.gen(function* () {
       const now = yield* Clock.currentTimeMillis;
       lastFlushAt = now;
       const rows = dedupe(buffer.map(toArchiveRow));
@@ -109,14 +112,17 @@ export const makeRecorder = (options: {
       if (!uploaded) return;
       const since = hourStartKey(now - HOUR_MS);
       recent = recent.filter((chunk) => chunk.key >= since);
-      yield* upload(LIVE_ARCHIVE_KEY, concat(recent.map((chunk) => chunk.bytes)), LIVE_CACHE);
+      const liveUploaded = yield* upload(LIVE_ARCHIVE_KEY, concat(recent.map((chunk) => chunk.bytes)), LIVE_CACHE);
+      liveFailingSince = liveUploaded ? null : (liveFailingSince ?? now);
     });
+
+    const flush = lock.withPermits(1)(flushNow);
 
     const shape: RecorderShape = {
       record: (fix) => void buffer.push(fix),
       flush,
       flushIfDue: Effect.flatMap(Clock.currentTimeMillis, (now) => (now - lastFlushAt >= FLUSH_EVERY_MS ? flush : Effect.void)),
-      status: Effect.sync(() => ({ lastWriteAt, failingSince, pendingRows: buffer.length + pendingTotal(), droppedRows })),
+      status: Effect.sync(() => ({ lastWriteAt, failingSince, liveFailingSince, pendingRows: buffer.length + pendingTotal(), droppedRows })),
     };
     return shape;
   });

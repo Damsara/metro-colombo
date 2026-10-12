@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Effect } from "effect";
 import { TestClock } from "effect/testing";
-import { decodeArchiveChunk, type RecordedFix } from "@metro/core";
+import { decodeArchiveChunk, type RecordedFix, StoreError } from "@metro/core";
 import { memoryObjectStore, spyObjectStore, testClockAt } from "@metro/core/testing";
 import { LIVE_ARCHIVE_KEY, makeRecorder, type RecorderShape } from "@metro/fleet";
 
@@ -64,8 +64,8 @@ test("failed uploads stay pending and go up in order once storage recovers", asy
       return { failing, recovered: yield* recorder.status };
     }),
   );
-  assert.deepEqual(result.failing, { lastWriteAt: null, failingSince: T0, pendingRows: 2, droppedRows: 0 });
-  assert.deepEqual(result.recovered, { lastWriteAt: T0 + 10 * MINUTE, failingSince: null, pendingRows: 0, droppedRows: 0 });
+  assert.deepEqual(result.failing, { lastWriteAt: null, failingSince: T0, liveFailingSince: null, pendingRows: 2, droppedRows: 0 });
+  assert.deepEqual(result.recovered, { lastWriteAt: T0 + 10 * MINUTE, failingSince: null, liveFailingSince: null, pendingRows: 0, droppedRows: 0 });
   assert.deepEqual(spy.puts.map((put) => put.key), [
     "raw/2026-10-12/080000-fleet.ndjson.gz",
     "raw/2026-10-12/080500-fleet.ndjson.gz",
@@ -142,4 +142,102 @@ test("a flush is due only every 5 minutes", async () => {
   );
   assert.equal(result, 0);
   assert.equal(spy.puts[0].key, "raw/2026-10-12/080500-fleet.ndjson.gz");
+});
+
+const slowPuts = (spy: ReturnType<typeof spyObjectStore>) => ({
+  ...spy.store,
+  put: (...args: Parameters<typeof spy.store.put>) =>
+    Effect.andThen(Effect.promise(() => new Promise<void>((resolve) => setTimeout(resolve, 5))), spy.store.put(...args)),
+});
+
+test("concurrent flushes upload every row exactly once and the live file has no duplicates", async () => {
+  const spy = spyObjectStore(memoryObjectStore());
+  await Effect.runPromise(
+    Effect.gen(function* () {
+      const recorder = yield* makeRecorder({ store: slowPuts(spy), instance: "fleet" });
+      recorder.record(fix("a", T0));
+      yield* Effect.all(
+        [recorder.flush, Effect.andThen(Effect.sync(() => recorder.record(fix("b", T0 + SECOND))), recorder.flush)],
+        { concurrency: "unbounded" },
+      );
+    }).pipe(Effect.provide(testClockAt(T0))),
+  );
+  const chunks = spy.puts.filter((put) => put.key !== LIVE_ARCHIVE_KEY);
+  assert.deepEqual(chunks.map((put) => put.key), ["raw/2026-10-12/080000-fleet.ndjson.gz", "raw/2026-10-12/080001-fleet.ndjson.gz"]);
+  assert.deepEqual((await Promise.all(chunks.map((put) => ids(put.body)))).flat(), ["a", "b"]);
+  const lives = spy.puts.filter((put) => put.key === LIVE_ARCHIVE_KEY);
+  assert.deepEqual(await ids(lives[lives.length - 1].body), ["a", "b"]);
+});
+
+test("repeated flushes in one second chain onto the next free second", async () => {
+  const { spy } = await withRecorder(undefined, (recorder) =>
+    Effect.gen(function* () {
+      recorder.record(fix("a", T0));
+      yield* recorder.flush;
+      recorder.record(fix("b", T0));
+      yield* recorder.flush;
+      yield* TestClock.adjust(SECOND);
+      recorder.record(fix("c", T0 + SECOND));
+      yield* recorder.flush;
+    }),
+  );
+  const chunks = spy.puts.filter((put) => put.key !== LIVE_ARCHIVE_KEY).map((put) => put.key);
+  assert.deepEqual(chunks, [
+    "raw/2026-10-12/080000-fleet.ndjson.gz",
+    "raw/2026-10-12/080001-fleet.ndjson.gz",
+    "raw/2026-10-12/080002-fleet.ndjson.gz",
+  ]);
+});
+
+test("a bumped name past midnight lands in the next day and the live window drops the old hour", async () => {
+  const midnight = Date.parse("2026-10-13T00:00:00+05:30");
+  const spy = spyObjectStore(memoryObjectStore());
+  await Effect.runPromise(
+    Effect.gen(function* () {
+      const recorder = yield* makeRecorder({ store: spy.store, instance: "fleet" });
+      recorder.record(fix("a", midnight - SECOND));
+      yield* recorder.flush;
+      recorder.record(fix("b", midnight - SECOND));
+      yield* recorder.flush;
+      yield* TestClock.adjust(91 * MINUTE);
+      recorder.record(fix("c", midnight + 90 * MINUTE));
+      yield* recorder.flush;
+    }).pipe(Effect.provide(testClockAt(midnight - SECOND))),
+  );
+  const chunks = spy.puts.filter((put) => put.key !== LIVE_ARCHIVE_KEY);
+  assert.deepEqual(chunks.map((put) => put.key), [
+    "raw/2026-10-12/235959-fleet.ndjson.gz",
+    "raw/2026-10-13/000000-fleet.ndjson.gz",
+    "raw/2026-10-13/013059-fleet.ndjson.gz",
+  ]);
+  const lives = spy.puts.filter((put) => put.key === LIVE_ARCHIVE_KEY);
+  assert.deepEqual(await ids(lives[lives.length - 1].body), ["b", "c"]);
+});
+
+test("a failed live upload shows in the status and clears on the next success", async () => {
+  const spy = spyObjectStore(memoryObjectStore());
+  let liveDown = true;
+  const failLive = {
+    ...spy.store,
+    put: (...args: Parameters<typeof spy.store.put>) =>
+      args[0] === LIVE_ARCHIVE_KEY && liveDown
+        ? Effect.fail(new StoreError({ message: "live refused", status: 503 }))
+        : spy.store.put(...args),
+  };
+  const { failed, recovered } = await Effect.runPromise(
+    Effect.gen(function* () {
+      const recorder = yield* makeRecorder({ store: failLive, instance: "fleet" });
+      recorder.record(fix("a", T0));
+      yield* recorder.flush;
+      const failed = yield* recorder.status;
+      liveDown = false;
+      yield* TestClock.adjust(5 * MINUTE);
+      recorder.record(fix("b", T0 + 5 * MINUTE));
+      yield* recorder.flush;
+      return { failed, recovered: yield* recorder.status };
+    }).pipe(Effect.provide(testClockAt(T0))),
+  );
+  assert.equal(failed.liveFailingSince, T0);
+  assert.equal(failed.failingSince, null);
+  assert.equal(recovered.liveFailingSince, null);
 });
