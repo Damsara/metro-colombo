@@ -220,18 +220,27 @@ def build_catalog(path, public_url, live_url, today_file, today_start_ms, days, 
         """CREATE VIEW load_by_route_hour AS
            SELECT route_code, hour(ts) AS hour, count(*) AS fixes,
                   avg(load) AS avg_load, max(load) AS max_load
-           FROM fixes WHERE load IS NOT NULL GROUP BY ALL"""
+           FROM all_fixes WHERE load IS NOT NULL GROUP BY ALL"""
     )
     con.execute(
+        """CREATE VIEW bus_hours AS
+           SELECT route_code, date_trunc('hour', ts) AS hour, bus_id, registration, count(*) AS fixes,
+                  round(111320 * sqrt(pow(max(lat) - min(lat), 2)
+                    + pow((max(lng) - min(lng)) * cos(radians(avg(lat))), 2))) AS spread_m,
+                  avg(load) AS avg_load, max(load) AS max_load
+           FROM all_fixes GROUP BY ALL"""
+    )
+    # Parked buses keep reporting all night; anyone who wants a different cutoff can count bus_hours themselves.
+    con.execute(
         """CREATE VIEW buses_per_hour AS
-           SELECT route_code, date_trunc('hour', ts) AS hour, count(DISTINCT bus_id) AS buses
-           FROM fixes GROUP BY ALL"""
+           SELECT route_code, hour, count(*) AS buses, count(*) FILTER (WHERE spread_m > 200) AS moving_buses
+           FROM bus_hours GROUP BY ALL"""
     )
     con.execute(
         """CREATE VIEW silences AS
            SELECT bus_id, registration, route_code, previous_ts AS silent_from, ts AS heard_again,
                   ts - previous_ts AS silent_for
-           FROM (SELECT *, lag(ts) OVER (PARTITION BY bus_id ORDER BY ts) AS previous_ts FROM fixes)
+           FROM (SELECT *, lag(ts) OVER (PARTITION BY bus_id ORDER BY ts) AS previous_ts FROM all_fixes)
            WHERE ts - previous_ts > INTERVAL 2 MINUTE"""
     )
     con.execute("CHECKPOINT")
