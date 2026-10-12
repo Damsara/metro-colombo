@@ -8,8 +8,11 @@ ARG NODE_VERSION=22.22
 FROM node:${NODE_VERSION}-alpine AS api
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY packages/core/package.json ./packages/core/
 RUN npm ci
 COPY tsconfig.json ./
+COPY packages/core/tsconfig.json ./packages/core/
+COPY packages/core/src ./packages/core/src
 COPY src ./src
 RUN npm run build && npm prune --omit=dev
 
@@ -33,6 +36,8 @@ VOLUME /data
 WORKDIR /app
 COPY --from=api /app/package.json ./
 COPY --from=api /app/node_modules ./node_modules
+COPY --from=api /app/packages/core/package.json ./packages/core/
+COPY --from=api /app/packages/core/dist ./packages/core/dist
 COPY --from=api /app/dist ./dist
 COPY --from=web /web/dist ./web/dist
 USER node
