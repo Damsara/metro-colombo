@@ -1,9 +1,12 @@
-import { useEffect, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { DOCS_MAIN, DOCS_TITLE, HEADER_LINK } from "./classNames";
 import { AppHeader } from "./components/AppHeader";
 import { Eyebrow } from "./components/ui/Eyebrow";
 import { duckdbShellLink } from "./lib/duckdbShell";
+
+// DuckDB in the browser is several megabytes, so it loads only with this page.
+const ArchiveCharts = lazy(() => import("./components/ArchiveCharts"));
 
 const DATA_HOST = "https://data.metro.manasa.ai";
 const BROWSER_CATALOG = `${DATA_HOST}/catalog/metro.duckdb`;
@@ -276,6 +279,19 @@ export default function DataDocs() {
           </Link>
           .
         </p>
+
+        <Section title="At a glance">
+          <p>
+            These charts run DuckDB in your browser against the archive, so they
+            are as fresh as the data.
+          </p>
+          <Suspense fallback={<p role="status">Loading the charts…</p>}>
+            <ArchiveCharts
+              catalogUrl={BROWSER_CATALOG}
+              shellSetup={SHELL_SETUP}
+            />
+          </Suspense>
+        </Section>
 
         <Section title="On your computer">
           <p>Install the DuckDB command line once (macOS, Linux or Windows):</p>
