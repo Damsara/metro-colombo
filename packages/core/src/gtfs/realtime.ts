@@ -31,7 +31,7 @@ const vehiclePosition = (bus: LiveBus): number[] => {
   const position = [...float(1, bus.lat), ...float(2, bus.lng), ...(bus.heading === undefined ? [] : float(3, bus.heading))];
   const occupancy =
     bus.current_capacity !== undefined && bus.total_capacity
-      ? uint(10, Math.round((bus.current_capacity / bus.total_capacity) * 100))
+      ? uint(10, Math.min(100, Math.max(0, Math.round((bus.current_capacity / bus.total_capacity) * 100))))
       : [];
   return [
     ...(bus.route_code ? message(1, text(5, bus.route_code)) : []),

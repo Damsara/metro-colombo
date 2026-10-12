@@ -55,3 +55,23 @@ test("four hundred buses round-trip, exercising multi-byte lengths", () => {
   assert.equal(feed.entity.length, 400);
   assert.equal(feed.entity[399].vehicle.vehicle.id, "bus-399");
 });
+
+test("occupancy is clamped to 0 to 100 so odd capacities never corrupt the feed", () => {
+  const bus = (id: string, current_capacity: number, total_capacity: number) => ({ id, lat: 6.9, lng: 79.8, current_capacity, total_capacity });
+  const feed = decode(
+    encodeVehiclePositions(
+      [bus("negative", -10, 70), bus("negative-total", 35, -70), bus("over", 140, 70), { id: "after", lat: 6.8, lng: 79.9, route_code: "138" }],
+      1_791_685_805,
+    ),
+  );
+  assert.deepEqual(
+    feed.entity.map((entity) => [entity.id, entity.vehicle.occupancyPercentage]),
+    [
+      ["negative", 0],
+      ["negative-total", 0],
+      ["over", 100],
+      ["after", undefined],
+    ],
+  );
+  assert.deepEqual(feed.entity[3].vehicle.trip, { routeId: "138" });
+});
