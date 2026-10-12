@@ -2,6 +2,7 @@ import { Clock, Effect, Semaphore } from "effect";
 import {
   type ArchiveRow,
   chunkKey,
+  concatAsOneMember,
   dedupe,
   encodeArchiveChunk,
   hourStartKey,
@@ -44,7 +45,7 @@ export const makeRecorder = (options: {
     const cap = options.maxPendingRows ?? MAX_PENDING_ROWS;
     let buffer: RecordedFix[] = [];
     const pending: { readonly key: string; rows: ArchiveRow[] }[] = [];
-    let recent: { readonly key: string; readonly rows: ReadonlyArray<ArchiveRow> }[] = [];
+    let recent: { readonly key: string; readonly bytes: Uint8Array }[] = [];
     let lastFlushAt = yield* Clock.currentTimeMillis;
     let lastChunkAt = Number.NEGATIVE_INFINITY;
     let lastWriteAt: number | null = null;
@@ -94,7 +95,7 @@ export const makeRecorder = (options: {
           break;
         }
         pending.shift();
-        recent.push({ key: chunk.key, rows: chunk.rows });
+        recent.push({ key: chunk.key, bytes });
         uploaded = true;
         lastWriteAt = now;
         failingSince = null;
@@ -102,8 +103,7 @@ export const makeRecorder = (options: {
       if (!uploaded) return;
       const since = hourStartKey(now - HOUR_MS);
       recent = recent.filter((chunk) => chunk.key >= since);
-      // One gzip member, since workerd's DecompressionStream rejects anything after the first.
-      const live = yield* Effect.promise(() => encodeArchiveChunk(recent.flatMap((chunk) => chunk.rows)));
+      const live = yield* Effect.promise(() => concatAsOneMember(recent.map((chunk) => chunk.bytes)));
       const liveUploaded = yield* upload(LIVE_ARCHIVE_KEY, live, LIVE_CACHE);
       liveFailingSince = liveUploaded ? null : (liveFailingSince ?? now);
     });

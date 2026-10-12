@@ -72,6 +72,19 @@ test("a fetch that throws fails with one fixed reason that never names the url",
   }
 });
 
+test("a fetch that throws synchronously fails with the fixed reason and never names the url", async () => {
+  const spy = vi.spyOn(globalThis, "fetch").mockImplementation(() => {
+    throw new TypeError(`Invalid URL ${SECRET_URL}`);
+  });
+  try {
+    const message = await failureMessage(workerSocket.connect(SECRET_URL, {}, () => {}));
+    assert.match(message, /SocketError: socket did not open/);
+    assert.doesNotMatch(message, /secret-session-token|socket\.test/);
+  } finally {
+    spy.mockRestore();
+  }
+});
+
 test("a refused upgrade never names the url and redirects are not followed", async () => {
   let init: RequestInit | undefined;
   const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, given) => {
@@ -153,6 +166,19 @@ test("an R2 failure carries no detail from its cause", async () => {
     const message = await failureMessage(effect);
     assert.match(message, /StoreError/);
     assert.doesNotMatch(message, /credential-secret/);
+  }
+});
+
+test("an R2 call that hangs fails as StoreError within its limit", async () => {
+  const hung = () => new Promise(() => {});
+  const store = r2ObjectStore({ get: hung, put: hung, list: hung, delete: hung } as unknown as R2Bucket, 50);
+  for (const effect of [
+    store.get("live/live.json"),
+    store.put("live/live.json", new Uint8Array(), { contentType: "application/json" }),
+    store.list("raw/"),
+    store.delete("live/live.json"),
+  ]) {
+    assert.match(await failureMessage(effect), /StoreError: R2 \w+ of [\w/.]+ timed out/);
   }
 });
 
