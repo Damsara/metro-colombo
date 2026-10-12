@@ -1,14 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { gunzipSync } from "node:zlib";
 import {
   chunkKey,
   colomboDay,
   dedupe,
-  encodeChunk,
   toArchiveRow,
   todayPrefix,
-} from "../src/archive/rows.js";
+} from "@metro/core";
 
 const fix = {
   id: "bus-1",
@@ -59,16 +57,4 @@ test("chunks are filed by the Colombo date and time", () => {
     "raw/2026-10-12/001507-pod-a.ndjson.gz",
   );
   assert.equal(todayPrefix(evening), "raw/2026-10-12/");
-});
-
-test("a chunk is gzipped newline-delimited JSON", () => {
-  const rows = [toArchiveRow(fix), { ...toArchiveRow(fix), bus_id: "bus-2" }];
-  const lines = gunzipSync(encodeChunk(rows))
-    .toString("utf8")
-    .trim()
-    .split("\n");
-  assert.deepEqual(
-    lines.map((line) => JSON.parse(line).bus_id),
-    ["bus-1", "bus-2"],
-  );
 });

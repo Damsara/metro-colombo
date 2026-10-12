@@ -15,12 +15,12 @@ import {
   chunkKey,
   colomboDay,
   dedupe,
-  encodeChunk,
   hourStartKey,
   toArchiveRow,
   type ArchiveRow,
   type RecordedFix,
-} from "./rows.js";
+} from "@metro/core";
+import { encodeChunk } from "./rows.js";
 
 export const LIVE_KEY = "today/live.ndjson.gz";
 

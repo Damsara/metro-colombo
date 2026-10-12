@@ -5,7 +5,7 @@ import { Effect } from "effect";
 import { TestClock } from "effect/testing";
 import { ArchiveError, type ArchiveStoreShape } from "../src/archive/r2.js";
 import { LIVE_KEY, makeFlusher } from "../src/archive/recorder.js";
-import type { RecordedFix } from "../src/archive/rows.js";
+import type { RecordedFix } from "@metro/core";
 
 const fix = (id: string, timestamp: number): RecordedFix => ({
   id,
