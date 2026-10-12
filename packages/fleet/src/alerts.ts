@@ -1,4 +1,4 @@
-import { Clock, Effect, Layer, Option, Schema } from "effect";
+import { Clock, Effect, Layer, Option, Redacted, Schema, Semaphore } from "effect";
 import { HttpBody, HttpClient } from "effect/http";
 import { type Alert, Alerts, COLOMBO_UTC_OFFSET_MS, StateStore } from "@metro/core";
 import { FleetConfig } from "./config.js";
@@ -14,7 +14,7 @@ export const NtfyAlerts = Layer.effect(
           onNone: () => Effect.logWarning(alert.title, alert.message),
           onSome: (url) =>
             http
-              .post(url, {
+              .post(Redacted.value(url), {
                 // Plain text with title, priority and tags headers is ntfy's format; other webhooks still get the text.
                 headers: {
                   title: alert.title,
@@ -25,11 +25,13 @@ export const NtfyAlerts = Layer.effect(
               })
               .pipe(
                 Effect.flatMap((response) =>
-                  response.status < 300 ? Effect.void : Effect.logWarning("alert rejected", response.status),
+                  response.status >= 200 && response.status <= 299
+                    ? Effect.logInfo(alert.title, alert.message)
+                    : Effect.logWarning("alert rejected", response.status),
                 ),
                 Effect.timeout("10 seconds"),
-                Effect.catch((error) => Effect.logWarning("alert not sent", error)),
-                Effect.andThen(Effect.logInfo(alert.title, alert.message)),
+                // The error's message carries the request url, which is the secret.
+                Effect.catch((error) => Effect.logWarning("alert not sent", "reason" in error ? error.reason._tag : error._tag)),
               ),
         }),
     });
@@ -54,37 +56,53 @@ export type AlertBookShape = {
 
 const HOUR_MS = 3_600_000;
 const Book = Schema.Record(Schema.String, Schema.Struct({ since: Schema.Number, sentAt: Schema.Number }));
+type Stored = Option.Option<typeof Book.Type>;
 
 export const makeAlertBook = Effect.gen(function* () {
   const state = yield* StateStore;
   const alerts = yield* Alerts;
-  const stored = yield* state.get("alerts").pipe(
-    Effect.map(Option.flatMap(Schema.decodeUnknownOption(Book))),
-    Effect.orElseSucceed(() => Option.none()),
+  const empty = (reason: string) => Effect.as(Effect.logWarning(reason), Option.none() as Stored);
+  const stored: Stored = yield* state.get("alerts").pipe(
+    Effect.flatMap((found) =>
+      Option.match(found, {
+        onNone: () => Effect.succeed(Option.none() as Stored),
+        onSome: (value) =>
+          Option.match(Schema.decodeUnknownOption(Book)(value), {
+            onNone: () => empty("alert book unreadable, starting empty"),
+            onSome: (entries) => Effect.succeed(Option.some(entries)),
+          }),
+      }),
+    ),
+    Effect.catch(() => empty("alert book not loaded, starting empty")),
   );
   const book: Record<string, { since: number; sentAt: number }> = Option.match(stored, {
     onNone: () => ({}),
     onSome: (entries) => ({ ...entries }),
   });
   const save = state.set("alerts", book).pipe(Effect.catch((error) => Effect.logWarning("alert book not saved", error.message)));
+  const lock = yield* Semaphore.make(1);
 
   const raise = (problem: Problem, alert: Alert) =>
-    Effect.gen(function* () {
-      const now = yield* Clock.currentTimeMillis;
-      const entry = book[problem];
-      if (entry && now - entry.sentAt < HOUR_MS) return;
-      yield* alerts.send(alert);
-      book[problem] = { since: entry?.since ?? now, sentAt: now };
-      yield* save;
-    });
+    lock.withPermits(1)(
+      Effect.gen(function* () {
+        const now = yield* Clock.currentTimeMillis;
+        const entry = book[problem];
+        if (entry && now - entry.sentAt < HOUR_MS) return;
+        yield* alerts.send(alert);
+        book[problem] = { since: entry?.since ?? now, sentAt: now };
+        yield* save;
+      }),
+    );
 
   const resolve = (problem: Problem, alert: Alert) =>
-    Effect.gen(function* () {
-      if (!book[problem]) return;
-      delete book[problem];
-      yield* save;
-      yield* alerts.send(alert);
-    });
+    lock.withPermits(1)(
+      Effect.gen(function* () {
+        if (!book[problem]) return;
+        delete book[problem];
+        yield* save;
+        yield* alerts.send(alert);
+      }),
+    );
 
   const shape: AlertBookShape = { raise, resolve, open: Effect.sync(() => Object.keys(book) as Problem[]) };
   return shape;
