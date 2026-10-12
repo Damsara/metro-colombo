@@ -914,7 +914,11 @@ export default function MapView(props: Props) {
     // Leaving follow mode keeps the camera where the user (or the bus) left it.
     const wasFollowing = appliedFocus.current === FOLLOW_FOCUS;
     appliedFocus.current = next.key;
-    if (wasFollowing && !next.key.startsWith("ride:")) return;
+    if (wasFollowing && !next.key.startsWith("ride:")) {
+      // Otherwise the follow panel closing reframes the map to the whole network.
+      userMoved.current = true;
+      return;
+    }
     if (next.coordinates.length === 0) return;
     const bounds = new maplibregl.LngLatBounds();
     next.coordinates.forEach((position) =>
