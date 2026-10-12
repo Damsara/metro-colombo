@@ -89,6 +89,23 @@ in `.env`. If the saved token stops working, for example after the server was
 off for more than about 7 days, run the login again: the server falls back to
 the new token in `.env`.
 
+To log in again without a laptop, set `METRO_PHONE`, `OTP_SECRET` and
+`ALERT_WEBHOOK_URL`. When the refresh token is rejected, the server stops
+calling refresh, sends an alert, and texts a code to the phone (at most every
+10 minutes). An iPhone Shortcuts automation on that phone (trigger: a message
+from `LMT-GO` containing "verification code", run immediately) takes the code
+with `(?<=is:\s)\d{6}` and posts it:
+
+```
+POST /fleet/otp
+Authorization: Bearer <OTP_SECRET>
+{"code":"123456"}
+```
+
+The server signs in with it, saves the new token, resumes the live feed and
+sends a "restored" alert. Replies: 200 accepted, 400 not a code or rejected,
+409 no code pending, 404 wrong secret or `OTP_SECRET` unset.
+
 Treat `.env` and `.auth-state` like a password: they act as the account that
 signed in. Both are gitignored.
 
@@ -129,6 +146,9 @@ the catalogs.
 | ------------------------ | ------------------------------------ | ----------------------------------------------------------- |
 | `METRO_REFRESH_TOKEN`    | none (required)                      | upstream refresh token from `scripts/otp-login.mjs`         |
 | `AUTH_STATE_PATH`        | `.auth-state`                        | where the renewed refresh token is saved                    |
+| `METRO_PHONE`            | none                                 | the login's phone; a code is texted here when it dies       |
+| `OTP_SECRET`             | none (endpoint off)                  | bearer secret for `POST /fleet/otp`                         |
+| `ALERT_WEBHOOK_URL`      | none (log only)                      | where login alerts are POSTed, e.g. an ntfy topic           |
 | `EIMSKY_BASE`            | `https://metrobusapiprod.eimsky.com` | MetroBus backend                                            |
 | `LANKAMETRO_BASE`        | `https://lankametro.lk`              | route colours, landmarks, geometry fallback                 |
 | `HOST` / `PORT`          | `127.0.0.1` / `8788`                 | listen address; set `HOST=0.0.0.0` to accept other machines |
