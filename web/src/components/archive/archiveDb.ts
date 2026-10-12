@@ -29,3 +29,22 @@ export async function rows<T>(db: ArchiveDb, sql: string): Promise<T[]> {
   const table = await db.coordinator.query(sql);
   return table.toArray() as T[];
 }
+
+export type ResultTable = {
+  fields: { name: string; typeId: number }[];
+  rows: Record<string, unknown>[];
+};
+
+export async function resultTable(
+  db: ArchiveDb,
+  sql: string,
+): Promise<ResultTable> {
+  const table = await db.coordinator.query(sql);
+  return {
+    fields: table.schema.fields.map((field) => ({
+      name: field.name,
+      typeId: field.type.typeId,
+    })),
+    rows: table.toArray() as Record<string, unknown>[],
+  };
+}

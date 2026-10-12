@@ -14,7 +14,14 @@ import {
   withoutLimit,
 } from "../../lib/archiveCharts";
 import { palette } from "../../theme";
-import { openArchive, rows, type ArchiveDb } from "./archiveDb";
+import { cellKind, formatCell } from "../../lib/resultCells";
+import {
+  openArchive,
+  resultTable,
+  rows,
+  type ArchiveDb,
+  type ResultTable,
+} from "./archiveDb";
 import { PointsMap, type MapPoint } from "./PointsMap";
 import { WhenVisible } from "./WhenVisible";
 
@@ -26,7 +33,8 @@ export type ChartKind =
   | "slow"
   | "spans"
   | "swaps"
-  | "lag";
+  | "lag"
+  | "table";
 
 type Api = ArchiveDb["api"];
 type ViewState = "loading" | "empty" | "ready" | "failed";
@@ -522,6 +530,85 @@ function FeedLag({ catalogUrl, sql }: { catalogUrl: string; sql: string }) {
   );
 }
 
+const PREVIEW_ROWS = 8;
+
+// Views need a name, and one built from the query keeps each example's view apart.
+function viewName(sql: string): string {
+  let hash = 5381;
+  for (const char of sql) hash = (hash * 33 + char.charCodeAt(0)) >>> 0;
+  return `ex_table_${hash.toString(36)}`;
+}
+
+function Results({ catalogUrl, sql }: { catalogUrl: string; sql: string }) {
+  const name = viewName(sql);
+  const view = useView(catalogUrl, name, chartView(name, sql));
+  const [result, setResult] = useState<ResultTable | null>(null);
+  const [total, setTotal] = useState(0);
+  useEffect(() => {
+    if (!view.db || view.state !== "ready") return;
+    let cancelled = false;
+    Promise.all([
+      resultTable(view.db, `SELECT * FROM ${name} LIMIT ${PREVIEW_ROWS}`),
+      rows<{ n: number }>(view.db, `SELECT count(*)::INT AS n FROM ${name}`),
+    ])
+      .then(([found, [{ n }]]) => {
+        if (cancelled) return;
+        setResult(found);
+        setTotal(n);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [view.db, view.state, view.version, name]);
+  const state: ViewState =
+    view.state === "ready" && !result ? "loading" : view.state;
+  return (
+    <Status state={state} empty="No rows yet.">
+      {result && (
+        <>
+          <div className="mb-2 overflow-x-auto rounded-lg border border-line">
+            <table className="w-full text-left text-sm tabular-nums">
+              <thead className="bg-tint-50 text-muted">
+                <tr>
+                  {result.fields.map((field) => (
+                    <th
+                      key={field.name}
+                      scope="col"
+                      className="px-3 py-2 font-semibold whitespace-nowrap"
+                    >
+                      {field.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {result.rows.map((row, index) => (
+                  <tr key={index} className="border-t border-line">
+                    {result.fields.map((field) => (
+                      <td
+                        key={field.name}
+                        className="px-3 py-1.5 whitespace-nowrap"
+                      >
+                        {formatCell(row[field.name], cellKind(field.typeId))}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className={NOTE}>
+            {total > result.rows.length
+              ? `The first ${result.rows.length} of ${total} rows.`
+              : `${total} ${total === 1 ? "row" : "rows"}.`}
+          </p>
+        </>
+      )}
+    </Status>
+  );
+}
+
 const CHARTS: Record<
   ChartKind,
   (props: { catalogUrl: string; sql: string }) => ReactNode
@@ -534,6 +621,7 @@ const CHARTS: Record<
   spans: Spans,
   swaps: Swaps,
   lag: FeedLag,
+  table: Results,
 };
 
 class ChartBoundary extends Component<

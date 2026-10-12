@@ -40,11 +40,13 @@ function Query({ title, about, sql, chart }: Example) {
     <Card>
       <h3 className={CARD_TITLE}>{title}</h3>
       {about && <p className="text-muted">{about}</p>}
-      {chart && (
-        <Suspense fallback={null}>
-          <ExampleChart kind={chart} catalogUrl={BROWSER_CATALOG} sql={sql} />
-        </Suspense>
-      )}
+      <Suspense fallback={null}>
+        <ExampleChart
+          kind={chart ?? "table"}
+          catalogUrl={BROWSER_CATALOG}
+          sql={sql}
+        />
+      </Suspense>
       <details className="group mt-2">
         <summary className="flex min-h-9 cursor-pointer list-none items-center gap-3 text-sm font-semibold text-ink [&::-webkit-details-marker]:hidden">
           <span className="inline-block transition-transform group-open:rotate-90 motion-reduce:transition-none">
@@ -96,6 +98,8 @@ QUALIFY row_number() OVER (PARTITION BY bus_id ORDER BY ts DESC) = 1;`,
   },
   {
     title: "The most crowded routes and hours",
+    about:
+      "The route and hour of day when buses are fullest on average, across the whole archive.",
     sql: `SELECT route_code, hour, round(avg_load, 2) AS avg_load
 FROM load_by_route_hour
 ORDER BY avg_load DESC
@@ -296,7 +300,10 @@ const COLUMNS: [string, string][] = [
   ["lat, lng", "Position in degrees."],
   ["heading", "Degrees clockwise from north, when the bus reports it."],
   ["passengers, capacity", "Load the bus reports, and its total capacity."],
-  ["load", "passengers ÷ capacity, from 0 to 1."],
+  [
+    "load",
+    "passengers ÷ capacity. Above 1 when a bus reports more riders than its capacity.",
+  ],
   ["reported_at", "When the bus sent the position (milliseconds since 1970)."],
   ["received_at", "When this server received it (milliseconds since 1970)."],
   ["ts", "reported_at as a Colombo date and time."],
