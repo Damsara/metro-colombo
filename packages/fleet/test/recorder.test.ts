@@ -5,7 +5,7 @@ import { Effect } from "effect";
 import { TestClock } from "effect/testing";
 import { decodeArchiveChunk, type RecordedFix, StoreError } from "@metro/core";
 import { memoryObjectStore, spyObjectStore, testClockAt } from "@metro/core/testing";
-import { LIVE_ARCHIVE_KEY, makeRecorder, type RecorderShape } from "@metro/fleet";
+import { LIVE_ARCHIVE_KEY, makeRecorder, MAX_PENDING_ROWS, type RecorderShape } from "@metro/fleet";
 
 const T0 = Date.parse("2026-10-12T08:00:00+05:30");
 const SECOND = 1_000;
@@ -94,6 +94,22 @@ test("pending rows are capped, dropping the oldest and counting them", async () 
   assert.equal(result.droppedRows, 1);
   assert.deepEqual(await ids(spy.puts[0].body), ["b"]);
   assert.deepEqual(await ids(spy.puts[1].body), ["c"]);
+});
+
+test("by default 100,000 rows stay pending and the next one drops the oldest", async () => {
+  const { result } = await withRecorder(undefined, (recorder, store) =>
+    Effect.gen(function* () {
+      store.setFailing(true);
+      for (let row = 0; row < 100_000; row++) recorder.record(fix(`bus-${row}`, T0));
+      yield* recorder.flush;
+      yield* TestClock.adjust(5 * MINUTE);
+      recorder.record(fix("late", T0 + 5 * MINUTE));
+      yield* recorder.flush;
+      return yield* recorder.status;
+    }),
+  );
+  assert.deepEqual([result.pendingRows, result.droppedRows], [100_000, 1]);
+  assert.equal(MAX_PENDING_ROWS, 100_000);
 });
 
 test("two flushes in the same second never reuse a chunk name", async () => {

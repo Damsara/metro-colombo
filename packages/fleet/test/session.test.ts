@@ -166,6 +166,25 @@ test("after a failed read the next tick reads storage again and refreshes the st
   assert.deepEqual(alerts.sent, []);
 });
 
+test("a corrupt stored session never takes the seed: no refresh, and a login is needed", async () => {
+  const { upstream, alerts, backing, run } = setup({ session: { refreshToken: 1 }, env: { METRO_PHONE: "0771234567", METRO_REFRESH_TOKEN: "seed" } });
+  const [token, status] = await run((session) => Effect.all([session.token, session.status]));
+  assert.equal(tokenText(token), undefined);
+  assert.equal(status, "login_needed");
+  assert.deepEqual(upstream.calls.refresh, []);
+  assert.deepEqual(upstream.calls.checkPhone, ["+94771234567"]);
+  assert.equal(JSON.parse(backing.get("login") ?? "{}").reason, "no refresh token");
+  assert.match(alerts.sent[0].message, /no refresh token/);
+});
+
+test("callers queued behind a refresh that finds a dead token don't refresh again", async () => {
+  const { upstream, run } = setup({ session: expired });
+  upstream.settings.refreshStatus = 400;
+  const tokens = await run((session) => Effect.all(Array.from({ length: 3 }, () => session.token), { concurrency: "unbounded" }));
+  assert.deepEqual(tokens.map(tokenText), [undefined, undefined, undefined]);
+  assert.deepEqual(upstream.calls.refresh, ["stored"]);
+});
+
 test("status only reads storage, and never writes the seed", async () => {
   const { backing, log, run } = setup({ env: { METRO_REFRESH_TOKEN: "seed" } });
   assert.equal(await run((session) => session.status), "ok");
@@ -236,7 +255,7 @@ test("a slow load never overwrites the session an accepted code just made", asyn
   assert.equal(JSON.parse(backing.get("session") ?? "{}").refreshToken, "refresh-otp");
 });
 
-test("a seed is taken into empty storage and saved there", async () => {
+test("a seed in empty storage is refreshed and the rotated token saved", async () => {
   const { upstream, backing, run } = setup({ env: { METRO_REFRESH_TOKEN: "seed" } });
   await run((session) => session.token);
   assert.deepEqual(upstream.calls.refresh, ["seed"]);

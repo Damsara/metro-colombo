@@ -16,7 +16,7 @@ import {
 } from "@metro/core";
 import { recordingAlerts, type Register, scriptedSocket, spyObjectStore, testClockAt } from "@metro/core/testing";
 import { AuthClient, LankaMetroFeed } from "@metro/upstream";
-import { Fleet, type FleetShape, LIVE_ARCHIVE_KEY, LIVE_CACHE, LIVE_JSON_KEY, VEHICLES_PB_KEY } from "@metro/fleet";
+import { Fleet, type FleetShape, LIVE_ARCHIVE_KEY, LIVE_CACHE, LIVE_JSON_KEY, SHUTDOWN_FLUSH_MS, VEHICLES_PB_KEY } from "@metro/fleet";
 import { fakeLankaMetro } from "../support/fake-lanka-metro.ts";
 import { capturedLogs } from "./alerts.suite.ts";
 
@@ -89,6 +89,7 @@ const failingGets = (inner: ObjectStoreShape): ObjectStoreShape => ({
 type Controls = {
   hangRoutes: boolean;
   hangLivePuts: boolean;
+  hangArchivePuts: boolean;
   yieldingPuts: boolean;
   tickMayFail: boolean;
   hung: Deferred.Deferred<boolean> | undefined;
@@ -119,7 +120,7 @@ const untilDown = (fleet: FleetShape) =>
 const controlledStore = (inner: ObjectStoreShape, controls: Controls): ObjectStoreShape => ({
   get: (key) => inner.get(key),
   put: (key, body, options) =>
-    controls.hangLivePuts && key === LIVE_JSON_KEY
+    (controls.hangLivePuts && key === LIVE_JSON_KEY) || (controls.hangArchivePuts && key.startsWith("raw/"))
       ? hang(controls)
       : controls.yieldingPuts
         ? Effect.andThen(Effect.yieldNow, inner.put(key, body, options))
@@ -134,7 +135,7 @@ const harness = (wiring: FleetWiring, env: Record<string, string> = {}) => {
   const upstream = fakeLankaMetro();
   const socket = scriptedSocket();
   const alerts = recordingAlerts();
-  const controls: Controls = { hangRoutes: false, hangLivePuts: false, yieldingPuts: false, tickMayFail: false, hung: undefined };
+  const controls: Controls = { hangRoutes: false, hangLivePuts: false, hangArchivePuts: false, yieldingPuts: false, tickMayFail: false, hung: undefined };
   const objects = spyObjectStore(controlledStore(wiring.objects, controls));
   const logs = capturedLogs();
   const client = upstream.client.pipe(
@@ -212,6 +213,21 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       await h.runFleet(T0, (fleet) => Effect.andThen(fleet.tick, fleet.tick));
       await h.runFleet(T0 + MINUTE, (fleet) => fleet.tick);
       assert.deepEqual(h.upstream.calls.refresh, ["dead"]);
+    }));
+
+  test(`${name}: a corrupt stored session never falls back to the configured seed`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring, { METRO_REFRESH_TOKEN: "seed" });
+      await h.seed("session", { refreshToken: 1 });
+      const status = await h.runFleet(T0, (fleet) => Effect.andThen(fleet.tick, fleet.status));
+      assert.deepEqual(h.upstream.calls.refresh, []);
+      assert.equal(status.login, "login_needed");
+      assert.deepEqual(Option.getOrUndefined(await run(wiring.openState().get("login"))), {
+        reason: "no refresh token",
+        otpReference: "ref-1",
+        lastCodeRequestAt: T0,
+      });
+      assert.equal(h.socket.connections.length, 0);
     }));
 
   test(`${name}: a dead token stops refreshing and keeps the last snapshot stale, and an SMS code resumes the feed`, () =>
@@ -560,6 +576,32 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
         }),
       );
       assert.deepEqual(h.objects.puts.filter((put) => put.key.startsWith("raw/")), []);
+    }));
+
+  test(`${name}: a shutdown whose archive write hangs gives up after 10 seconds`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      await h.seed("session", validSession);
+      const result = await h.runFleet(T0, (fleet) =>
+        Effect.gen(function* () {
+          yield* fleet.tick;
+          h.socket.connections[0].send(gps([bus("bus-a")]));
+          const hung = yield* Deferred.make<boolean>();
+          h.controls.hung = hung;
+          h.controls.hangArchivePuts = true;
+          const stopping = yield* Effect.forkChild(fleet.shutdown);
+          yield* Deferred.await(hung);
+          yield* TestClock.adjust(10 * SECOND - 1);
+          const early = stopping.pollUnsafe() !== undefined;
+          yield* TestClock.adjust(1);
+          for (let turn = 0; turn < 200 && stopping.pollUnsafe() === undefined; turn++) yield* Effect.yieldNow;
+          const late = stopping.pollUnsafe() !== undefined;
+          if (late) yield* Fiber.join(stopping);
+          return { early, late };
+        }),
+      );
+      assert.deepEqual(result, { early: false, late: true });
+      assert.equal(SHUTDOWN_FLUSH_MS, 10_000);
     }));
 
   test(`${name}: failing archive writes keep rows pending, alert after 15 minutes, and recover`, () =>
