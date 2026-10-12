@@ -69,14 +69,22 @@ export const ReplayFeed = Layer.effect(
           const now = yield* Clock.currentTimeMillis;
           const instant = replayInstant(now, date, speed);
           const currentHour = Math.floor((instant - dayStart) / HOUR_MS);
+          const batch: unknown[] = [];
           if (currentHour !== hour || instant < last) {
-            const from = last === Number.NEGATIVE_INFINITY || instant < last ? instant - WARM_START_MS : last;
+            const advancing = hour >= 0 && currentHour !== hour;
+            if (advancing) {
+              while (cursor < rows.length) {
+                batch.push(toUpstreamFix(rows[cursor], now - instant));
+                cursor += 1;
+              }
+            }
+            rows = [];
             rows = yield* loadHour(currentHour);
             hour = currentHour;
+            const from = advancing ? Number.NEGATIVE_INFINITY : instant - WARM_START_MS;
             cursor = rows.findIndex((candidate) => candidate.received_at > from);
             if (cursor < 0) cursor = rows.length;
           }
-          const batch: unknown[] = [];
           while (cursor < rows.length && rows[cursor].received_at <= instant) {
             batch.push(toUpstreamFix(rows[cursor], now - instant));
             cursor += 1;

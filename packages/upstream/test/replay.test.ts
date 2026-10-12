@@ -110,3 +110,26 @@ test("a bad REPLAY_DATE stops the layer", async () => {
   assert.ok(Exit.isFailure(exit));
   assert.match(String(exit.cause), /REPLAY_DATE/);
 });
+
+const boundary = async (lastHour: number, firstHour: number, tail: string, head: string, now: string) => {
+  const spy = spyObjectStore(memoryObjectStore());
+  const put = (key: string, rows: ArchiveRow[]) =>
+    encodeArchiveChunk(rows).then((body) => Effect.runPromise(spy.store.put(key, body, { contentType: "application/x-ndjson" })));
+  await put(replayHourKey(DAY, lastHour), [row("bus-a", tail)]);
+  await put(replayHourKey(DAY, firstHour), [row("bus-b", head)]);
+  spy.gets.length = 0;
+  const batches = await replay(spy.store, Date.parse(now), [SECOND, SECOND, SECOND]);
+  return { spy, ids: batches.flat().map((fix) => fix.bus_id) };
+};
+
+test("rows just before and after an hour boundary each come out once, in order", async () => {
+  const { spy, ids } = await boundary(8, 9, "08:59:59.500", "09:00:00.100", "2026-10-12T08:59:58.200+05:30");
+  assert.deepEqual(ids, ["bus-a", "bus-b"]);
+  assert.deepEqual(spy.gets, [replayHourKey(DAY, 8), replayHourKey(DAY, 9)]);
+});
+
+test("rows just before and after midnight each come out once, in order", async () => {
+  const { spy, ids } = await boundary(23, 0, "23:59:59.500", "00:00:00.100", "2026-10-12T23:59:58.200+05:30");
+  assert.deepEqual(ids, ["bus-a", "bus-b"]);
+  assert.deepEqual(spy.gets, [replayHourKey(DAY, 23), replayHourKey(DAY, 0)]);
+});
