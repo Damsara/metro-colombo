@@ -82,3 +82,29 @@ test("a failed routes call is a FeedError", async () => {
   const error = await run((feed) => Effect.flip(feed.routes(token)));
   assert.equal(error.message, "routes answered HTTP 500");
 });
+
+test("a 200 reply that is not JSON is a FeedError", async () => {
+  const { run } = setup({ status: 200, text: "not json" });
+  const error = await run((feed) => Effect.flip(feed.routes(token)));
+  assert.equal(error._tag, "FeedError");
+  assert.match(error.message, /^routes failed: /);
+});
+
+test("a 200 reply that fails the schema is a FeedError", async () => {
+  const { run } = setup({ status: 200, json: { data: { routes: [{ id: 1 }] } } });
+  const error = await run((feed) => Effect.flip(feed.routes(token)));
+  assert.equal(error._tag, "FeedError");
+  assert.match(error.message, /^routes failed: /);
+});
+
+test("interrupting a session closes the socket", async () => {
+  const { socket, run } = setup();
+  await run((feed) =>
+    Effect.gen(function* () {
+      const fiber = yield* feed.run(token, { onMessage: () => {}, onBatch: () => {} }).pipe(Effect.forkChild({ startImmediately: true }));
+      assert.equal(socket.connections[0].isOpen(), true);
+      yield* Fiber.interrupt(fiber);
+    }),
+  );
+  assert.equal(socket.connections[0].isOpen(), false);
+});
