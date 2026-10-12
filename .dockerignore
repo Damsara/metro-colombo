@@ -13,3 +13,6 @@ tests
 web/tests
 deploy
 *.md
+spikes
+.dev.vars
+.handoff

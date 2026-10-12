@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 const FORBIDDEN =
-  /from\s+["'](node:[^"']+|ws|undici|cloudflare:[^"']+|@cloudflare\/[^"']+|(?:\.\.\/)+(?:src|apps)\/[^"']*)["']/;
+  /(?:from\s+|import\s*\(?\s*)["'](node:[^"']+|ws|undici|cloudflare:[^"']+|@cloudflare\/[^"']+|(?:\.\.\/)+(?:src|apps)\/[^"']*)["']/;
 
 const sources = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
