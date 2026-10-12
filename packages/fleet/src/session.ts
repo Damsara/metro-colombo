@@ -1,0 +1,196 @@
+import { Clock, Effect, Option, Redacted, Schema, Semaphore } from "effect";
+import { StateStore } from "@metro/core";
+import { AuthClient, isDeadToken, LankaMetroConfig, normalizePhone } from "@metro/upstream";
+import type { AlertBookShape } from "./alerts.js";
+
+export const RENEW_MARGIN_MS = 2 * 60_000;
+export const CODE_EVERY_MS = 10 * 60_000;
+
+export type LoginStatus = "ok" | "login_needed" | "upstream_error";
+
+export type SubmitOutcome =
+  | { readonly _tag: "Accepted" }
+  | { readonly _tag: "NoCodePending" }
+  | { readonly _tag: "CodeRejected"; readonly message: string };
+
+export type SessionShape = {
+  readonly token: Effect.Effect<Option.Option<Redacted.Redacted<string>>>;
+  readonly status: Effect.Effect<LoginStatus>;
+  readonly submitCode: (code: string) => Effect.Effect<SubmitOutcome>;
+};
+
+const StoredSession = Schema.Struct({
+  refreshToken: Schema.String,
+  webviewToken: Schema.String,
+  expiresAt: Schema.Number,
+  refreshedAt: Schema.Number,
+});
+type StoredSession = Schema.Schema.Type<typeof StoredSession>;
+
+const StoredLogin = Schema.Struct({
+  reason: Schema.String,
+  otpReference: Schema.NullOr(Schema.String),
+  lastCodeRequestAt: Schema.NullOr(Schema.Number),
+});
+type StoredLogin = Schema.Schema.Type<typeof StoredLogin>;
+
+const ACCEPTED: SubmitOutcome = { _tag: "Accepted" };
+export const NO_CODE_PENDING: SubmitOutcome = { _tag: "NoCodePending" };
+
+const loginNeededAlert = (reason: string, hasPhone: boolean) => ({
+  urgent: true,
+  title: "Live buses are down: login needed",
+  message: hasPhone
+    ? `Upstream login failed: ${reason}. A code is being texted to the login phone; the iPhone shortcut sends it back.`
+    : `Upstream login failed: ${reason}. Set METRO_PHONE so a code can be texted.`,
+});
+
+const restoredAlert = { title: "Live buses: login restored", message: "The code was accepted and the live feed is resuming." };
+
+export const makeSession = (alerts: AlertBookShape) =>
+  Effect.gen(function* () {
+    const auth = yield* AuthClient;
+    const state = yield* StateStore;
+    const config = yield* LankaMetroConfig;
+    const phone = Option.flatMap(config.phone, (raw) => Option.fromUndefinedOr(normalizePhone(raw)));
+    // Refresh tokens are single use, so two refreshes at once would leave one holding a dead token.
+    const semaphore = yield* Semaphore.make(1);
+
+    let loaded = false;
+    let session: StoredSession | undefined;
+    let login: StoredLogin | undefined;
+    let lastError: "upstream_error" | undefined;
+
+    const load = Effect.gen(function* () {
+      if (loaded) return;
+      const storedSession = yield* state.get("session");
+      const storedLogin = yield* state.get("login");
+      session = Option.getOrUndefined(Option.flatMap(storedSession, Schema.decodeUnknownOption(StoredSession)));
+      login = Option.getOrUndefined(Option.flatMap(storedLogin, Schema.decodeUnknownOption(StoredLogin)));
+      if (Option.isNone(storedSession) && Option.isSome(config.seedRefreshToken)) {
+        session = {
+          refreshToken: Redacted.value(config.seedRefreshToken.value),
+          webviewToken: "",
+          expiresAt: 0,
+          refreshedAt: 0,
+        };
+        yield* state.set("session", session);
+      }
+      loaded = true;
+    });
+
+    // Memory is updated first so a failed write never loses a refresh token that upstream has already rotated.
+    const saveSession = (next: StoredSession) => Effect.andThen(Effect.sync(() => void (session = next)), state.set("session", next));
+    const saveLogin = (next: StoredLogin) => Effect.andThen(Effect.sync(() => void (login = next)), state.set("login", next));
+    const fresh = (now: number) =>
+      session !== undefined && session.webviewToken !== "" && session.expiresAt - now > RENEW_MARGIN_MS;
+
+    const requestCode = Effect.gen(function* () {
+      const current = login;
+      const now = yield* Clock.currentTimeMillis;
+      if (!current || Option.isNone(phone)) return;
+      if (current.lastCodeRequestAt !== null && now - current.lastCodeRequestAt < CODE_EVERY_MS) return;
+      yield* saveLogin({ ...current, lastCodeRequestAt: now });
+      const reference = yield* auth.checkPhone(phone.value);
+      yield* saveLogin({ ...current, lastCodeRequestAt: now, otpReference: reference });
+      yield* Effect.logInfo("login code requested");
+    }).pipe(Effect.catch((error) => Effect.logWarning("login code request failed", error.message)));
+
+    const needLogin = (reason: string) =>
+      Effect.gen(function* () {
+        if (!login) yield* saveLogin({ reason, otpReference: null, lastCodeRequestAt: null });
+        yield* alerts.raise("login", loginNeededAlert(reason, Option.isSome(phone)));
+        yield* requestCode;
+      });
+
+    const adopt = (refreshToken: string, accessToken: string) =>
+      auth.webview(accessToken).pipe(
+        Effect.flatMap((webview) =>
+          Effect.gen(function* () {
+            const now = yield* Clock.currentTimeMillis;
+            yield* saveSession({
+              refreshToken,
+              webviewToken: webview.token,
+              expiresAt: now + webview.expiresInSeconds * 1000,
+              refreshedAt: now,
+            });
+            lastError = undefined;
+          }),
+        ),
+        Effect.catchTag("AuthHttpError", (error) =>
+          Effect.andThen(Effect.sync(() => void (lastError = "upstream_error")), Effect.logWarning("webview token failed", error.message)),
+        ),
+      );
+
+    const refresh = semaphore.withPermits(1)(
+      Effect.gen(function* () {
+        const now = yield* Clock.currentTimeMillis;
+        if (login || fresh(now)) return;
+        const current = session;
+        if (!current?.refreshToken) return yield* needLogin("no refresh token");
+        const pair = yield* auth.refresh(current.refreshToken).pipe(
+          Effect.map(Option.some),
+          Effect.catchTag("AuthHttpError", (error) =>
+            isDeadToken(error)
+              ? Effect.as(needLogin(`the refresh token was rejected (HTTP ${error.status})`), Option.none())
+              : Effect.as(
+                  Effect.andThen(Effect.sync(() => void (lastError = "upstream_error")), Effect.logWarning("refresh failed", error.message)),
+                  Option.none(),
+                ),
+          ),
+        );
+        if (Option.isNone(pair)) return;
+        yield* saveSession({ ...current, refreshToken: pair.value.refreshToken, webviewToken: "", expiresAt: 0 });
+        yield* adopt(pair.value.refreshToken, pair.value.accessToken);
+      }),
+    );
+
+    const token = Effect.gen(function* () {
+      yield* load;
+      if (login) {
+        yield* semaphore.withPermits(1)(Effect.suspend(() => (login ? needLogin(login.reason) : Effect.void)));
+        if (login) return Option.none<Redacted.Redacted<string>>();
+      }
+      if (!fresh(yield* Clock.currentTimeMillis)) yield* refresh;
+      const now = yield* Clock.currentTimeMillis;
+      return session && session.webviewToken !== "" && session.expiresAt > now
+        ? Option.some(Redacted.make(session.webviewToken))
+        : Option.none<Redacted.Redacted<string>>();
+    }).pipe(
+      Effect.catch((error) => Effect.as(Effect.logWarning("session state unavailable", error.message), Option.none<Redacted.Redacted<string>>())),
+    );
+
+    const status = load.pipe(
+      Effect.ignore,
+      Effect.map((): LoginStatus => (login ? "login_needed" : (lastError ?? "ok"))),
+    );
+
+    const submitCode = (code: string) =>
+      semaphore
+        .withPermits(1)(
+          Effect.gen(function* () {
+            yield* load;
+            const reference = login?.otpReference;
+            if (!reference) return NO_CODE_PENDING;
+            const verified = yield* auth.verifyOtp(reference, code).pipe(
+              Effect.map((pair) => ({ ok: true as const, pair })),
+              Effect.catchTag("AuthHttpError", (error) => Effect.succeed({ ok: false as const, message: error.message })),
+            );
+            if (!verified.ok) return { _tag: "CodeRejected", message: verified.message } satisfies SubmitOutcome;
+            yield* saveSession({ refreshToken: verified.pair.refreshToken, webviewToken: "", expiresAt: 0, refreshedAt: 0 });
+            login = undefined;
+            yield* state.delete("login").pipe(Effect.catch((error) => Effect.logWarning("login state not cleared", error.message)));
+            yield* adopt(verified.pair.refreshToken, verified.pair.accessToken);
+            yield* alerts.resolve("login", restoredAlert);
+            return ACCEPTED;
+          }),
+        )
+        .pipe(
+          Effect.catch((error) =>
+            Effect.succeed<SubmitOutcome>({ _tag: "CodeRejected", message: `login state unavailable: ${error.message}` }),
+          ),
+        );
+
+    const shape: SessionShape = { token, status, submitCode };
+    return shape;
+  });

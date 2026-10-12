@@ -36,6 +36,13 @@ test("a 4xx on refresh is a dead token and a 5xx is an outage", async () => {
   assert.equal(isDeadToken(outage), false);
 });
 
+test("a timeout or rate limit on refresh is an outage, and a 401 is still a dead token", async () => {
+  const statusOf = (status: number) => setup(() => ({ status, json: {} })).run((auth) => Effect.flip(auth.refresh("r1")));
+  assert.equal(isDeadToken(await statusOf(408)), false);
+  assert.equal(isDeadToken(await statusOf(429)), false);
+  assert.equal(isDeadToken(await statusOf(401)), true);
+});
+
 test("an unreadable refresh reply is an error without a status", async () => {
   const error = await setup(() => ({ status: 200, json: { data: {} } })).run((auth) => Effect.flip(auth.refresh("r1")));
   assert.equal(error.status, undefined);

@@ -8,9 +8,9 @@ export class AuthHttpError extends Data.TaggedError("AuthHttpError")<{
   readonly status?: number;
 }> {}
 
-// Only a 4xx on refresh means the token is dead; 5xx and network failures are outages.
+// Only a 4xx on refresh means the token is dead; 408, 429, 5xx and network failures are outages.
 export const isDeadToken = (error: AuthHttpError) =>
-  error.status !== undefined && error.status >= 400 && error.status < 500;
+  error.status !== undefined && error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429;
 
 export type TokenPair = { readonly accessToken: string; readonly refreshToken: string };
 export type WebviewToken = { readonly token: string; readonly expiresInSeconds: number };
