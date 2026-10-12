@@ -85,7 +85,8 @@ test("the cron puts the Fleet's alarm back if it is missing", async () => {
 });
 
 test("the staging Worker writes only to the staging bucket, on workers.dev, replaying, with no seed token", () => {
-  const config = JSON.parse(stagingConfig);
+  // JSONC allows trailing commas, which JSON.parse rejects.
+  const config = JSON.parse(stagingConfig.replace(/,(\s*[}\]])/g, "$1"));
   expect(config.name).toBe("metro-staging");
   expect(config.workers_dev).toBe(true);
   expect(config.routes).toBeUndefined();
