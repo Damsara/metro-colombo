@@ -224,6 +224,10 @@ export function makeR2Store(
                 message: `public read of ${path} failed: ${cause.message}`,
               }),
           ),
+          Effect.retry({
+            schedule: Schedule.exponential(Duration.millis(100)),
+            times: 2,
+          }),
         ),
   };
 }

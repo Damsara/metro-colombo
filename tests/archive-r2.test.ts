@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Duration, Effect, Fiber } from "effect";
-import { HttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
+import {
+  HttpClient,
+  HttpClientError,
+  HttpClientRequest,
+  HttpClientResponse,
+} from "effect/http";
 import { TestClock } from "effect/testing";
 import { makeR2Store } from "../src/archive/r2.js";
 
@@ -14,12 +19,20 @@ const settings = {
 };
 
 const recording = (
-  respond: (request: HttpClientRequest.HttpClientRequest) => Response | null,
+  respond: (
+    request: HttpClientRequest.HttpClientRequest,
+  ) => Response | null | "drop",
 ) => {
   const requests: HttpClientRequest.HttpClientRequest[] = [];
   const http = HttpClient.make((request) => {
     requests.push(request);
     const response = respond(request);
+    if (response === "drop")
+      return Effect.fail(
+        new HttpClientError.HttpClientError({
+          reason: new HttpClientError.TransportError({ request }),
+        }),
+      );
     return response
       ? Effect.succeed(HttpClientResponse.fromWeb(request, response))
       : Effect.never;
@@ -141,4 +154,22 @@ test("public reads go through the public domain without signing", async () => {
   );
   assert.equal(requests[0].headers["range"], "bytes=0-9");
   assert.equal(requests[0].headers["authorization"], undefined);
+});
+
+test("a public read that drops on the network is tried again", async () => {
+  let attempts = 0;
+  const { requests, store } = recording(() =>
+    ++attempts === 1 ? "drop" : new Response("x", { status: 206 }),
+  );
+  const response = await run(
+    Effect.gen(function* () {
+      const fiber = yield* Effect.forkChild(
+        store.fetchPublic("catalog/metro.duckdb", { range: "bytes=0-9" }),
+      );
+      yield* advance(Duration.seconds(2));
+      return yield* Fiber.join(fiber);
+    }),
+  );
+  assert.equal(response.status, 206);
+  assert.equal(requests.length, 2);
 });
