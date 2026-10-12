@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { closeSync, mkdirSync, mkdtempSync, openSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { open } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -134,6 +135,22 @@ test("a state write leaves no temporary file behind", async () => {
   const reopened = fileStateStore(join(dir, "fleet-state.json"));
   assert.equal((await Effect.runPromise(reopened.get("b")))._tag, "Some");
   assert.equal((await Effect.runPromise(reopened.get("a")))._tag, "None");
+});
+
+test("a state write syncs the new file before the rename and the folder after it", async (context) => {
+  const dir = temp("state-");
+  const path = join(dir, "fleet-state.json");
+  const probe = await open(dir, "r");
+  const prototype = Object.getPrototypeOf(probe) as { sync: () => Promise<void> };
+  await probe.close();
+  const original = prototype.sync;
+  const syncs: string[] = [];
+  context.mock.method(prototype, "sync", function (this: unknown) {
+    syncs.push(existsSync(path) ? "after rename" : "before rename");
+    return original.call(this);
+  });
+  await Effect.runPromise(fileStateStore(path).set("session", { refreshToken: "r" }));
+  assert.deepEqual(syncs, ["before rename", "after rename"]);
 });
 
 test("a state error names neither the key nor the value", async () => {

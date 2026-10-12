@@ -34,7 +34,7 @@ export const fileStateStore = (path: string, timeoutMs = STATE_TIMEOUT_MS): Stat
 
   const write = async (values: Record<string, unknown>) => {
     await mkdir(dirname(path), { recursive: true });
-    await replaceFile(path, JSON.stringify(values), { mode: 0o600 });
+    await replaceFile(path, JSON.stringify(values), { mode: 0o600, durable: true });
   };
 
   const limited = <A>(what: string, run: () => Promise<A>) =>
