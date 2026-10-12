@@ -9,6 +9,7 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 import urllib.request
 from zoneinfo import ZoneInfo
 
@@ -165,13 +166,19 @@ def write_reference(con, root):
     return True
 
 
+def cache_key(url, version):
+    """The edge keeps .parquet responses, 404s included, so each URL gets a version that hasn't been asked for before it existed."""
+    return f"{url}?v={version}" if url.startswith(("http://", "https://")) else url
+
+
 def build_catalog(path, public_url, live_url, today_file, today_start_ms, days, has_reference):
+    built = int(time.time() * 1000)
     if os.path.exists(path):
         os.remove(path)
     con = duckdb.connect(path)
     if has_reference:
-        con.execute(f"CREATE VIEW routes AS SELECT * FROM read_parquet({quote(public_url + '/reference/routes.parquet')})")
-        con.execute(f"CREATE VIEW stops AS SELECT * FROM read_parquet({quote(public_url + '/reference/stops.parquet')})")
+        con.execute(f"CREATE VIEW routes AS SELECT * FROM read_parquet({quote(cache_key(public_url + '/reference/routes.parquet', built))})")
+        con.execute(f"CREATE VIEW stops AS SELECT * FROM read_parquet({quote(cache_key(public_url + '/reference/stops.parquet', built))})")
 
     # Live fixes name the route by id only, so the code is filled in from the route list.
     def with_route_codes(select):
@@ -183,7 +190,7 @@ def build_catalog(path, public_url, live_url, today_file, today_start_ms, days, 
             "ON f.route_id = codes.route_id"
         )
 
-    urls = [f"{public_url}/fixes/date={day}/fixes.parquet" for day in sorted(days)]
+    urls = [cache_key(f"{public_url}/fixes/date={day}/fixes.parquet", 1) for day in sorted(days)]
     empty = "SELECT " + ", ".join(f"NULL::{t} AS {k}" for k, t in COLUMNS.items()) + " WHERE false"
     source = (
         f"read_parquet([{', '.join(quote(u) for u in urls)}], hive_partitioning = false)"
@@ -193,7 +200,7 @@ def build_catalog(path, public_url, live_url, today_file, today_start_ms, days, 
     con.execute(f"CREATE VIEW fixes AS {with_route_codes(f'SELECT *, {DERIVED} FROM {source}')}")
     live = f"SELECT * FROM read_json({quote(live_url)}, format = 'newline_delimited', columns = {COLUMNS_SQL})"
     sources = (
-        f"SELECT * FROM read_parquet({quote(today_file)}, hive_partitioning = false) UNION ALL BY NAME {live}"
+        f"SELECT * FROM read_parquet({quote(cache_key(today_file, built))}, hive_partitioning = false) UNION ALL BY NAME {live}"
         if today_file
         else live
     )

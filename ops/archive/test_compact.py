@@ -153,6 +153,11 @@ def test_a_plain_path_is_found_only_when_the_file_exists():
         assert compact.files(con, f"{root}/a/missing.parquet") == []
         assert compact.files(con, f"{root}/missing/c.parquet") == []
 
+
+def test_public_urls_get_a_version_and_local_paths_do_not():
+    assert compact.cache_key("https://x/a.parquet", 5) == "https://x/a.parquet?v=5"
+    assert compact.cache_key("/data/a.parquet", 5) == "/data/a.parquet"
+
 if __name__ == "__main__":
     for name, test in list(globals().items()):
         if name.startswith("test_"):
