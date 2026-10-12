@@ -81,3 +81,12 @@ test("bearer comparison needs the exact header", async () => {
   assert.equal(await Effect.runPromise(bearerMatches("bearer s3cret", "s3cret")), false);
   assert.equal(await Effect.runPromise(bearerMatches(undefined, "s3cret")), false);
 });
+
+test("an empty or blank secret matches nothing, and a header of another length never matches", async () => {
+  const matches = (header: string | undefined, secret: string) => Effect.runPromise(bearerMatches(header, secret));
+  assert.equal(await matches("Bearer ", ""), false);
+  assert.equal(await matches("Bearer  ", " "), false);
+  assert.equal(await matches("Bearer \t", "\t"), false);
+  assert.equal(await matches("Bearer s3cret-and-more", "s3cret"), false);
+  assert.equal(await matches("Bearer s3c", "s3cret"), false);
+});

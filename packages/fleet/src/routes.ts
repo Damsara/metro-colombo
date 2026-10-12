@@ -15,7 +15,7 @@ const digest = async (text: string) => new Uint8Array(await crypto.subtle.digest
 
 export const bearerMatches = (header: string | undefined, secret: string) =>
   Effect.promise(async () => {
-    if (header === undefined) return false;
+    if (header === undefined || secret.trim() === "") return false;
     const [given, expected] = await Promise.all([digest(header), digest(`Bearer ${secret}`)]);
     let difference = 0;
     for (let index = 0; index < expected.length; index++) difference |= given[index] ^ expected[index];
