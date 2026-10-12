@@ -11,6 +11,7 @@ import {
 import { Otlp, OtlpSerialization } from "effect/observability";
 import { createServer } from "node:http";
 import path from "node:path";
+import { Alerts } from "./alerts.js";
 import { ArchiveStore } from "./archive/r2.js";
 import { FleetRecorder } from "./archive/recorder.js";
 import { ArchiveRoutes } from "./archive/routes.js";
@@ -19,6 +20,7 @@ import { ServerConfig } from "./config.js";
 import { UpstreamHttp } from "./http.js";
 import { LiveFleet } from "./live-fleet.js";
 import { Occasions } from "./occasions.js";
+import { OtpRoutes } from "./otp.js";
 import { directionMatches, isIsoDate, isStopUuid } from "./params.js";
 import type * as S from "./schemas.js";
 import { UpstreamApi, type UpstreamError } from "./upstream.js";
@@ -313,6 +315,7 @@ const App = Layer.merge(WarmCaches, FleetRecorder).pipe(
   Layer.provideMerge(Occasions.layer),
   Layer.provideMerge(UpstreamApi.layer),
   Layer.provideMerge(Auth.layer),
+  Layer.provideMerge(Alerts.layer),
   Layer.provideMerge(UpstreamHttp),
 );
 
@@ -334,6 +337,7 @@ const Main = HttpRouter.serve(
   Layer.mergeAll(
     ApiRoutes,
     ArchiveRoutes,
+    OtpRoutes,
     WebRoutes,
     HttpRouter.cors({ allowedMethods: ["GET"] }),
   ),

@@ -27,4 +27,14 @@ export const UpstreamConfig = Config.all({
   authStatePath: Config.String("AUTH_STATE_PATH").pipe(
     Config.withDefault(".auth-state"),
   ),
+  // The login's phone; when the refresh token dies, a code is texted here.
+  phone: Config.option(Config.String("METRO_PHONE")),
+});
+
+export const OtpConfig = Config.all({
+  secret: Config.option(Config.Redacted("OTP_SECRET")),
+});
+
+export const AlertConfig = Config.all({
+  webhookUrl: Config.option(Config.String("ALERT_WEBHOOK_URL")),
 });
