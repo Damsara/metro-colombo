@@ -76,12 +76,15 @@ export class AuthClient extends Context.Service<AuthClient, AuthClientShape>()("
             Effect.flatMap((response) =>
               response.status < 400
                 ? Effect.succeed(response)
-                : Effect.fail(
-                    new AuthHttpError({
-                      endpoint,
-                      message: `upstream /auth/${endpoint} answered HTTP ${response.status}`,
-                      status: response.status,
-                    }),
+                : Effect.andThen(
+                    Effect.ignore(response.arrayBuffer),
+                    Effect.fail(
+                      new AuthHttpError({
+                        endpoint,
+                        message: `upstream /auth/${endpoint} answered HTTP ${response.status}`,
+                        status: response.status,
+                      }),
+                    ),
                   ),
             ),
           );

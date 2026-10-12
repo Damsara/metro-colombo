@@ -1,4 +1,4 @@
-import { Duration, Effect, Option } from "effect";
+import { Clock, Duration, Effect, Option } from "effect";
 import {
   type ObjectStoreShape,
   type SchedulerShape,
@@ -70,7 +70,7 @@ export const doStateStore = (storage: DurableObjectStorage, timeoutMs = STATE_TI
 };
 
 export const alarmScheduler = (storage: DurableObjectStorage): SchedulerShape => ({
-  wakeAfter: (ms) => Effect.promise(() => storage.setAlarm(Date.now() + ms)),
+  wakeAfter: (ms) => Effect.flatMap(Clock.currentTimeMillis, (now) => Effect.promise(() => storage.setAlarm(now + ms))),
   next: Effect.promise(() => storage.getAlarm()).pipe(Effect.map(Option.fromNullishOr)),
 });
 

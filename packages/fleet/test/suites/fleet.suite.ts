@@ -27,7 +27,9 @@ export type FleetWiring = {
 };
 export type WithFleetWiring = (body: (wiring: FleetWiring) => Promise<void>) => Promise<void>;
 
-const T0 = Date.parse("2026-10-12T08:00:00+05:30");
+const DAY = "2099-10-12";
+const colomboTime = (time: string) => Date.parse(`${DAY}T${time}+05:30`);
+const T0 = colomboTime("08:00:00");
 const SECOND = 1_000;
 const MINUTE = 60_000;
 const run = <A, E>(effect: Effect.Effect<A, E>) => Effect.runPromise(effect);
@@ -390,7 +392,7 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
   test(`${name}: empty frames all night keep the feed fresh rather than down`, () =>
     withWiring(async (wiring) => {
       const h = harness(wiring);
-      const night = Date.parse("2026-10-12T02:00:00+05:30");
+      const night = colomboTime("02:00:00");
       await h.seed("session", { ...validSession, expiresAt: night + 30 * MINUTE });
       const status = await h.runFleet(night, (fleet) =>
         Effect.gen(function* () {
@@ -515,7 +517,7 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           yield* fleet.tick;
         }),
       );
-      const chunk = h.putsTo("raw/2026-10-12/080500-fleet.ndjson.gz");
+      const chunk = h.putsTo(`raw/${DAY}/080500-fleet.ndjson.gz`);
       assert.equal(chunk.length, 1);
       assert.equal(chunk[0].options.cacheControl, "public, max-age=31536000, immutable");
       const rows = await decodeArchiveChunk(chunk[0].body);
@@ -539,7 +541,7 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           h.socket.connections[0].send(gps([bus("bus-a")]));
         }),
       );
-      const chunk = h.putsTo("raw/2026-10-12/080000-fleet.ndjson.gz");
+      const chunk = h.putsTo(`raw/${DAY}/080000-fleet.ndjson.gz`);
       assert.equal(chunk.length, 1);
       assert.deepEqual((await decodeArchiveChunk(chunk[0].body)).map((row) => row.bus_id), ["bus-a"]);
     }));
@@ -590,11 +592,11 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       assert.deepEqual(
         h.objects.puts.filter((put) => put.key.startsWith("raw/")).map((put) => put.key),
         [
-          "raw/2026-10-12/080500-fleet.ndjson.gz",
-          "raw/2026-10-12/081000-fleet.ndjson.gz",
-          "raw/2026-10-12/081500-fleet.ndjson.gz",
-          "raw/2026-10-12/082000-fleet.ndjson.gz",
-          "raw/2026-10-12/082600-fleet.ndjson.gz",
+          `raw/${DAY}/080500-fleet.ndjson.gz`,
+          `raw/${DAY}/081000-fleet.ndjson.gz`,
+          `raw/${DAY}/081500-fleet.ndjson.gz`,
+          `raw/${DAY}/082000-fleet.ndjson.gz`,
+          `raw/${DAY}/082600-fleet.ndjson.gz`,
         ],
       );
     }));
@@ -602,7 +604,7 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
   test(`${name}: a stale feed in quiet hours doesn't alert, and alerts from 05:00`, () =>
     withWiring(async (wiring) => {
       const h = harness(wiring);
-      const early = Date.parse("2026-10-12T04:50:00+05:30");
+      const early = colomboTime("04:50:00");
       await h.seed("session", validSession);
       await h.runFleet(early, (fleet) =>
         Effect.gen(function* () {
@@ -622,7 +624,7 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
   test(`${name}: quiet hours don't hold back the login alert`, () =>
     withWiring(async (wiring) => {
       const h = harness(wiring);
-      const night = Date.parse("2026-10-12T02:00:00+05:30");
+      const night = colomboTime("02:00:00");
       h.upstream.settings.refreshStatus = 400;
       await h.seed("session", { ...validSession, refreshToken: "dead", expiresAt: night - MINUTE });
       await h.runFleet(night, (fleet) => fleet.tick);
@@ -632,7 +634,7 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
   test(`${name}: quiet hours don't hold back the archive alert`, () =>
     withWiring(async (wiring) => {
       const h = harness(wiring);
-      const night = Date.parse("2026-10-12T01:00:00+05:30");
+      const night = colomboTime("01:00:00");
       await h.seed("session", { ...validSession, expiresAt: night + 30 * MINUTE });
       await h.runFleet(night, (fleet) =>
         Effect.gen(function* () {

@@ -83,7 +83,10 @@ export const LankaMetroFeed = Layer.effect(
                         Effect.flatMap(Schema.decodeUnknownEffect(RoutesResponse)),
                         Effect.mapError((error) => new FeedError({ message: `routes failed: ${error.message}` })),
                       )
-                    : Effect.fail(new FeedError({ message: `routes answered HTTP ${response.status}` })),
+                    : Effect.andThen(
+                        Effect.ignore(response.arrayBuffer),
+                        Effect.fail(new FeedError({ message: `routes answered HTTP ${response.status}` })),
+                      ),
                 ),
                 Effect.map(({ data }) => data.routes.map(({ id, code }) => ({ id, code }))),
               ),

@@ -24,6 +24,8 @@ export const NtfyAlerts = Layer.effect(
                 body: HttpBody.text(alert.message),
               })
               .pipe(
+                // An unread response is aborted later by a GC callback, which workerd rejects outside a request.
+                Effect.tap((response) => Effect.ignore(response.arrayBuffer)),
                 Effect.flatMap((response) =>
                   response.status >= 200 && response.status <= 299
                     ? Effect.logInfo(alert.title, alert.message)
