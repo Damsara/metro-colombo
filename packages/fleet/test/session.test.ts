@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ConfigProvider, Effect, Layer, Option, Redacted } from "effect";
+import { ConfigProvider, Effect, Fiber, Layer, Option, Redacted } from "effect";
 import { HttpClient } from "effect/http";
 import { TestClock } from "effect/testing";
 import { Alerts, StateError, StateStore, type StateStoreShape } from "@metro/core";
 import { memoryStateStore, recordingAlerts, testClockAt } from "@metro/core/testing";
 import { AuthClient } from "@metro/upstream";
 import { makeAlertBook, makeSession, type SessionShape } from "@metro/fleet";
+import { capturedLogs } from "./suites/alerts.suite.ts";
 import { fakeLankaMetro } from "./support/fake-lanka-metro.ts";
 
 const T0 = Date.parse("2026-10-12T08:00:00+05:30");
@@ -28,11 +29,13 @@ const setup = (options: { session?: unknown; env?: Record<string, string>; state
       ),
   };
   const alerts = recordingAlerts();
+  const logs = capturedLogs();
   const env = options.env ?? { METRO_PHONE: "0771234567" };
   const layer = Layer.mergeAll(
     AuthClient.layer.pipe(Layer.provide(Layer.succeed(HttpClient.HttpClient, upstream.client))),
     Layer.succeed(StateStore, state),
     Layer.succeed(Alerts, alerts.alerts),
+    logs.layer,
   ).pipe(Layer.provideMerge(ConfigProvider.layer(ConfigProvider.fromEnvRecord(env))), Layer.provideMerge(testClockAt(T0)));
   const run = <A>(use: (session: SessionShape) => Effect.Effect<A>) =>
     Effect.runPromise(
@@ -41,7 +44,7 @@ const setup = (options: { session?: unknown; env?: Record<string, string>; state
         return yield* use(session);
       }).pipe(Effect.provide(layer)),
     );
-  return { upstream, alerts, backing, log, run };
+  return { upstream, alerts, backing, log, logs: logs.lines, run };
 };
 
 const tokenText = (token: Option.Option<Redacted.Redacted<string>>) => Option.getOrUndefined(Option.map(token, Redacted.value));
@@ -133,17 +136,104 @@ test("codes go out at most every 10 minutes while the login is needed", async ()
 });
 
 test("a storage read failure is not empty storage: no seed, no refresh, no alert", async () => {
+  const writes: string[] = [];
   const failing: StateStoreShape = {
     get: () => Effect.fail(new StateError({ message: "storage unavailable" })),
-    set: () => Effect.void,
-    delete: () => Effect.void,
+    set: (key) => Effect.sync(() => void writes.push(key)),
+    delete: (key) => Effect.sync(() => void writes.push(key)),
   };
   const { upstream, alerts, run } = setup({ env: { METRO_PHONE: "0771234567", METRO_REFRESH_TOKEN: "seed" }, state: failing });
-  const result = await run((session) => Effect.all([session.token, session.status]));
+  const result = await run((session) => Effect.all([session.token, session.status, session.token]));
   assert.equal(tokenText(result[0]), undefined);
-  assert.notEqual(result[1], "login_needed");
+  assert.equal(result[1], "ok");
   assert.deepEqual(upstream.calls.refresh, []);
+  assert.deepEqual(upstream.calls.checkPhone, []);
   assert.deepEqual(alerts.sent, []);
+  assert.deepEqual(writes, []);
+});
+
+test("after a failed read the next tick reads storage again and refreshes the stored token, not the seed", async () => {
+  const memory = memoryStateStore(new Map([["session", JSON.stringify(expired)]]));
+  let failures = 1;
+  const flaky: StateStoreShape = {
+    ...memory,
+    get: (key) => (key === "session" && failures-- > 0 ? Effect.fail(new StateError({ message: "storage unavailable" })) : memory.get(key)),
+  };
+  const { upstream, alerts, run } = setup({ env: { METRO_PHONE: "0771234567", METRO_REFRESH_TOKEN: "seed" }, state: flaky });
+  const tokens = await run((session) => Effect.all([session.token, session.token]));
+  assert.deepEqual(tokens.map(tokenText), [undefined, "webview-1"]);
+  assert.deepEqual(upstream.calls.refresh, ["stored"]);
+  assert.deepEqual(alerts.sent, []);
+});
+
+test("status only reads storage, and never writes the seed", async () => {
+  const { backing, log, run } = setup({ env: { METRO_REFRESH_TOKEN: "seed" } });
+  assert.equal(await run((session) => session.status), "ok");
+  assert.deepEqual(log, []);
+  assert.equal(backing.size, 0);
+});
+
+const gatedStore = (backing: Map<string, string>) => {
+  const memory = memoryStateStore(backing);
+  let open!: () => void;
+  const gate = new Promise<void>((resolve) => (open = resolve));
+  let stalled = false;
+  const state: StateStoreShape = {
+    ...memory,
+    get: (key) =>
+      Effect.flatMap(memory.get(key), (value) => {
+        if (stalled || key !== "session") return Effect.succeed(value);
+        stalled = true;
+        return Effect.as(Effect.promise(() => gate), value);
+      }),
+  };
+  const settle = Effect.forEach(Array.from({ length: 200 }), () => Effect.yieldNow, { discard: true });
+  return { state, settle, open: Effect.sync(() => open()) };
+};
+
+test("a slow first load never overwrites a session another caller already rotated", async () => {
+  const backing = new Map([["session", JSON.stringify(expired)]]);
+  const gated = gatedStore(backing);
+  const { upstream, run } = setup({ state: gated.state });
+  const token = await run((session) =>
+    Effect.gen(function* () {
+      const reading = yield* Effect.forkChild(session.status);
+      const first = yield* Effect.forkChild(session.token);
+      yield* gated.settle;
+      yield* gated.open;
+      yield* Fiber.join(reading);
+      yield* Fiber.join(first);
+      return yield* session.token;
+    }),
+  );
+  assert.equal(tokenText(token), "webview-1");
+  assert.deepEqual(upstream.calls.refresh, ["stored"]);
+  assert.equal(JSON.parse(backing.get("session") ?? "{}").refreshToken, "refresh-1");
+});
+
+test("a slow load never overwrites the session an accepted code just made", async () => {
+  const pending = { reason: "the refresh token was rejected (HTTP 400)", otpReference: "ref-0", lastCodeRequestAt: T0 };
+  const backing = new Map([
+    ["session", JSON.stringify(expired)],
+    ["login", JSON.stringify(pending)],
+  ]);
+  const gated = gatedStore(backing);
+  const { upstream, run } = setup({ state: gated.state });
+  const outcome = await run((session) =>
+    Effect.gen(function* () {
+      const waiting = yield* Effect.forkChild(session.token);
+      const submitted = yield* Effect.forkChild(session.submitCode("123456"));
+      yield* gated.settle;
+      yield* gated.open;
+      yield* Fiber.join(waiting);
+      return { submitted: yield* Fiber.join(submitted), token: yield* session.token, status: yield* session.status };
+    }),
+  );
+  assert.deepEqual(outcome.submitted, { _tag: "Accepted" });
+  assert.equal(tokenText(outcome.token), "webview-1");
+  assert.equal(outcome.status, "ok");
+  assert.deepEqual(upstream.calls.refresh, []);
+  assert.equal(JSON.parse(backing.get("session") ?? "{}").refreshToken, "refresh-otp");
 });
 
 test("a seed is taken into empty storage and saved there", async () => {
@@ -212,4 +302,101 @@ test("a failed session write after a refresh keeps the new refresh token for the
   );
   assert.deepEqual(upstream.calls.refresh, ["stored", "refresh-1"]);
   assert.equal(JSON.parse(backing.get("session") ?? "{}").refreshToken, "refresh-2");
+});
+
+const awaitingCode = { reason: "the refresh token was rejected (HTTP 400)", otpReference: "ref-0", lastCodeRequestAt: T0 };
+
+test("a failed clear of the login record after an accepted code is retried on the next tick", async () => {
+  const backing = new Map([
+    ["session", JSON.stringify(expired)],
+    ["login", JSON.stringify(awaitingCode)],
+  ]);
+  const memory = memoryStateStore(backing);
+  let failDeletes = true;
+  const flaky: StateStoreShape = {
+    ...memory,
+    delete: (key) => (failDeletes ? Effect.fail(new StateError({ message: "delete failed" })) : memory.delete(key)),
+  };
+  const first = setup({ state: flaky });
+  const outcome = await first.run((session) =>
+    Effect.gen(function* () {
+      const submitted = yield* session.submitCode("123456");
+      const stillThere = backing.has("login");
+      failDeletes = false;
+      yield* session.token;
+      return { submitted, stillThere };
+    }),
+  );
+  assert.deepEqual(outcome, { submitted: { _tag: "Accepted" }, stillThere: true });
+  assert.equal(backing.has("login"), false);
+  const restarted = setup({ state: memoryStateStore(backing) });
+  const after = await restarted.run((session) => Effect.all([session.token, session.status]));
+  assert.equal(tokenText(after[0]), "webview-1");
+  assert.equal(after[1], "ok");
+  assert.deepEqual(restarted.upstream.calls.checkPhone, []);
+});
+
+test("a failed session save after an accepted code still accepts it and saves on the next tick", async () => {
+  const backing = new Map([
+    ["session", JSON.stringify(expired)],
+    ["login", JSON.stringify(awaitingCode)],
+  ]);
+  const memory = memoryStateStore(backing);
+  let failWrites = true;
+  const flaky: StateStoreShape = {
+    ...memory,
+    set: (key, value) => (failWrites ? Effect.fail(new StateError({ message: "write failed" })) : memory.set(key, value)),
+  };
+  const { upstream, run } = setup({ state: flaky });
+  const outcome = await run((session) =>
+    Effect.gen(function* () {
+      const submitted = yield* session.submitCode("123456");
+      const during = yield* session.token;
+      failWrites = false;
+      const after = yield* session.token;
+      return { submitted, during: tokenText(during), after: tokenText(after) };
+    }),
+  );
+  assert.deepEqual(outcome, { submitted: { _tag: "Accepted" }, during: "webview-1", after: "webview-1" });
+  assert.deepEqual(upstream.calls.refresh, []);
+  assert.equal(JSON.parse(backing.get("session") ?? "{}").refreshToken, "refresh-otp");
+  assert.equal(JSON.parse(backing.get("session") ?? "{}").webviewToken, "webview-1");
+});
+
+test("a restart within 10 minutes does not text another code", async () => {
+  const backing = new Map([["session", JSON.stringify(expired)]]);
+  const first = setup({ state: memoryStateStore(backing) });
+  first.upstream.settings.refreshStatus = 400;
+  await first.run((session) => session.token);
+  const second = setup({ state: memoryStateStore(backing) });
+  await second.run((session) => Effect.andThen(TestClock.adjust(9 * MINUTE), session.token));
+  assert.equal(first.upstream.calls.checkPhone.length, 1);
+  assert.deepEqual(second.upstream.calls.checkPhone, []);
+  assert.deepEqual(second.upstream.calls.refresh, []);
+  assert.deepEqual(second.alerts.sent, []);
+});
+
+test("a stored session exactly 2 minutes from expiry is renewed", async () => {
+  const edge = { refreshToken: "stored", webviewToken: "live", expiresAt: T0 + 2 * MINUTE, refreshedAt: T0 - 58 * MINUTE };
+  const { upstream, run } = setup({ session: edge });
+  const token = await run((session) => session.token);
+  assert.equal(tokenText(token), "webview-1");
+  assert.deepEqual(upstream.calls.refresh, ["stored"]);
+});
+
+test("logs never carry tokens, codes, references or the phone number", async () => {
+  const { upstream, logs, run } = setup({ session: expired });
+  upstream.settings.refreshStatus = 401;
+  await run((session) =>
+    Effect.gen(function* () {
+      yield* session.token;
+      yield* session.submitCode("999999");
+      yield* session.submitCode("123456");
+      upstream.settings.webviewStatus = 503;
+      yield* TestClock.adjust(2 * 60 * MINUTE);
+      yield* session.token;
+    }),
+  );
+  assert.ok(logs.length > 0);
+  for (const line of logs) assert.doesNotMatch(line, /stored|refresh-|access-|webview-|ref-\d|999999|123456|0771234567|94771234567/);
 });

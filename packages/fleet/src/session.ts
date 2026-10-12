@@ -55,33 +55,55 @@ export const makeSession = (alerts: AlertBookShape) =>
     const phone = Option.flatMap(config.phone, (raw) => Option.fromUndefinedOr(normalizePhone(raw)));
     // Refresh tokens are single use, so two refreshes at once would leave one holding a dead token.
     const semaphore = yield* Semaphore.make(1);
+    const loadLock = yield* Semaphore.make(1);
 
     let loaded = false;
     let session: StoredSession | undefined;
     let login: StoredLogin | undefined;
     let lastError: "upstream_error" | undefined;
+    let sessionUnsaved = false;
+    let loginUncleared = false;
 
-    const load = Effect.gen(function* () {
-      if (loaded) return;
-      const storedSession = yield* state.get("session");
-      const storedLogin = yield* state.get("login");
-      session = Option.getOrUndefined(Option.flatMap(storedSession, Schema.decodeUnknownOption(StoredSession)));
-      login = Option.getOrUndefined(Option.flatMap(storedLogin, Schema.decodeUnknownOption(StoredLogin)));
-      if (Option.isNone(storedSession) && Option.isSome(config.seedRefreshToken)) {
-        session = {
-          refreshToken: Redacted.value(config.seedRefreshToken.value),
-          webviewToken: "",
-          expiresAt: 0,
-          refreshedAt: 0,
-        };
-        yield* state.set("session", session);
-      }
-      loaded = true;
-    });
+    // Every change to memory happens after the load, so a load that finds loaded set never overwrites newer state.
+    const load = loadLock.withPermits(1)(
+      Effect.gen(function* () {
+        if (loaded) return;
+        const storedSession = yield* state.get("session");
+        const storedLogin = yield* state.get("login");
+        session = Option.getOrUndefined(Option.flatMap(storedSession, Schema.decodeUnknownOption(StoredSession)));
+        login = Option.getOrUndefined(Option.flatMap(storedLogin, Schema.decodeUnknownOption(StoredLogin)));
+        if (Option.isNone(storedSession) && Option.isSome(config.seedRefreshToken)) {
+          session = { refreshToken: Redacted.value(config.seedRefreshToken.value), webviewToken: "", expiresAt: 0, refreshedAt: 0 };
+        }
+        loaded = true;
+      }),
+    );
 
     // Memory is updated first so a failed write never loses a refresh token that upstream has already rotated.
-    const saveSession = (next: StoredSession) => Effect.andThen(Effect.sync(() => void (session = next)), state.set("session", next));
-    const saveLogin = (next: StoredLogin) => Effect.andThen(Effect.sync(() => void (login = next)), state.set("login", next));
+    const saveSession = (next: StoredSession) =>
+      Effect.andThen(
+        Effect.sync(() => void ((session = next), (sessionUnsaved = true))),
+        Effect.andThen(state.set("session", next), Effect.sync(() => void (sessionUnsaved = false))),
+      );
+    const keepSession = (next: StoredSession) =>
+      saveSession(next).pipe(Effect.catch((error) => Effect.logWarning("session not saved, retrying next tick", error.message)));
+    const saveLogin = (next: StoredLogin) =>
+      Effect.andThen(Effect.sync(() => void ((login = next), (loginUncleared = false))), state.set("login", next));
+    const clearLogin = Effect.andThen(
+      Effect.sync(() => void ((login = undefined), (loginUncleared = true))),
+      Effect.suspend(() => state.delete("login")).pipe(
+        Effect.andThen(Effect.sync(() => void (loginUncleared = false))),
+        Effect.catch((error) => Effect.logWarning("login state not cleared, retrying next tick", error.message)),
+      ),
+    );
+    const retryWrites = semaphore.withPermits(1)(
+      Effect.suspend(() =>
+        Effect.andThen(
+          sessionUnsaved && session ? keepSession(session) : Effect.void,
+          loginUncleared && !login ? clearLogin : Effect.void,
+        ),
+      ),
+    );
     const fresh = (now: number) =>
       session !== undefined && session.webviewToken !== "" && session.expiresAt - now > RENEW_MARGIN_MS;
 
@@ -108,7 +130,7 @@ export const makeSession = (alerts: AlertBookShape) =>
         Effect.flatMap((webview) =>
           Effect.gen(function* () {
             const now = yield* Clock.currentTimeMillis;
-            yield* saveSession({
+            yield* keepSession({
               refreshToken,
               webviewToken: webview.token,
               expiresAt: now + webview.expiresInSeconds * 1000,
@@ -147,6 +169,7 @@ export const makeSession = (alerts: AlertBookShape) =>
 
     const token = Effect.gen(function* () {
       yield* load;
+      if (sessionUnsaved || loginUncleared) yield* retryWrites;
       if (login) {
         yield* semaphore.withPermits(1)(Effect.suspend(() => (login ? needLogin(login.reason) : Effect.void)));
         if (login) return Option.none<Redacted.Redacted<string>>();
@@ -177,9 +200,8 @@ export const makeSession = (alerts: AlertBookShape) =>
               Effect.catchTag("AuthHttpError", (error) => Effect.succeed({ ok: false as const, message: error.message })),
             );
             if (!verified.ok) return { _tag: "CodeRejected", message: verified.message } satisfies SubmitOutcome;
-            yield* saveSession({ refreshToken: verified.pair.refreshToken, webviewToken: "", expiresAt: 0, refreshedAt: 0 });
-            login = undefined;
-            yield* state.delete("login").pipe(Effect.catch((error) => Effect.logWarning("login state not cleared", error.message)));
+            yield* keepSession({ refreshToken: verified.pair.refreshToken, webviewToken: "", expiresAt: 0, refreshedAt: 0 });
+            yield* clearLogin;
             yield* adopt(verified.pair.refreshToken, verified.pair.accessToken);
             yield* alerts.resolve("login", restoredAlert);
             return ACCEPTED;
