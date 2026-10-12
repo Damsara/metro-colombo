@@ -20,11 +20,20 @@ const tagOf = (cause: unknown) => {
   return cause instanceof Error ? ` (${cause.name})` : "";
 };
 
-export const r2ObjectStore = (bucket: R2Bucket, timeoutMs = STORE_TIMEOUT_MS): ObjectStoreShape => {
+export const r2ObjectStore = (
+  bucket: R2Bucket,
+  timeoutMs = STORE_TIMEOUT_MS,
+): ObjectStoreShape => {
   const storeTry = <A>(what: string, run: () => Promise<A>) =>
-    Effect.tryPromise({ try: run, catch: (cause) => new StoreError({ message: `${what} failed${tagOf(cause)}` }) }).pipe(
+    Effect.tryPromise({
+      try: run,
+      catch: (cause) =>
+        new StoreError({ message: `${what} failed${tagOf(cause)}` }),
+    }).pipe(
       Effect.timeout(Duration.millis(timeoutMs)),
-      Effect.catchTag("TimeoutError", () => Effect.fail(new StoreError({ message: `${what} timed out` }))),
+      Effect.catchTag("TimeoutError", () =>
+        Effect.fail(new StoreError({ message: `${what} timed out` })),
+      ),
     );
   return {
     get: (key) =>
@@ -39,14 +48,22 @@ export const r2ObjectStore = (bucket: R2Bucket, timeoutMs = STORE_TIMEOUT_MS): O
       }),
     put: (key, body, { contentType, cacheControl }) =>
       storeTry(`R2 upload of ${key}`, () =>
-        bucket.put(key, body, { httpMetadata: { contentType, ...(cacheControl ? { cacheControl } : {}) } }),
+        bucket.put(key, body, {
+          httpMetadata: {
+            contentType,
+            ...(cacheControl ? { cacheControl } : {}),
+          },
+        }),
       ).pipe(Effect.asVoid),
     list: (prefix) =>
       storeTry(`R2 list of ${prefix}`, async () => {
         const keys: string[] = [];
         let cursor: string | undefined;
         do {
-          const page = await bucket.list({ prefix, ...(cursor ? { cursor } : {}) });
+          const page = await bucket.list({
+            prefix,
+            ...(cursor ? { cursor } : {}),
+          });
           keys.push(...page.objects.map((object) => object.key));
           cursor = page.truncated ? page.cursor : undefined;
         } while (cursor);
@@ -56,28 +73,51 @@ export const r2ObjectStore = (bucket: R2Bucket, timeoutMs = STORE_TIMEOUT_MS): O
   };
 };
 
-export const doStateStore = (storage: DurableObjectStorage, timeoutMs = STATE_TIMEOUT_MS): StateStoreShape => {
+export const doStateStore = (
+  storage: DurableObjectStorage,
+  timeoutMs = STATE_TIMEOUT_MS,
+): StateStoreShape => {
   const limited = <A>(what: string, run: () => Promise<A>) =>
-    Effect.tryPromise({ try: run, catch: (cause) => new StateError({ message: `${what} failed${tagOf(cause)}` }) }).pipe(
+    Effect.tryPromise({
+      try: run,
+      catch: (cause) =>
+        new StateError({ message: `${what} failed${tagOf(cause)}` }),
+    }).pipe(
       Effect.timeout(Duration.millis(timeoutMs)),
-      Effect.catchTag("TimeoutError", () => Effect.fail(new StateError({ message: `${what} timed out` }))),
+      Effect.catchTag("TimeoutError", () =>
+        Effect.fail(new StateError({ message: `${what} timed out` })),
+      ),
     );
   return {
-    get: (key) => limited("state read", () => storage.get(key)).pipe(Effect.map(Option.fromUndefinedOr)),
+    get: (key) =>
+      limited("state read", () => storage.get(key)).pipe(
+        Effect.map(Option.fromUndefinedOr),
+      ),
     set: (key, value) => limited("state write", () => storage.put(key, value)),
-    delete: (key) => limited("state delete", () => storage.delete(key)).pipe(Effect.asVoid),
+    delete: (key) =>
+      limited("state delete", () => storage.delete(key)).pipe(Effect.asVoid),
   };
 };
 
-export const alarmScheduler = (storage: DurableObjectStorage): SchedulerShape => ({
-  wakeAfter: (ms) => Effect.flatMap(Clock.currentTimeMillis, (now) => Effect.promise(() => storage.setAlarm(now + ms))),
-  next: Effect.promise(() => storage.getAlarm()).pipe(Effect.map(Option.fromNullishOr)),
+export const alarmScheduler = (
+  storage: DurableObjectStorage,
+): SchedulerShape => ({
+  wakeAfter: (ms) =>
+    Effect.flatMap(Clock.currentTimeMillis, (now) =>
+      Effect.promise(() => storage.setAlarm(now + ms)),
+    ),
+  next: Effect.promise(() => storage.getAlarm()).pipe(
+    Effect.map(Option.fromNullishOr),
+  ),
 });
 
 // The URL carries the session token, so no message ever names it.
 const didNotOpen = () => new SocketError({ message: "socket did not open" });
 
-export type WorkerSocketOptions = { readonly handshakeTimeoutMs?: number; readonly maxMessageChars?: number };
+export type WorkerSocketOptions = {
+  readonly handshakeTimeoutMs?: number;
+  readonly maxMessageChars?: number;
+};
 
 // workerd has no setting for the largest incoming frame, so the cap is checked after a frame arrives.
 export const makeWorkerSocket = ({

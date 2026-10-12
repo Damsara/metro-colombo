@@ -14,9 +14,23 @@ import {
   type StateStoreShape,
   StoreError,
 } from "@metro/core";
-import { recordingAlerts, type Register, scriptedSocket, spyObjectStore, testClockAt } from "@metro/core/testing";
+import {
+  recordingAlerts,
+  type Register,
+  scriptedSocket,
+  spyObjectStore,
+  testClockAt,
+} from "@metro/core/testing";
 import { AuthClient, LankaMetroFeed } from "@metro/upstream";
-import { Fleet, type FleetShape, LIVE_ARCHIVE_KEY, LIVE_CACHE, LIVE_JSON_KEY, SHUTDOWN_FLUSH_MS, VEHICLES_PB_KEY } from "@metro/fleet";
+import {
+  Fleet,
+  type FleetShape,
+  LIVE_ARCHIVE_KEY,
+  LIVE_CACHE,
+  LIVE_JSON_KEY,
+  SHUTDOWN_FLUSH_MS,
+  VEHICLES_PB_KEY,
+} from "@metro/fleet";
 import { fakeLankaMetro } from "../support/fake-lanka-metro.ts";
 import { capturedLogs } from "./alerts.suite.ts";
 
@@ -25,7 +39,9 @@ export type FleetWiring = {
   readonly openState: () => StateStoreShape;
   readonly scheduler: SchedulerShape;
 };
-export type WithFleetWiring = (body: (wiring: FleetWiring) => Promise<void>) => Promise<void>;
+export type WithFleetWiring = (
+  body: (wiring: FleetWiring) => Promise<void>,
+) => Promise<void>;
 
 const DAY = "2099-10-12";
 const colomboTime = (time: string) => Date.parse(`${DAY}T${time}+05:30`);
@@ -33,13 +49,29 @@ const T0 = colomboTime("08:00:00");
 const SECOND = 1_000;
 const MINUTE = 60_000;
 const run = <A, E>(effect: Effect.Effect<A, E>) => Effect.runPromise(effect);
-const gps = (buses: ReadonlyArray<Record<string, unknown>>) => JSON.stringify({ type: "gps_update", payload: buses });
-const bus = (id: string, lat = 6.9, timestamp = T0) => ({ bus_id: id, lat, lng: 79.86, route_id: "route-1", timestamp });
-const validSession = { refreshToken: "stored", webviewToken: "webview-stored", expiresAt: T0 + 30 * MINUTE, refreshedAt: T0 - 30 * MINUTE };
-const decodeJson = (body: Uint8Array) => JSON.parse(new TextDecoder().decode(body));
+const gps = (buses: ReadonlyArray<Record<string, unknown>>) =>
+  JSON.stringify({ type: "gps_update", payload: buses });
+const bus = (id: string, lat = 6.9, timestamp = T0) => ({
+  bus_id: id,
+  lat,
+  lng: 79.86,
+  route_id: "route-1",
+  timestamp,
+});
+const validSession = {
+  refreshToken: "stored",
+  webviewToken: "webview-stored",
+  expiresAt: T0 + 30 * MINUTE,
+  refreshedAt: T0 - 30 * MINUTE,
+};
+const decodeJson = (body: Uint8Array) =>
+  JSON.parse(new TextDecoder().decode(body));
 
 const protobufFields = (bytes: Uint8Array) => {
-  const fields: { readonly field: number; readonly value: number | Uint8Array }[] = [];
+  const fields: {
+    readonly field: number;
+    readonly value: number | Uint8Array;
+  }[] = [];
   let at = 0;
   const varint = () => {
     let value = 0;
@@ -67,15 +99,20 @@ const protobufFields = (bytes: Uint8Array) => {
   return fields;
 };
 const nested = (fields: ReturnType<typeof protobufFields>, field: number) =>
-  fields.filter((entry) => entry.field === field).map((entry) => protobufFields(entry.value as Uint8Array));
-const scalar = (fields: ReturnType<typeof protobufFields>, field: number) => fields.find((entry) => entry.field === field)?.value;
+  fields
+    .filter((entry) => entry.field === field)
+    .map((entry) => protobufFields(entry.value as Uint8Array));
+const scalar = (fields: ReturnType<typeof protobufFields>, field: number) =>
+  fields.find((entry) => entry.field === field)?.value;
 const decodeVehicles = (body: Uint8Array) => {
   const feed = protobufFields(body);
   const [header] = nested(feed, 1);
   return {
     version: new TextDecoder().decode(scalar(header, 1) as Uint8Array),
     timestamp: scalar(header, 3),
-    ids: nested(feed, 2).map((entity) => new TextDecoder().decode(scalar(entity, 1) as Uint8Array)),
+    ids: nested(feed, 2).map((entity) =>
+      new TextDecoder().decode(scalar(entity, 1) as Uint8Array),
+    ),
   };
 };
 
@@ -97,7 +134,9 @@ type Controls = {
 
 const hang = (controls: Controls) =>
   Effect.andThen(
-    Effect.suspend(() => (controls.hung ? Deferred.succeed(controls.hung, true) : Effect.void)),
+    Effect.suspend(() =>
+      controls.hung ? Deferred.succeed(controls.hung, true) : Effect.void,
+    ),
     Effect.never,
   );
 
@@ -107,7 +146,9 @@ const tickThrough = (fleet: FleetShape, controls: Controls, hangFor: number) =>
     const hung = yield* Deferred.make<boolean>();
     controls.hung = hung;
     const tick = yield* Effect.forkChild(fleet.tick);
-    yield* Effect.forkChild(Effect.andThen(Fiber.await(tick), Deferred.succeed(hung, false)));
+    yield* Effect.forkChild(
+      Effect.andThen(Fiber.await(tick), Deferred.succeed(hung, false)),
+    );
     if (yield* Deferred.await(hung)) yield* TestClock.adjust(hangFor);
     yield* Fiber.join(tick);
   });
@@ -117,10 +158,14 @@ const untilDown = (fleet: FleetShape) =>
     while ((yield* fleet.status).feed !== "down") yield* Effect.yieldNow;
   });
 
-const controlledStore = (inner: ObjectStoreShape, controls: Controls): ObjectStoreShape => ({
+const controlledStore = (
+  inner: ObjectStoreShape,
+  controls: Controls,
+): ObjectStoreShape => ({
   get: (key) => inner.get(key),
   put: (key, body, options) =>
-    (controls.hangLivePuts && key === LIVE_JSON_KEY) || (controls.hangArchivePuts && key.startsWith("raw/"))
+    (controls.hangLivePuts && key === LIVE_JSON_KEY) ||
+    (controls.hangArchivePuts && key.startsWith("raw/"))
       ? hang(controls)
       : controls.yieldingPuts
         ? Effect.andThen(Effect.yieldNow, inner.put(key, body, options))
@@ -135,12 +180,21 @@ const harness = (wiring: FleetWiring, env: Record<string, string> = {}) => {
   const upstream = fakeLankaMetro();
   const socket = scriptedSocket();
   const alerts = recordingAlerts();
-  const controls: Controls = { hangRoutes: false, hangLivePuts: false, hangArchivePuts: false, yieldingPuts: false, tickMayFail: false, hung: undefined };
+  const controls: Controls = {
+    hangRoutes: false,
+    hangLivePuts: false,
+    hangArchivePuts: false,
+    yieldingPuts: false,
+    tickMayFail: false,
+    hung: undefined,
+  };
   const objects = spyObjectStore(controlledStore(wiring.objects, controls));
   const logs = capturedLogs();
   const client = upstream.client.pipe(
     HttpClient.transform((response, request) =>
-      controls.hangRoutes && request.url.endsWith("/routes/geo") ? Effect.andThen(response, hang(controls)) : response,
+      controls.hangRoutes && request.url.endsWith("/routes/geo")
+        ? Effect.andThen(response, hang(controls))
+        : response,
     ),
   );
   const fleetAt = (at: number) =>
@@ -156,22 +210,55 @@ const harness = (wiring: FleetWiring, env: Record<string, string> = {}) => {
           Layer.succeed(Alerts, alerts.alerts),
         ),
       ),
-      Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({ METRO_PHONE: "0771234567", ...env }))),
+      Layer.provide(
+        ConfigProvider.layer(
+          ConfigProvider.fromEnvRecord({ METRO_PHONE: "0771234567", ...env }),
+        ),
+      ),
       Layer.provideMerge(testClockAt(at)),
       Layer.provideMerge(logs.layer),
     );
-  const runFleet = async <A>(at: number, use: (fleet: FleetShape) => Effect.Effect<A>) => {
-    const result = await run(Effect.gen(function* () { return yield* use(yield* Fleet); }).pipe(Effect.provide(fleetAt(at))));
-    if (!controls.tickMayFail) assert.deepEqual(logs.lines.filter((line) => line.includes("fleet tick failed")), []);
-    assert.deepEqual(logs.lines.filter((line) => TOKENS.test(line)), []);
+  const runFleet = async <A>(
+    at: number,
+    use: (fleet: FleetShape) => Effect.Effect<A>,
+  ) => {
+    const result = await run(
+      Effect.gen(function* () {
+        return yield* use(yield* Fleet);
+      }).pipe(Effect.provide(fleetAt(at))),
+    );
+    if (!controls.tickMayFail)
+      assert.deepEqual(
+        logs.lines.filter((line) => line.includes("fleet tick failed")),
+        [],
+      );
+    assert.deepEqual(
+      logs.lines.filter((line) => TOKENS.test(line)),
+      [],
+    );
     return result;
   };
-  const seed = (key: string, value: unknown) => run(wiring.openState().set(key, value));
+  const seed = (key: string, value: unknown) =>
+    run(wiring.openState().set(key, value));
   const putsTo = (key: string) => objects.puts.filter((put) => put.key === key);
-  return { upstream, socket, alerts, objects, logs, controls, runFleet, seed, putsTo };
+  return {
+    upstream,
+    socket,
+    alerts,
+    objects,
+    logs,
+    controls,
+    runFleet,
+    seed,
+    putsTo,
+  };
 };
 
-export function fleetSuite(test: Register, name: string, withWiring: WithFleetWiring) {
+export function fleetSuite(
+  test: Register,
+  name: string,
+  withWiring: WithFleetWiring,
+) {
   test(`${name}: a restart reuses a stored session without refreshing`, () =>
     withWiring(async (wiring) => {
       const h = harness(wiring);
@@ -179,8 +266,14 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       await h.runFleet(T0, (fleet) => fleet.tick);
       assert.deepEqual(h.upstream.calls.refresh, []);
       assert.equal(h.socket.connections.length, 1);
-      assert.equal(h.socket.connections[0].url, "wss://metrobusapiprod.eimsky.com/ticketing-service/ws?token=webview-stored");
-      assert.equal(h.socket.connections[0].headers.origin, "https://lmtgo.eimsky.com");
+      assert.equal(
+        h.socket.connections[0].url,
+        "wss://metrobusapiprod.eimsky.com/ticketing-service/ws?token=webview-stored",
+      );
+      assert.equal(
+        h.socket.connections[0].headers.origin,
+        "https://lmtgo.eimsky.com",
+      );
     }));
 
   test(`${name}: a session about to expire is refreshed once and the new tokens are stored`, () =>
@@ -189,13 +282,19 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       await h.seed("session", { ...validSession, expiresAt: T0 + MINUTE });
       await h.runFleet(T0, (fleet) => Effect.andThen(fleet.tick, fleet.tick));
       assert.deepEqual(h.upstream.calls.refresh, ["stored"]);
-      assert.deepEqual(Option.getOrUndefined(await run(wiring.openState().get("session"))), {
-        refreshToken: "refresh-1",
-        webviewToken: "webview-1",
-        expiresAt: T0 + 3_600_000,
-        refreshedAt: T0,
-      });
-      assert.equal(h.socket.connections[0].url.endsWith("token=webview-1"), true);
+      assert.deepEqual(
+        Option.getOrUndefined(await run(wiring.openState().get("session"))),
+        {
+          refreshToken: "refresh-1",
+          webviewToken: "webview-1",
+          expiresAt: T0 + 3_600_000,
+          refreshedAt: T0,
+        },
+      );
+      assert.equal(
+        h.socket.connections[0].url.endsWith("token=webview-1"),
+        true,
+      );
     }));
 
   test(`${name}: a configured seed is used only when storage is empty`, () =>
@@ -209,7 +308,11 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
     withWiring(async (wiring) => {
       const h = harness(wiring, { METRO_REFRESH_TOKEN: "seed" });
       h.upstream.settings.refreshStatus = 400;
-      await h.seed("session", { ...validSession, refreshToken: "dead", expiresAt: T0 - MINUTE });
+      await h.seed("session", {
+        ...validSession,
+        refreshToken: "dead",
+        expiresAt: T0 - MINUTE,
+      });
       await h.runFleet(T0, (fleet) => Effect.andThen(fleet.tick, fleet.tick));
       await h.runFleet(T0 + MINUTE, (fleet) => fleet.tick);
       assert.deepEqual(h.upstream.calls.refresh, ["dead"]);
@@ -219,14 +322,19 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
     withWiring(async (wiring) => {
       const h = harness(wiring, { METRO_REFRESH_TOKEN: "seed" });
       await h.seed("session", { refreshToken: 1 });
-      const status = await h.runFleet(T0, (fleet) => Effect.andThen(fleet.tick, fleet.status));
+      const status = await h.runFleet(T0, (fleet) =>
+        Effect.andThen(fleet.tick, fleet.status),
+      );
       assert.deepEqual(h.upstream.calls.refresh, []);
       assert.equal(status.login, "login_needed");
-      assert.deepEqual(Option.getOrUndefined(await run(wiring.openState().get("login"))), {
-        reason: "no refresh token",
-        otpReference: "ref-1",
-        lastCodeRequestAt: T0,
-      });
+      assert.deepEqual(
+        Option.getOrUndefined(await run(wiring.openState().get("login"))),
+        {
+          reason: "no refresh token",
+          otpReference: "ref-1",
+          lastCodeRequestAt: T0,
+        },
+      );
       assert.equal(h.socket.connections.length, 0);
     }));
 
@@ -234,9 +342,24 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
     withWiring(async (wiring) => {
       const h = harness(wiring);
       h.upstream.settings.refreshStatus = 400;
-      await h.seed("session", { ...validSession, refreshToken: "dead", expiresAt: T0 - MINUTE });
-      const last = { success: true, count: 1, timestamp: T0 - MINUTE, buses: [{ id: "bus-x", lat: 6.9, lng: 79.86 }] };
-      await run(wiring.objects.put(LIVE_JSON_KEY, new TextEncoder().encode(JSON.stringify(last)), { contentType: "application/json" }));
+      await h.seed("session", {
+        ...validSession,
+        refreshToken: "dead",
+        expiresAt: T0 - MINUTE,
+      });
+      const last = {
+        success: true,
+        count: 1,
+        timestamp: T0 - MINUTE,
+        buses: [{ id: "bus-x", lat: 6.9, lng: 79.86 }],
+      };
+      await run(
+        wiring.objects.put(
+          LIVE_JSON_KEY,
+          new TextEncoder().encode(JSON.stringify(last)),
+          { contentType: "application/json" },
+        ),
+      );
 
       const down = await h.runFleet(T0, (fleet) =>
         Effect.gen(function* () {
@@ -253,15 +376,24 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
 
       assert.equal(down.login, "login_needed");
       assert.deepEqual(h.upstream.calls.refresh, ["dead"]);
-      assert.deepEqual(h.upstream.calls.checkPhone, ["+94771234567", "+94771234567"]);
+      assert.deepEqual(h.upstream.calls.checkPhone, [
+        "+94771234567",
+        "+94771234567",
+      ]);
       assert.equal(h.socket.connections.length, 0);
-      assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Live buses are down: login needed"]);
+      assert.deepEqual(
+        h.alerts.sent.map((alert) => alert.title),
+        ["Live buses are down: login needed"],
+      );
       const published = h.putsTo(LIVE_JSON_KEY).at(-1);
       assert.ok(published);
       const doc = decodeJson(published.body);
       assert.equal(doc.stale, true);
       assert.equal(doc.reason, "login_needed");
-      assert.deepEqual(doc.buses.map((entry: { id: string }) => entry.id), ["bus-x"]);
+      assert.deepEqual(
+        doc.buses.map((entry: { id: string }) => entry.id),
+        ["bus-x"],
+      );
 
       const resumed = await h.runFleet(T0 + 12 * MINUTE, (fleet) =>
         Effect.gen(function* () {
@@ -277,10 +409,18 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       assert.equal(resumed.right._tag, "Accepted");
       assert.equal(resumed.status.login, "ok");
       assert.equal(h.upstream.calls.checkPhone.length, 2);
-      assert.match(h.socket.connections.at(-1)?.url ?? "", /token=webview-\d+$/);
-      const stored = Option.getOrUndefined(await run(wiring.openState().get("session"))) as { refreshToken: string };
+      assert.match(
+        h.socket.connections.at(-1)?.url ?? "",
+        /token=webview-\d+$/,
+      );
+      const stored = Option.getOrUndefined(
+        await run(wiring.openState().get("session")),
+      ) as { refreshToken: string };
       assert.equal(stored.refreshToken, "refresh-otp");
-      assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Live buses are down: login needed", "Live buses: login restored"]);
+      assert.deepEqual(
+        h.alerts.sent.map((alert) => alert.title),
+        ["Live buses are down: login needed", "Live buses: login restored"],
+      );
     }));
 
   test(`${name}: the live socket reconnects with backoff that stops growing at 60 s`, () =>
@@ -296,7 +436,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
             yield* untilDown(fleet);
             const before = h.socket.connections.length;
             let waited = 0;
-            while (h.socket.connections.length === before && waited < 120 * SECOND) {
+            while (
+              h.socket.connections.length === before &&
+              waited < 120 * SECOND
+            ) {
               yield* TestClock.adjust(SECOND);
               waited += SECOND;
               yield* fleet.tick;
@@ -306,7 +449,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           return observed;
         }),
       );
-      assert.deepEqual(delays, [2_000, 4_000, 8_000, 16_000, 32_000, 60_000, 60_000]);
+      assert.deepEqual(
+        delays,
+        [2_000, 4_000, 8_000, 16_000, 32_000, 60_000, 60_000],
+      );
     }));
 
   test(`${name}: a socket that delivered positions reconnects after 1 s, and a silent one is closed after 30 s`, () =>
@@ -353,8 +499,14 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       assert.equal(doc.count, 2);
       assert.equal(doc.age_ms, 0);
       assert.deepEqual(
-        doc.buses.map((entry: { id: string; route_code: string }) => [entry.id, entry.route_code]),
-        [["bus-a", "138"], ["bus-b", "138"]],
+        doc.buses.map((entry: { id: string; route_code: string }) => [
+          entry.id,
+          entry.route_code,
+        ]),
+        [
+          ["bus-a", "138"],
+          ["bus-b", "138"],
+        ],
       );
       assert.equal(writes[1].options.cacheControl, "public, max-age=5");
       const pb = h.putsTo(VEHICLES_PB_KEY);
@@ -377,9 +529,19 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       const json = h.putsTo(LIVE_JSON_KEY).at(-1);
       const pb = h.putsTo(VEHICLES_PB_KEY).at(-1);
       assert.ok(json && pb);
-      assert.deepEqual(json.options, { contentType: "application/json", cacheControl: LIVE_CACHE });
-      assert.deepEqual(pb.options, { contentType: "application/x-protobuf", cacheControl: LIVE_CACHE });
-      assert.deepEqual(decodeVehicles(pb.body), { version: "2.0", timestamp: Math.floor(T0 / 1000), ids: ["bus-a", "bus-b"] });
+      assert.deepEqual(json.options, {
+        contentType: "application/json",
+        cacheControl: LIVE_CACHE,
+      });
+      assert.deepEqual(pb.options, {
+        contentType: "application/x-protobuf",
+        cacheControl: LIVE_CACHE,
+      });
+      assert.deepEqual(decodeVehicles(pb.body), {
+        version: "2.0",
+        timestamp: Math.floor(T0 / 1000),
+        ids: ["bus-a", "bus-b"],
+      });
     }));
 
   test(`${name}: empty frames don't rewrite the live files until a minute has passed`, () =>
@@ -391,7 +553,11 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           yield* fleet.tick;
           h.socket.connections[0].send(gps([]));
           yield* fleet.tick;
-          for (let elapsed = 5 * SECOND; elapsed < MINUTE; elapsed += 5 * SECOND) {
+          for (
+            let elapsed = 5 * SECOND;
+            elapsed < MINUTE;
+            elapsed += 5 * SECOND
+          ) {
             yield* TestClock.adjust(5 * SECOND);
             h.socket.connections[0].send(gps([]));
             yield* fleet.tick;
@@ -409,7 +575,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
     withWiring(async (wiring) => {
       const h = harness(wiring);
       const night = colomboTime("02:00:00");
-      await h.seed("session", { ...validSession, expiresAt: night + 30 * MINUTE });
+      await h.seed("session", {
+        ...validSession,
+        expiresAt: night + 30 * MINUTE,
+      });
       const status = await h.runFleet(night, (fleet) =>
         Effect.gen(function* () {
           yield* fleet.tick;
@@ -424,7 +593,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       assert.equal(status.feed, "connected");
       assert.equal(h.socket.connections.length, 1);
       const docs = h.putsTo(LIVE_JSON_KEY).map((put) => decodeJson(put.body));
-      assert.deepEqual(docs.slice(1).map((doc) => doc.stale), docs.slice(1).map(() => false));
+      assert.deepEqual(
+        docs.slice(1).map((doc) => doc.stale),
+        docs.slice(1).map(() => false),
+      );
     }));
 
   test(`${name}: an unchanged stale snapshot is rewritten once a minute`, () =>
@@ -459,7 +631,11 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       );
       const docs = h.putsTo(LIVE_JSON_KEY).map((put) => decodeJson(put.body));
       assert.deepEqual(
-        docs.map((doc) => [doc.stale, doc.reason ?? null, doc.buses.map((entry: { id: string }) => entry.id)]),
+        docs.map((doc) => [
+          doc.stale,
+          doc.reason ?? null,
+          doc.buses.map((entry: { id: string }) => entry.id),
+        ]),
         [
           [true, "feed_down", []],
           [false, null, ["bus-a"]],
@@ -480,18 +656,33 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       ];
       for (const [label, variant] of cases) {
         if (label === "corrupt") {
-          await run(wiring.objects.put(LIVE_JSON_KEY, new TextEncoder().encode("{not json"), { contentType: "application/json" }));
+          await run(
+            wiring.objects.put(
+              LIVE_JSON_KEY,
+              new TextEncoder().encode("{not json"),
+              { contentType: "application/json" },
+            ),
+          );
         }
         const h = harness(variant);
         await h.seed("session", validSession);
-        const next = await h.runFleet(T0, (fleet) => Effect.andThen(fleet.start, wiring.scheduler.next));
-        if (label === "missing") assert.deepEqual(next, Option.some(T0 + SECOND));
+        const next = await h.runFleet(T0, (fleet) =>
+          Effect.andThen(fleet.start, wiring.scheduler.next),
+        );
+        if (label === "missing")
+          assert.deepEqual(next, Option.some(T0 + SECOND));
         else assert.equal(Option.isSome(next), true, label);
-        await h.runFleet(T0, (fleet) => Effect.andThen(fleet.start, fleet.tick));
+        await h.runFleet(T0, (fleet) =>
+          Effect.andThen(fleet.start, fleet.tick),
+        );
         const published = h.putsTo(LIVE_JSON_KEY).at(-1);
         assert.ok(published, label);
         const doc = decodeJson(published.body);
-        assert.deepEqual([doc.stale, doc.reason, doc.buses], [true, "feed_down", []], label);
+        assert.deepEqual(
+          [doc.stale, doc.reason, doc.buses],
+          [true, "feed_down", []],
+          label,
+        );
       }
     }));
 
@@ -506,7 +697,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           h.socket.connections[0].send(gps([bus("bus-a")]));
           yield* fleet.tick;
           assert.equal(h.putsTo(LIVE_JSON_KEY).length, 1);
-          assert.deepEqual(yield* wiring.scheduler.next, Option.some(T0 + 5 * SECOND));
+          assert.deepEqual(
+            yield* wiring.scheduler.next,
+            Option.some(T0 + 5 * SECOND),
+          );
           h.objects.setFailing(false);
           yield* TestClock.adjust(5 * SECOND);
           yield* fleet.tick;
@@ -516,7 +710,12 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       );
       const writes = h.putsTo(LIVE_JSON_KEY);
       assert.equal(writes.length, 2);
-      assert.deepEqual(decodeJson(writes[1].body).buses.map((entry: { id: string }) => entry.id), ["bus-a"]);
+      assert.deepEqual(
+        decodeJson(writes[1].body).buses.map(
+          (entry: { id: string }) => entry.id,
+        ),
+        ["bus-a"],
+      );
       assert.equal(h.putsTo(VEHICLES_PB_KEY).length, 2);
     }));
 
@@ -529,18 +728,26 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           yield* fleet.tick;
           h.socket.connections[0].send(gps([bus("bus-a")]));
           yield* TestClock.adjust(5 * MINUTE);
-          h.socket.connections[0].send(gps([bus("bus-a", 6.91, T0 + 5 * MINUTE)]));
+          h.socket.connections[0].send(
+            gps([bus("bus-a", 6.91, T0 + 5 * MINUTE)]),
+          );
           yield* fleet.tick;
         }),
       );
       const chunk = h.putsTo(`raw/${DAY}/080500-fleet.ndjson.gz`);
       assert.equal(chunk.length, 1);
-      assert.equal(chunk[0].options.cacheControl, "public, max-age=31536000, immutable");
+      assert.equal(
+        chunk[0].options.cacheControl,
+        "public, max-age=31536000, immutable",
+      );
       const rows = await decodeArchiveChunk(chunk[0].body);
-      assert.deepEqual(rows.map((row) => [row.bus_id, row.lat, row.received_at]), [
-        ["bus-a", 6.9, T0],
-        ["bus-a", 6.91, T0 + 5 * MINUTE],
-      ]);
+      assert.deepEqual(
+        rows.map((row) => [row.bus_id, row.lat, row.received_at]),
+        [
+          ["bus-a", 6.9, T0],
+          ["bus-a", 6.91, T0 + 5 * MINUTE],
+        ],
+      );
       const live = h.putsTo(LIVE_ARCHIVE_KEY);
       assert.equal(live.length, 1);
       assert.deepEqual([...live[0].body], [...chunk[0].body]);
@@ -559,7 +766,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       );
       const chunk = h.putsTo(`raw/${DAY}/080000-fleet.ndjson.gz`);
       assert.equal(chunk.length, 1);
-      assert.deepEqual((await decodeArchiveChunk(chunk[0].body)).map((row) => row.bus_id), ["bus-a"]);
+      assert.deepEqual(
+        (await decodeArchiveChunk(chunk[0].body)).map((row) => row.bus_id),
+        ["bus-a"],
+      );
     }));
 
   test(`${name}: shutting down twice flushes the archive once`, () =>
@@ -575,7 +785,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           h.objects.setFailing(false);
         }),
       );
-      assert.deepEqual(h.objects.puts.filter((put) => put.key.startsWith("raw/")), []);
+      assert.deepEqual(
+        h.objects.puts.filter((put) => put.key.startsWith("raw/")),
+        [],
+      );
     }));
 
   test(`${name}: a shutdown whose archive write hangs gives up after 10 seconds`, () =>
@@ -594,7 +807,12 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           yield* TestClock.adjust(10 * SECOND - 1);
           const early = stopping.pollUnsafe() !== undefined;
           yield* TestClock.adjust(1);
-          for (let turn = 0; turn < 200 && stopping.pollUnsafe() === undefined; turn++) yield* Effect.yieldNow;
+          for (
+            let turn = 0;
+            turn < 200 && stopping.pollUnsafe() === undefined;
+            turn++
+          )
+            yield* Effect.yieldNow;
           const late = stopping.pollUnsafe() !== undefined;
           if (late) yield* Fiber.join(stopping);
           return { early, late };
@@ -615,13 +833,18 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           h.socket.connections[0].send(gps([bus("bus-a")]));
           for (let minute = 1; minute <= 21; minute++) {
             yield* TestClock.adjust(MINUTE);
-            h.socket.connections.filter((connection) => connection.isOpen()).at(-1)?.send(gps([bus("bus-a", 6.9, T0 + minute * MINUTE)]));
+            h.socket.connections
+              .filter((connection) => connection.isOpen())
+              .at(-1)
+              ?.send(gps([bus("bus-a", 6.9, T0 + minute * MINUTE)]));
             yield* fleet.tick;
           }
           const failing = yield* fleet.status;
           h.objects.setFailing(false);
           yield* TestClock.adjust(5 * MINUTE);
-          h.socket.connections[0].send(gps([bus("bus-a", 6.9, T0 + 26 * MINUTE)]));
+          h.socket.connections[0].send(
+            gps([bus("bus-a", 6.9, T0 + 26 * MINUTE)]),
+          );
           yield* fleet.tick;
           return { failing, recovered: yield* fleet.status };
         }),
@@ -630,9 +853,14 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       assert.ok(result.failing.pendingRows > 0);
       assert.equal(result.recovered.pendingRows, 0);
       assert.equal(result.recovered.lastArchiveWriteAt, T0 + 26 * MINUTE);
-      assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Fleet archive: writes failing", "Fleet archive: writes recovered"]);
       assert.deepEqual(
-        h.objects.puts.filter((put) => put.key.startsWith("raw/")).map((put) => put.key),
+        h.alerts.sent.map((alert) => alert.title),
+        ["Fleet archive: writes failing", "Fleet archive: writes recovered"],
+      );
+      assert.deepEqual(
+        h.objects.puts
+          .filter((put) => put.key.startsWith("raw/"))
+          .map((put) => put.key),
         [
           `raw/${DAY}/080500-fleet.ndjson.gz`,
           `raw/${DAY}/081000-fleet.ndjson.gz`,
@@ -660,7 +888,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           yield* fleet.tick;
         }),
       );
-      assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Live buses: feed stale"]);
+      assert.deepEqual(
+        h.alerts.sent.map((alert) => alert.title),
+        ["Live buses: feed stale"],
+      );
     }));
 
   test(`${name}: quiet hours don't hold back the login alert`, () =>
@@ -668,29 +899,45 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       const h = harness(wiring);
       const night = colomboTime("02:00:00");
       h.upstream.settings.refreshStatus = 400;
-      await h.seed("session", { ...validSession, refreshToken: "dead", expiresAt: night - MINUTE });
+      await h.seed("session", {
+        ...validSession,
+        refreshToken: "dead",
+        expiresAt: night - MINUTE,
+      });
       await h.runFleet(night, (fleet) => fleet.tick);
-      assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Live buses are down: login needed"]);
+      assert.deepEqual(
+        h.alerts.sent.map((alert) => alert.title),
+        ["Live buses are down: login needed"],
+      );
     }));
 
   test(`${name}: quiet hours don't hold back the archive alert`, () =>
     withWiring(async (wiring) => {
       const h = harness(wiring);
       const night = colomboTime("01:00:00");
-      await h.seed("session", { ...validSession, expiresAt: night + 30 * MINUTE });
+      await h.seed("session", {
+        ...validSession,
+        expiresAt: night + 30 * MINUTE,
+      });
       await h.runFleet(night, (fleet) =>
         Effect.gen(function* () {
           yield* fleet.tick;
           h.objects.setFailing(true);
           for (let minute = 1; minute <= 21; minute++) {
             yield* TestClock.adjust(MINUTE);
-            h.socket.connections.filter((connection) => connection.isOpen()).at(-1)?.send(gps([bus("bus-a", 6.9, night + minute * MINUTE)]));
+            h.socket.connections
+              .filter((connection) => connection.isOpen())
+              .at(-1)
+              ?.send(gps([bus("bus-a", 6.9, night + minute * MINUTE)]));
             yield* fleet.tick;
           }
           h.objects.setFailing(false);
         }),
       );
-      assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Fleet archive: writes failing"]);
+      assert.deepEqual(
+        h.alerts.sent.map((alert) => alert.title),
+        ["Fleet archive: writes failing"],
+      );
     }));
 
   test(`${name}: no positions for 2 minutes raises one feed alert, and positions clear it`, () =>
@@ -708,7 +955,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           yield* fleet.tick;
         }),
       );
-      assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Live buses: feed stale", "Live buses: feed back"]);
+      assert.deepEqual(
+        h.alerts.sent.map((alert) => alert.title),
+        ["Live buses: feed stale", "Live buses: feed back"],
+      );
     }));
 
   test(`${name}: an open socket is closed once login is needed, and isn't reopened`, () =>
@@ -740,7 +990,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       h.controls.yieldingPuts = true;
       await h.seed("session", validSession);
       const next = await h.runFleet(T0, (fleet) =>
-        Effect.andThen(Effect.all([fleet.tick, fleet.tick], { concurrency: "unbounded" }), wiring.scheduler.next),
+        Effect.andThen(
+          Effect.all([fleet.tick, fleet.tick], { concurrency: "unbounded" }),
+          wiring.scheduler.next,
+        ),
       );
       assert.equal(h.putsTo(LIVE_JSON_KEY).length, 1);
       assert.equal(h.putsTo(VEHICLES_PB_KEY).length, 1);
@@ -757,14 +1010,21 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
         Effect.gen(function* () {
           yield* tickThrough(fleet, h.controls, 15 * SECOND);
           assert.equal(h.putsTo(LIVE_JSON_KEY).length, 1);
-          for (let elapsed = 15 * SECOND; elapsed < 4 * MINUTE; elapsed += 5 * SECOND) {
+          for (
+            let elapsed = 15 * SECOND;
+            elapsed < 4 * MINUTE;
+            elapsed += 5 * SECOND
+          ) {
             h.socket.connections.at(-1)?.send(JSON.stringify({ type: "ping" }));
             yield* TestClock.adjust(5 * SECOND);
             yield* tickThrough(fleet, h.controls, 15 * SECOND);
           }
         }),
       );
-      assert.deepEqual(h.alerts.sent.map((alert) => alert.title), ["Live buses: feed stale"]);
+      assert.deepEqual(
+        h.alerts.sent.map((alert) => alert.title),
+        ["Live buses: feed stale"],
+      );
       assert.ok(h.putsTo(LIVE_JSON_KEY).length >= 4);
     }));
 
@@ -785,7 +1045,10 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       );
       assert.deepEqual(next, Option.some(T0 + 35 * SECOND));
       assert.equal(h.putsTo(LIVE_JSON_KEY).length, 1);
-      assert.equal(h.logs.lines.some((line) => line.includes("fleet tick failed")), true);
+      assert.equal(
+        h.logs.lines.some((line) => line.includes("fleet tick failed")),
+        true,
+      );
     }));
 
   test(`${name}: after shutdown, a tick doesn't publish, alert or reopen the feed`, () =>
@@ -816,15 +1079,30 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       const slowCodeSaves = (inner: StateStoreShape): StateStoreShape => ({
         get: (key) => inner.get(key),
         set: (key, value) =>
-          slow && key === "login" && (value as { otpReference: string | null }).otpReference !== null
-            ? Effect.andThen(Deferred.succeed(reached, undefined), Effect.andThen(Effect.sleep(40 * SECOND), inner.set(key, value)))
+          slow &&
+          key === "login" &&
+          (value as { otpReference: string | null }).otpReference !== null
+            ? Effect.andThen(
+                Deferred.succeed(reached, undefined),
+                Effect.andThen(
+                  Effect.sleep(40 * SECOND),
+                  inner.set(key, value),
+                ),
+              )
             : inner.set(key, value),
         delete: (key) => inner.delete(key),
       });
-      const h = harness({ ...wiring, openState: () => slowCodeSaves(wiring.openState()) });
+      const h = harness({
+        ...wiring,
+        openState: () => slowCodeSaves(wiring.openState()),
+      });
       h.controls.tickMayFail = true;
       h.upstream.settings.refreshStatus = 400;
-      await h.seed("session", { ...validSession, refreshToken: "dead", expiresAt: T0 - MINUTE });
+      await h.seed("session", {
+        ...validSession,
+        refreshToken: "dead",
+        expiresAt: T0 - MINUTE,
+      });
       await h.runFleet(T0, (fleet) =>
         Effect.gen(function* () {
           const tick = yield* Effect.forkChild(fleet.tick);
@@ -834,7 +1112,9 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
         }),
       );
       slow = false;
-      const outcome = await h.runFleet(T0 + 5 * MINUTE, (fleet) => fleet.submitCode("123456"));
+      const outcome = await h.runFleet(T0 + 5 * MINUTE, (fleet) =>
+        fleet.submitCode("123456"),
+      );
       assert.equal(outcome._tag, "Accepted");
       assert.deepEqual(h.upstream.calls.checkPhone, ["+94771234567"]);
     }));

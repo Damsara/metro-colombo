@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  classify,
-  fixedOccasions,
-  parseIcs,
-  toOccasions,
-} from "@metro/core";
+import { classify, fixedOccasions, parseIcs, toOccasions } from "@metro/core";
 
 const ics = [
   "BEGIN:VCALENDAR",

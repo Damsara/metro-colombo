@@ -1,6 +1,12 @@
 import { Clock, Effect, Option, Redacted, Schema, Semaphore } from "effect";
 import { StateStore } from "@metro/core";
-import { AuthClient, AuthHttpError, isDeadToken, LankaMetroConfig, normalizePhone } from "@metro/upstream";
+import {
+  AuthClient,
+  AuthHttpError,
+  isDeadToken,
+  LankaMetroConfig,
+  normalizePhone,
+} from "@metro/upstream";
 import type { AlertBookShape } from "./alerts.js";
 
 export const RENEW_MARGIN_MS = 2 * 60_000;
@@ -46,14 +52,19 @@ const loginNeededAlert = (reason: string, hasPhone: boolean) => ({
     : `Upstream login failed: ${reason}. Set METRO_PHONE so a code can be texted.`,
 });
 
-const restoredAlert = { title: "Live buses: login restored", message: "The code was accepted and the live feed is resuming." };
+const restoredAlert = {
+  title: "Live buses: login restored",
+  message: "The code was accepted and the live feed is resuming.",
+};
 
 export const makeSession = (alerts: AlertBookShape) =>
   Effect.gen(function* () {
     const auth = yield* AuthClient;
     const state = yield* StateStore;
     const config = yield* LankaMetroConfig;
-    const phone = Option.flatMap(config.phone, (raw) => Option.fromUndefinedOr(normalizePhone(raw)));
+    const phone = Option.flatMap(config.phone, (raw) =>
+      Option.fromUndefinedOr(normalizePhone(raw)),
+    );
     // Refresh tokens are single use, so two refreshes at once would leave one holding a dead token.
     const semaphore = yield* Semaphore.make(1);
     const loadLock = yield* Semaphore.make(1);
@@ -71,10 +82,25 @@ export const makeSession = (alerts: AlertBookShape) =>
         if (loaded) return;
         const storedSession = yield* state.get("session");
         const storedLogin = yield* state.get("login");
-        session = Option.getOrUndefined(Option.flatMap(storedSession, Schema.decodeUnknownOption(StoredSession)));
-        login = Option.getOrUndefined(Option.flatMap(storedLogin, Schema.decodeUnknownOption(StoredLogin)));
-        if (Option.isNone(storedSession) && Option.isSome(config.seedRefreshToken)) {
-          session = { refreshToken: Redacted.value(config.seedRefreshToken.value), webviewToken: "", expiresAt: 0, refreshedAt: 0 };
+        session = Option.getOrUndefined(
+          Option.flatMap(
+            storedSession,
+            Schema.decodeUnknownOption(StoredSession),
+          ),
+        );
+        login = Option.getOrUndefined(
+          Option.flatMap(storedLogin, Schema.decodeUnknownOption(StoredLogin)),
+        );
+        if (
+          Option.isNone(storedSession) &&
+          Option.isSome(config.seedRefreshToken)
+        ) {
+          session = {
+            refreshToken: Redacted.value(config.seedRefreshToken.value),
+            webviewToken: "",
+            expiresAt: 0,
+            refreshedAt: 0,
+          };
         }
         loaded = true;
       }),
@@ -84,12 +110,25 @@ export const makeSession = (alerts: AlertBookShape) =>
     const saveSession = (next: StoredSession) =>
       Effect.andThen(
         Effect.sync(() => void ((session = next), (sessionUnsaved = true))),
-        Effect.andThen(state.set("session", next), Effect.sync(() => void (sessionUnsaved = false))),
+        Effect.andThen(
+          state.set("session", next),
+          Effect.sync(() => void (sessionUnsaved = false)),
+        ),
       );
     const keepSession = (next: StoredSession) =>
-      saveSession(next).pipe(Effect.catch((error) => Effect.logWarning("session not saved, retrying next tick", error.message)));
+      saveSession(next).pipe(
+        Effect.catch((error) =>
+          Effect.logWarning(
+            "session not saved, retrying next tick",
+            error.message,
+          ),
+        ),
+      );
     const saveLogin = (next: StoredLogin) =>
-      Effect.andThen(Effect.sync(() => void ((login = next), (loginUncleared = false))), state.set("login", next));
+      Effect.andThen(
+        Effect.sync(() => void ((login = next), (loginUncleared = false))),
+        state.set("login", next),
+      );
     // Storage keeps the login record until the new session is saved, so a restart never falls back to the spent token.
     const clearLogin = Effect.andThen(
       Effect.sync(() => void ((login = undefined), (loginUncleared = true))),
@@ -98,7 +137,12 @@ export const makeSession = (alerts: AlertBookShape) =>
           ? Effect.void
           : state.delete("login").pipe(
               Effect.andThen(Effect.sync(() => void (loginUncleared = false))),
-              Effect.catch((error) => Effect.logWarning("login state not cleared, retrying next tick", error.message)),
+              Effect.catch((error) =>
+                Effect.logWarning(
+                  "login state not cleared, retrying next tick",
+                  error.message,
+                ),
+              ),
             ),
       ),
     );
@@ -106,32 +150,58 @@ export const makeSession = (alerts: AlertBookShape) =>
       Effect.suspend(() =>
         Effect.andThen(
           sessionUnsaved && session ? keepSession(session) : Effect.void,
-          Effect.suspend(() => (loginUncleared && !login && !sessionUnsaved ? clearLogin : Effect.void)),
+          Effect.suspend(() =>
+            loginUncleared && !login && !sessionUnsaved
+              ? clearLogin
+              : Effect.void,
+          ),
         ),
       ),
     );
     const fresh = (now: number) =>
-      session !== undefined && session.webviewToken !== "" && session.expiresAt - now > RENEW_MARGIN_MS;
+      session !== undefined &&
+      session.webviewToken !== "" &&
+      session.expiresAt - now > RENEW_MARGIN_MS;
 
     const requestCode = Effect.gen(function* () {
       const current = login;
       const now = yield* Clock.currentTimeMillis;
       if (!current || Option.isNone(phone)) return;
-      if (current.lastCodeRequestAt !== null && now - current.lastCodeRequestAt < CODE_EVERY_MS) return;
+      if (
+        current.lastCodeRequestAt !== null &&
+        now - current.lastCodeRequestAt < CODE_EVERY_MS
+      )
+        return;
       yield* saveLogin({ ...current, lastCodeRequestAt: now });
       // Once upstream has texted the code, nothing may interrupt before its reference is saved.
       yield* Effect.uninterruptibleMask((restore) =>
         Effect.flatMap(restore(auth.checkPhone(phone.value)), (reference) =>
-          saveLogin({ ...current, lastCodeRequestAt: now, otpReference: reference }),
+          saveLogin({
+            ...current,
+            lastCodeRequestAt: now,
+            otpReference: reference,
+          }),
         ),
       );
       yield* Effect.logInfo("login code requested");
-    }).pipe(Effect.catch((error) => Effect.logWarning("login code request failed", error.message)));
+    }).pipe(
+      Effect.catch((error) =>
+        Effect.logWarning("login code request failed", error.message),
+      ),
+    );
 
     const needLogin = (reason: string) =>
       Effect.gen(function* () {
-        if (!login) yield* saveLogin({ reason, otpReference: null, lastCodeRequestAt: null });
-        yield* alerts.raise("login", loginNeededAlert(reason, Option.isSome(phone)));
+        if (!login)
+          yield* saveLogin({
+            reason,
+            otpReference: null,
+            lastCodeRequestAt: null,
+          });
+        yield* alerts.raise(
+          "login",
+          loginNeededAlert(reason, Option.isSome(phone)),
+        );
         yield* requestCode;
       });
 
@@ -150,7 +220,10 @@ export const makeSession = (alerts: AlertBookShape) =>
           }),
         ),
         Effect.catchTag("AuthHttpError", (error) =>
-          Effect.andThen(Effect.sync(() => void (lastError = "upstream_error")), Effect.logWarning("webview token failed", error.message)),
+          Effect.andThen(
+            Effect.sync(() => void (lastError = "upstream_error")),
+            Effect.logWarning("webview token failed", error.message),
+          ),
         ),
       );
 
@@ -166,17 +239,39 @@ export const makeSession = (alerts: AlertBookShape) =>
             auth.refresh(current.refreshToken).pipe(
               Effect.timeout(REFRESH_TIMEOUT),
               Effect.catchTag("TimeoutError", () =>
-                Effect.fail(new AuthHttpError({ endpoint: "refresh", message: "upstream /auth/refresh timed out" })),
+                Effect.fail(
+                  new AuthHttpError({
+                    endpoint: "refresh",
+                    message: "upstream /auth/refresh timed out",
+                  }),
+                ),
               ),
             ),
-          ).pipe(Effect.tap((rotated) => saveSession({ ...current, refreshToken: rotated.refreshToken, webviewToken: "", expiresAt: 0 }))),
+          ).pipe(
+            Effect.tap((rotated) =>
+              saveSession({
+                ...current,
+                refreshToken: rotated.refreshToken,
+                webviewToken: "",
+                expiresAt: 0,
+              }),
+            ),
+          ),
         ).pipe(
           Effect.map(Option.some),
           Effect.catchTag("AuthHttpError", (error) =>
             isDeadToken(error)
-              ? Effect.as(needLogin(`the refresh token was rejected (HTTP ${error.status})`), Option.none())
+              ? Effect.as(
+                  needLogin(
+                    `the refresh token was rejected (HTTP ${error.status})`,
+                  ),
+                  Option.none(),
+                )
               : Effect.as(
-                  Effect.andThen(Effect.sync(() => void (lastError = "upstream_error")), Effect.logWarning("refresh failed", error.message)),
+                  Effect.andThen(
+                    Effect.sync(() => void (lastError = "upstream_error")),
+                    Effect.logWarning("refresh failed", error.message),
+                  ),
                   Option.none(),
                 ),
           ),
@@ -190,7 +285,9 @@ export const makeSession = (alerts: AlertBookShape) =>
       yield* load;
       if (sessionUnsaved || loginUncleared) yield* retryWrites;
       if (login) {
-        yield* semaphore.withPermits(1)(Effect.suspend(() => (login ? needLogin(login.reason) : Effect.void)));
+        yield* semaphore.withPermits(1)(
+          Effect.suspend(() => (login ? needLogin(login.reason) : Effect.void)),
+        );
         if (login) return Option.none<Redacted.Redacted<string>>();
       }
       if (!fresh(yield* Clock.currentTimeMillis)) yield* refresh;
@@ -199,12 +296,19 @@ export const makeSession = (alerts: AlertBookShape) =>
         ? Option.some(Redacted.make(session.webviewToken))
         : Option.none<Redacted.Redacted<string>>();
     }).pipe(
-      Effect.catch((error) => Effect.as(Effect.logWarning("session state unavailable", error.message), Option.none<Redacted.Redacted<string>>())),
+      Effect.catch((error) =>
+        Effect.as(
+          Effect.logWarning("session state unavailable", error.message),
+          Option.none<Redacted.Redacted<string>>(),
+        ),
+      ),
     );
 
     const status = load.pipe(
       Effect.ignore,
-      Effect.map((): LoginStatus => (login ? "login_needed" : (lastError ?? "ok"))),
+      Effect.map(
+        (): LoginStatus => (login ? "login_needed" : (lastError ?? "ok")),
+      ),
     );
 
     const submitCode = (code: string) =>
@@ -216,10 +320,21 @@ export const makeSession = (alerts: AlertBookShape) =>
             if (!reference) return NO_CODE_PENDING;
             const verified = yield* auth.verifyOtp(reference, code).pipe(
               Effect.map((pair) => ({ ok: true as const, pair })),
-              Effect.catchTag("AuthHttpError", (error) => Effect.succeed({ ok: false as const, message: error.message })),
+              Effect.catchTag("AuthHttpError", (error) =>
+                Effect.succeed({ ok: false as const, message: error.message }),
+              ),
             );
-            if (!verified.ok) return { _tag: "CodeRejected", message: verified.message } satisfies SubmitOutcome;
-            yield* keepSession({ refreshToken: verified.pair.refreshToken, webviewToken: "", expiresAt: 0, refreshedAt: 0 });
+            if (!verified.ok)
+              return {
+                _tag: "CodeRejected",
+                message: verified.message,
+              } satisfies SubmitOutcome;
+            yield* keepSession({
+              refreshToken: verified.pair.refreshToken,
+              webviewToken: "",
+              expiresAt: 0,
+              refreshedAt: 0,
+            });
             yield* clearLogin;
             yield* adopt(verified.pair.refreshToken, verified.pair.accessToken);
             yield* alerts.resolve("login", restoredAlert);
@@ -228,7 +343,10 @@ export const makeSession = (alerts: AlertBookShape) =>
         )
         .pipe(
           Effect.catch((error) =>
-            Effect.succeed<SubmitOutcome>({ _tag: "CodeRejected", message: `login state unavailable: ${error.message}` }),
+            Effect.succeed<SubmitOutcome>({
+              _tag: "CodeRejected",
+              message: `login state unavailable: ${error.message}`,
+            }),
           ),
         );
 

@@ -1,9 +1,14 @@
 import { Config } from "effect";
 
-export const LiveFeedConfig = Config.Literals(["lankametro", "replay"], "LIVE_FEED");
+export const LiveFeedConfig = Config.Literals(
+  ["lankametro", "replay"],
+  "LIVE_FEED",
+);
 
 export const LankaMetroConfig = Config.all({
-  eimskyBase: Config.String("EIMSKY_BASE").pipe(Config.withDefault("https://metrobusapiprod.eimsky.com")),
+  eimskyBase: Config.String("EIMSKY_BASE").pipe(
+    Config.withDefault("https://metrobusapiprod.eimsky.com"),
+  ),
   phone: Config.option(Config.String("METRO_PHONE")),
   seedRefreshToken: Config.option(Config.Redacted("METRO_REFRESH_TOKEN")),
 });

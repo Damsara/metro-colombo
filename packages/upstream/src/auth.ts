@@ -10,22 +10,36 @@ export class AuthHttpError extends Data.TaggedError("AuthHttpError")<{
 
 // Only a 4xx on refresh means the token is dead; 408, 429, 5xx and network failures are outages.
 export const isDeadToken = (error: AuthHttpError) =>
-  error.status !== undefined && error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429;
+  error.status !== undefined &&
+  error.status >= 400 &&
+  error.status < 500 &&
+  error.status !== 408 &&
+  error.status !== 429;
 
 const REQUEST_TIMEOUT = "15 seconds";
 
-export type TokenPair = { readonly accessToken: string; readonly refreshToken: string };
-export type WebviewToken = { readonly token: string; readonly expiresInSeconds: number };
+export type TokenPair = {
+  readonly accessToken: string;
+  readonly refreshToken: string;
+};
+export type WebviewToken = {
+  readonly token: string;
+  readonly expiresInSeconds: number;
+};
 
 export const normalizePhone = (raw: string): string | undefined => {
   const digits = raw.replace(/\D/g, "");
   if (digits.startsWith("94") && digits.length === 11) return `+${digits}`;
-  if (digits.startsWith("0") && digits.length === 10) return `+94${digits.slice(1)}`;
+  if (digits.startsWith("0") && digits.length === 10)
+    return `+94${digits.slice(1)}`;
   return undefined;
 };
 
 // verify-otp's reply nests the tokens differently by account state.
-export const findTokens = (value: unknown, found: { access?: string; refresh?: string } = {}) => {
+export const findTokens = (
+  value: unknown,
+  found: { access?: string; refresh?: string } = {},
+) => {
   if (typeof value !== "object" || value === null) return found;
   const record = value as Record<string, unknown>;
   for (const [key, field] of [
@@ -40,23 +54,38 @@ export const findTokens = (value: unknown, found: { access?: string; refresh?: s
 };
 
 const RefreshResponse = Schema.Struct({
-  data: Schema.Struct({ access_token: Schema.String, refresh_token: Schema.String }),
+  data: Schema.Struct({
+    access_token: Schema.String,
+    refresh_token: Schema.String,
+  }),
 });
 const WebviewResponse = Schema.Struct({
-  data: Schema.Struct({ webview_token: Schema.String, expires_in: Schema.Number }),
+  data: Schema.Struct({
+    webview_token: Schema.String,
+    expires_in: Schema.Number,
+  }),
 });
 const CheckPhoneResponse = Schema.Struct({
   data: Schema.Struct({ otp_reference: Schema.String }),
 });
 
 export type AuthClientShape = {
-  readonly refresh: (refreshToken: string) => Effect.Effect<TokenPair, AuthHttpError>;
-  readonly webview: (accessToken: string) => Effect.Effect<WebviewToken, AuthHttpError>;
+  readonly refresh: (
+    refreshToken: string,
+  ) => Effect.Effect<TokenPair, AuthHttpError>;
+  readonly webview: (
+    accessToken: string,
+  ) => Effect.Effect<WebviewToken, AuthHttpError>;
   readonly checkPhone: (phone: string) => Effect.Effect<string, AuthHttpError>;
-  readonly verifyOtp: (reference: string, code: string) => Effect.Effect<TokenPair, AuthHttpError>;
+  readonly verifyOtp: (
+    reference: string,
+    code: string,
+  ) => Effect.Effect<TokenPair, AuthHttpError>;
 };
 
-export class AuthClient extends Context.Service<AuthClient, AuthClientShape>()("metro/AuthClient") {
+export class AuthClient extends Context.Service<AuthClient, AuthClientShape>()(
+  "metro/AuthClient",
+) {
   static readonly layer = Layer.effect(
     AuthClient,
     Effect.gen(function* () {
@@ -74,7 +103,13 @@ export class AuthClient extends Context.Service<AuthClient, AuthClientShape>()("
             body: HttpBody.jsonUnsafe(body),
           })
           .pipe(
-            Effect.mapError(() => new AuthHttpError({ endpoint, message: `upstream /auth/${endpoint} failed` })),
+            Effect.mapError(
+              () =>
+                new AuthHttpError({
+                  endpoint,
+                  message: `upstream /auth/${endpoint} failed`,
+                }),
+            ),
             Effect.flatMap((response) =>
               response.status < 400
                 ? Effect.succeed(response)
@@ -97,45 +132,90 @@ export class AuthClient extends Context.Service<AuthClient, AuthClientShape>()("
           call.pipe(
             Effect.timeout(REQUEST_TIMEOUT),
             Effect.catchTag("TimeoutError", () =>
-              Effect.fail(new AuthHttpError({ endpoint, message: `upstream /auth/${endpoint} timed out` })),
+              Effect.fail(
+                new AuthHttpError({
+                  endpoint,
+                  message: `upstream /auth/${endpoint} timed out`,
+                }),
+              ),
             ),
           );
 
       const readWith =
-        <A>(endpoint: string, decode: (input: unknown) => Effect.Effect<A, Schema.SchemaError>) =>
+        <A>(
+          endpoint: string,
+          decode: (input: unknown) => Effect.Effect<A, Schema.SchemaError>,
+        ) =>
         (response: HttpClientResponse.HttpClientResponse) =>
           response.json.pipe(
             Effect.flatMap(decode),
-            Effect.mapError(() => new AuthHttpError({ endpoint, message: `upstream /auth/${endpoint} reply unreadable` })),
+            Effect.mapError(
+              () =>
+                new AuthHttpError({
+                  endpoint,
+                  message: `upstream /auth/${endpoint} reply unreadable`,
+                }),
+            ),
           );
 
       return AuthClient.of({
         refresh: (refreshToken) =>
           send("refresh", { refresh_token: refreshToken }).pipe(
-            Effect.flatMap(readWith("refresh", Schema.decodeUnknownEffect(RefreshResponse))),
-            Effect.map(({ data }) => ({ accessToken: data.access_token, refreshToken: data.refresh_token })),
+            Effect.flatMap(
+              readWith("refresh", Schema.decodeUnknownEffect(RefreshResponse)),
+            ),
+            Effect.map(({ data }) => ({
+              accessToken: data.access_token,
+              refreshToken: data.refresh_token,
+            })),
             limited("refresh"),
           ),
         webview: (accessToken) =>
           send("webview-token", {}, accessToken).pipe(
-            Effect.flatMap(readWith("webview-token", Schema.decodeUnknownEffect(WebviewResponse))),
-            Effect.map(({ data }) => ({ token: data.webview_token, expiresInSeconds: data.expires_in })),
+            Effect.flatMap(
+              readWith(
+                "webview-token",
+                Schema.decodeUnknownEffect(WebviewResponse),
+              ),
+            ),
+            Effect.map(({ data }) => ({
+              token: data.webview_token,
+              expiresInSeconds: data.expires_in,
+            })),
             limited("webview-token"),
           ),
         checkPhone: (phone) =>
           send("customer/check-phone", { phone }).pipe(
-            Effect.flatMap(readWith("customer/check-phone", Schema.decodeUnknownEffect(CheckPhoneResponse))),
+            Effect.flatMap(
+              readWith(
+                "customer/check-phone",
+                Schema.decodeUnknownEffect(CheckPhoneResponse),
+              ),
+            ),
             Effect.map(({ data }) => data.otp_reference),
             limited("customer/check-phone"),
           ),
         verifyOtp: (reference, code) =>
-          send("customer/verify-otp", { otp_reference: reference, otp_code: code }).pipe(
-            Effect.flatMap(readWith("customer/verify-otp", (input) => Effect.succeed(input))),
+          send("customer/verify-otp", {
+            otp_reference: reference,
+            otp_code: code,
+          }).pipe(
+            Effect.flatMap(
+              readWith("customer/verify-otp", (input) => Effect.succeed(input)),
+            ),
             Effect.flatMap((body) => {
               const tokens = findTokens(body);
               return tokens.access && tokens.refresh
-                ? Effect.succeed({ accessToken: tokens.access, refreshToken: tokens.refresh })
-                : Effect.fail(new AuthHttpError({ endpoint: "customer/verify-otp", message: "verify-otp returned no tokens" }));
+                ? Effect.succeed({
+                    accessToken: tokens.access,
+                    refreshToken: tokens.refresh,
+                  })
+                : Effect.fail(
+                    new AuthHttpError({
+                      endpoint: "customer/verify-otp",
+                      message: "verify-otp returned no tokens",
+                    }),
+                  );
             }),
             limited("customer/verify-otp"),
           ),

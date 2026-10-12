@@ -13,11 +13,16 @@ export const NodePorts = Layer.unwrap(
     const config = yield* NodeConfig;
     const http = yield* HttpClient.HttpClient;
     const ticker = yield* NodeTicker;
-    const s3 = Option.all({ endpoint: config.s3Endpoint, accessKeyId: config.s3AccessKeyId, secretAccessKey: config.s3SecretAccessKey });
+    const s3 = Option.all({
+      endpoint: config.s3Endpoint,
+      accessKeyId: config.s3AccessKeyId,
+      secretAccessKey: config.s3SecretAccessKey,
+    });
     if (Option.isSome(s3)) yield* guardBucket(config.bucket);
     const objects = Option.match(s3, {
       onNone: () => fileObjectStore(config.dataDir),
-      onSome: (settings) => s3ObjectStore({ ...settings, bucket: config.bucket }, http),
+      onSome: (settings) =>
+        s3ObjectStore({ ...settings, bucket: config.bucket }, http),
     });
     return Layer.mergeAll(
       Layer.succeed(ObjectStore, objects),

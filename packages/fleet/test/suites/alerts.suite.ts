@@ -7,11 +7,17 @@ import { NtfyAlerts } from "@metro/fleet";
 
 export const capturedLogs = () => {
   const lines: string[] = [];
-  const layer = Logger.layer([Logger.make(({ message }) => void lines.push(JSON.stringify(message)))]);
+  const layer = Logger.layer([
+    Logger.make(({ message }) => void lines.push(JSON.stringify(message))),
+  ]);
   return { lines, layer };
 };
 
-const deliver = async (client: HttpClient.HttpClient, env: Record<string, string>, alert: Alert) => {
+const deliver = async (
+  client: HttpClient.HttpClient,
+  env: Record<string, string>,
+  alert: Alert,
+) => {
   const logs = capturedLogs();
   await Effect.runPromise(
     Effect.gen(function* () {
@@ -21,7 +27,9 @@ const deliver = async (client: HttpClient.HttpClient, env: Record<string, string
         Layer.mergeAll(
           NtfyAlerts.pipe(
             Layer.provide(Layer.succeed(HttpClient.HttpClient, client)),
-            Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord(env))),
+            Layer.provide(
+              ConfigProvider.layer(ConfigProvider.fromEnvRecord(env)),
+            ),
           ),
           logs.layer,
         ),
@@ -31,7 +39,11 @@ const deliver = async (client: HttpClient.HttpClient, env: Record<string, string
   return logs.lines;
 };
 
-const send = async (env: Record<string, string>, alert: Alert, status = 200) => {
+const send = async (
+  env: Record<string, string>,
+  alert: Alert,
+  status = 200,
+) => {
   const http = fakeHttpClient(() => ({ status, text: "ok" }));
   const lines = await deliver(http.client, env, alert);
   return { requests: http.requests, lines };
@@ -41,7 +53,11 @@ const WEBHOOK = { ALERT_WEBHOOK_URL: "https://ntfy.test/metro-staging" };
 
 export function alertsSuite(test: Register, name: string) {
   test(`${name}: an urgent alert is a plain-text ntfy post with a high priority`, async () => {
-    const { requests } = await send(WEBHOOK, { urgent: true, title: "Live buses are down: login needed", message: "Upstream login failed." });
+    const { requests } = await send(WEBHOOK, {
+      urgent: true,
+      title: "Live buses are down: login needed",
+      message: "Upstream login failed.",
+    });
     const [request, ...rest] = requests;
     assert.equal(rest.length, 0);
     assert.equal(request.method, "POST");
@@ -53,39 +69,82 @@ export function alertsSuite(test: Register, name: string) {
   });
 
   test(`${name}: a resolved notice goes out at the default priority`, async () => {
-    const { requests } = await send(WEBHOOK, { title: "Live buses: login restored", message: "Resuming." });
+    const { requests } = await send(WEBHOOK, {
+      title: "Live buses: login restored",
+      message: "Resuming.",
+    });
     assert.equal(requests[0].headers["priority"], "default");
     assert.equal(requests[0].headers["tags"], "white_check_mark");
   });
 
   test(`${name}: without a webhook nothing is posted`, async () => {
-    assert.deepEqual((await send({}, { title: "t", message: "m" })).requests, []);
+    assert.deepEqual(
+      (await send({}, { title: "t", message: "m" })).requests,
+      [],
+    );
   });
 
   test(`${name}: a webhook that refuses never fails the sender`, async () => {
-    const { requests, lines } = await send(WEBHOOK, { title: "t", message: "m" }, 500);
+    const { requests, lines } = await send(
+      WEBHOOK,
+      { title: "t", message: "m" },
+      500,
+    );
     assert.equal(requests.length, 1);
-    assert.equal(lines.some((line) => line.includes("rejected")), true);
+    assert.equal(
+      lines.some((line) => line.includes("rejected")),
+      true,
+    );
   });
 
   test(`${name}: delivery is logged only after a 2xx`, async () => {
-    const delivered = await send(WEBHOOK, { title: "Sent title", message: "m" });
-    assert.equal(delivered.lines.some((line) => line.includes("Sent title")), true);
-    const refused = await send(WEBHOOK, { title: "Refused title", message: "m" }, 500);
-    assert.equal(refused.lines.some((line) => line.includes("Refused title")), false);
+    const delivered = await send(WEBHOOK, {
+      title: "Sent title",
+      message: "m",
+    });
+    assert.equal(
+      delivered.lines.some((line) => line.includes("Sent title")),
+      true,
+    );
+    const refused = await send(
+      WEBHOOK,
+      { title: "Refused title", message: "m" },
+      500,
+    );
+    assert.equal(
+      refused.lines.some((line) => line.includes("Refused title")),
+      false,
+    );
   });
 
   test(`${name}: a transport failure never puts the webhook url in the logs`, async () => {
     const failing = HttpClient.make((request) =>
       Effect.fail(
         new HttpClientError.HttpClientError({
-          reason: new HttpClientError.TransportError({ request, description: `POST ${request.url}` }),
+          reason: new HttpClientError.TransportError({
+            request,
+            description: `POST ${request.url}`,
+          }),
         }),
       ),
     );
-    const lines = await deliver(failing, WEBHOOK, { title: "Lost title", message: "m" });
-    assert.equal(lines.some((line) => line.includes("alert not sent")), true);
-    assert.equal(lines.some((line) => line.includes("Lost title")), false);
-    assert.equal(lines.some((line) => line.includes("ntfy.test") || line.includes("metro-staging")), false);
+    const lines = await deliver(failing, WEBHOOK, {
+      title: "Lost title",
+      message: "m",
+    });
+    assert.equal(
+      lines.some((line) => line.includes("alert not sent")),
+      true,
+    );
+    assert.equal(
+      lines.some((line) => line.includes("Lost title")),
+      false,
+    );
+    assert.equal(
+      lines.some(
+        (line) => line.includes("ntfy.test") || line.includes("metro-staging"),
+      ),
+      false,
+    );
   });
 }

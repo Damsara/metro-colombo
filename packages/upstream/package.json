@@ -4,9 +4,19 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist"],
-  "scripts": { "build": "tsc -b" },
-  "dependencies": { "@metro/core": "0.0.0", "effect": "4.0.1" }
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@metro/core": "0.0.0",
+    "effect": "4.0.1"
+  }
 }

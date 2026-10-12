@@ -8,7 +8,11 @@ import { NodeConfig } from "./config.js";
 import { NodePorts } from "./layers.js";
 import { NodeTicker } from "./ports/node-ticker.js";
 
-const Services = Layer.mergeAll(LiveFeedFromConfig, AuthClient.layer, NtfyAlerts).pipe(
+const Services = Layer.mergeAll(
+  LiveFeedFromConfig,
+  AuthClient.layer,
+  NtfyAlerts,
+).pipe(
   Layer.provideMerge(NodePorts),
   Layer.provideMerge(NodeTicker.layer),
   Layer.provideMerge(FetchHttpClient.layer),
@@ -29,7 +33,10 @@ const Client = Layer.effect(
   FleetClient,
   Effect.gen(function* () {
     const fleet = yield* Fleet;
-    return FleetClient.of({ status: fleet.status, submitCode: fleet.submitCode });
+    return FleetClient.of({
+      status: fleet.status,
+      submitCode: fleet.submitCode,
+    });
   }),
 );
 
@@ -40,8 +47,12 @@ const HttpLive = Layer.unwrap(
   }),
 );
 
-const Main = Layer.mergeAll(HttpRouter.serve(FleetRoutes).pipe(Layer.provide(Client), Layer.provide(HttpLive)), Driver).pipe(
-  Layer.provide(FleetLive),
-);
+const Main = Layer.mergeAll(
+  HttpRouter.serve(FleetRoutes).pipe(
+    Layer.provide(Client),
+    Layer.provide(HttpLive),
+  ),
+  Driver,
+).pipe(Layer.provide(FleetLive));
 
 Layer.launch(Main).pipe(NodeRuntime.runMain);

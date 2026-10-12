@@ -13,25 +13,39 @@ export type SocketServer = {
   readonly close: () => void;
   readonly stop: () => Promise<void>;
 };
-export type ServeSocket = (options?: { readonly refuse?: boolean }) => Promise<SocketServer>;
+export type ServeSocket = (options?: {
+  readonly refuse?: boolean;
+}) => Promise<SocketServer>;
 
 const within = <A>(promise: Promise<A>, what: string, ms = 5_000) =>
   Promise.race([
     promise,
-    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`${what} took over ${ms} ms`)), ms)),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${what} took over ${ms} ms`)), ms),
+    ),
   ]);
 
 const waitFor = async (ready: () => boolean) => {
-  for (let attempt = 0; attempt < 200 && !ready(); attempt++) await new Promise((resolve) => setTimeout(resolve, 10));
+  for (let attempt = 0; attempt < 200 && !ready(); attempt++)
+    await new Promise((resolve) => setTimeout(resolve, 10));
   assert.ok(ready(), "timed out waiting");
 };
 
-export function socketSuite(test: Register, name: string, socket: SocketShape, serve: ServeSocket) {
+export function socketSuite(
+  test: Register,
+  name: string,
+  socket: SocketShape,
+  serve: ServeSocket,
+) {
   test(`${name}: text frames arrive in order, binary frames are skipped, and a server close ends the session`, async () => {
     const server = await serve();
     const received: string[] = [];
     const session = Effect.runPromise(
-      socket.connect(server.url, { origin: "https://lmtgo.eimsky.com" }, (text) => void received.push(text)),
+      socket.connect(
+        server.url,
+        { origin: "https://lmtgo.eimsky.com" },
+        (text) => void received.push(text),
+      ),
     );
     await within(server.opened, "the upgrade");
     server.send("one");
@@ -47,7 +61,10 @@ export function socketSuite(test: Register, name: string, socket: SocketShape, s
 
   test(`${name}: a refused upgrade fails with SocketError`, async () => {
     const server = await serve({ refuse: true });
-    const exit = await within(Effect.runPromise(Effect.exit(socket.connect(server.url, {}, () => {}))), "the refusal");
+    const exit = await within(
+      Effect.runPromise(Effect.exit(socket.connect(server.url, {}, () => {}))),
+      "the refusal",
+    );
     assert.ok(Exit.isFailure(exit));
     assert.match(String(exit.cause), /SocketError/);
     await server.stop();

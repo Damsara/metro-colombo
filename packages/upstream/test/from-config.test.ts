@@ -14,7 +14,9 @@ const build = (env: Record<string, string>) =>
         Effect.provide(
           LiveFeedFromConfig.pipe(
             Layer.provide(Layer.succeed(ObjectStore, memoryObjectStore())),
-            Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord(env))),
+            Layer.provide(
+              ConfigProvider.layer(ConfigProvider.fromEnvRecord(env)),
+            ),
           ),
         ),
       ),

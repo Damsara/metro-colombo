@@ -3,20 +3,31 @@ import { Effect, Option } from "effect";
 import type { ObjectStoreShape } from "@metro/core";
 import type { Register } from "@metro/core/testing";
 
-export type WithObjectStore = (body: (store: ObjectStoreShape) => Promise<void>) => Promise<void>;
+export type WithObjectStore = (
+  body: (store: ObjectStoreShape) => Promise<void>,
+) => Promise<void>;
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const text = (body: Uint8Array) => new TextDecoder().decode(body);
 const run = <A, E>(effect: Effect.Effect<A, E>) => Effect.runPromise(effect);
 
-export function objectStoreSuite(test: Register, name: string, withStore: WithObjectStore) {
+export function objectStoreSuite(
+  test: Register,
+  name: string,
+  withStore: WithObjectStore,
+) {
   // Keys are unique per test because some stores are shared between tests.
   const base = () => `contract/${crypto.randomUUID()}`;
 
   test(`${name}: an object comes back with its body, type and caching`, () =>
     withStore(async (store) => {
       const key = `${base()}/live/live.json`;
-      await run(store.put(key, bytes('{"ok":true}'), { contentType: "application/json", cacheControl: "public, max-age=5" }));
+      await run(
+        store.put(key, bytes('{"ok":true}'), {
+          contentType: "application/json",
+          cacheControl: "public, max-age=5",
+        }),
+      );
       const found = await run(store.get(key));
       assert.ok(Option.isSome(found));
       assert.equal(text(found.value.body), '{"ok":true}');
@@ -32,7 +43,12 @@ export function objectStoreSuite(test: Register, name: string, withStore: WithOb
   test(`${name}: a put replaces the earlier object and its metadata`, () =>
     withStore(async (store) => {
       const key = `${base()}/x.json`;
-      await run(store.put(key, bytes("1"), { contentType: "application/json", cacheControl: "public, max-age=5" }));
+      await run(
+        store.put(key, bytes("1"), {
+          contentType: "application/json",
+          cacheControl: "public, max-age=5",
+        }),
+      );
       await run(store.put(key, bytes("2"), { contentType: "text/plain" }));
       const found = await run(store.get(key));
       assert.ok(Option.isSome(found));
@@ -51,19 +67,27 @@ export function objectStoreSuite(test: Register, name: string, withStore: WithOb
         "today/date=2026-10-12/through=08.parquet",
         "rawer.json",
       ]) {
-        await run(store.put(`${root}/${key}`, bytes(key), { contentType: "application/octet-stream" }));
+        await run(
+          store.put(`${root}/${key}`, bytes(key), {
+            contentType: "application/octet-stream",
+          }),
+        );
       }
       assert.deepEqual(await run(store.list(`${root}/raw/2026-10-12/`)), [
         `${root}/raw/2026-10-12/080000-fleet.ndjson.gz`,
         `${root}/raw/2026-10-12/080500-fleet.ndjson.gz`,
       ]);
-      assert.deepEqual(await run(store.list(`${root}/today/`)), [`${root}/today/date=2026-10-12/through=08.parquet`]);
+      assert.deepEqual(await run(store.list(`${root}/today/`)), [
+        `${root}/today/date=2026-10-12/through=08.parquet`,
+      ]);
     }));
 
   test(`${name}: delete removes an object and deleting a missing one succeeds`, () =>
     withStore(async (store) => {
       const key = `${base()}/gone.json`;
-      await run(store.put(key, bytes("x"), { contentType: "application/json" }));
+      await run(
+        store.put(key, bytes("x"), { contentType: "application/json" }),
+      );
       await run(store.delete(key));
       await run(store.delete(key));
       assert.ok(Option.isNone(await run(store.get(key))));

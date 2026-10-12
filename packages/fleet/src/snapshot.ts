@@ -6,7 +6,10 @@ export const FEED_QUIET_MS = 120_000;
 
 export type StaleReason = "login_needed" | "feed_down";
 
-export type LiveDocument = S.LiveFeed & { readonly stale: boolean; readonly reason?: StaleReason };
+export type LiveDocument = S.LiveFeed & {
+  readonly stale: boolean;
+  readonly reason?: StaleReason;
+};
 
 const withoutReceivedAt = (fix: Fix): S.LiveBus => {
   const { receivedAt, ...bus } = fix;
@@ -24,11 +27,16 @@ export function liveDocument(input: {
   readonly reason: StaleReason | undefined;
 }): LiveDocument {
   const { now, reason } = input;
-  const lastBatchAt = reason && input.frozen.length && input.frozenAt ? input.frozenAt : input.lastBatchAt;
+  const lastBatchAt =
+    reason && input.frozen.length && input.frozenAt
+      ? input.frozenAt
+      : input.lastBatchAt;
   const buses = reason
     ? [...input.frozen]
     : withRouteCodes(
-        input.fixes.filter((fix) => now - fix.receivedAt <= FRESH_FIX_MS).map(withoutReceivedAt),
+        input.fixes
+          .filter((fix) => now - fix.receivedAt <= FRESH_FIX_MS)
+          .map(withoutReceivedAt),
         input.routes,
       );
   return {
@@ -47,4 +55,8 @@ export const staleReason = (input: {
   readonly lastBatchAt: number;
   readonly loginNeeded: boolean;
 }): StaleReason | undefined =>
-  input.now - input.lastBatchAt <= FEED_QUIET_MS ? undefined : input.loginNeeded ? "login_needed" : "feed_down";
+  input.now - input.lastBatchAt <= FEED_QUIET_MS
+    ? undefined
+    : input.loginNeeded
+      ? "login_needed"
+      : "feed_down";

@@ -19,6 +19,11 @@ test("links each place to its stop code and id, dropping unknown stops", () => {
     [{ id: 19, stop_code: "MCC48", eimsky_id: "stop-uuid" }],
   );
   assert.deepEqual(linked, [
-    { ...place, name: "Lotus Tower Colombo", stop_code: "MCC48", stop_id: "stop-uuid" },
+    {
+      ...place,
+      name: "Lotus Tower Colombo",
+      stop_code: "MCC48",
+      stop_id: "stop-uuid",
+    },
   ]);
 });

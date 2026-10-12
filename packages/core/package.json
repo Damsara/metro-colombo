@@ -4,11 +4,25 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-    "./testing": { "types": "./dist/testing.d.ts", "default": "./dist/testing.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
+    }
   },
-  "files": ["dist"],
-  "scripts": { "build": "tsc -b" },
-  "dependencies": { "effect": "4.0.1" },
-  "devDependencies": { "gtfs-realtime-bindings": "2.2.0" }
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "effect": "4.0.1"
+  },
+  "devDependencies": {
+    "gtfs-realtime-bindings": "2.2.0"
+  }
 }

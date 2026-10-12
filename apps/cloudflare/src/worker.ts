@@ -1,6 +1,11 @@
 import { ConfigProvider, Effect, Layer } from "effect";
 import { HttpRouter } from "effect/http";
-import { FleetClient, FleetRoutes, type FleetStatus, type SubmitOutcome } from "@metro/fleet";
+import {
+  FleetClient,
+  FleetRoutes,
+  type FleetStatus,
+  type SubmitOutcome,
+} from "@metro/fleet";
 import type { Env } from "./env.js";
 import { stringVars } from "./fleet-object.js";
 
@@ -15,12 +20,20 @@ const build = (env: Env) =>
         Layer.succeed(
           FleetClient,
           FleetClient.of({
-            status: Effect.promise(async () => (await fleetStub(env).status()) as FleetStatus),
-            submitCode: (code) => Effect.promise(async () => (await fleetStub(env).submitCode(code)) as SubmitOutcome),
+            status: Effect.promise(
+              async () => (await fleetStub(env).status()) as FleetStatus,
+            ),
+            submitCode: (code) =>
+              Effect.promise(
+                async () =>
+                  (await fleetStub(env).submitCode(code)) as SubmitOutcome,
+              ),
           }),
         ),
       ),
-      Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord(stringVars(env)))),
+      Layer.provide(
+        ConfigProvider.layer(ConfigProvider.fromEnvRecord(stringVars(env))),
+      ),
     ),
   );
 

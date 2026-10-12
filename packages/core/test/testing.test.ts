@@ -16,7 +16,9 @@ const bytes = (text: string) => new TextEncoder().encode(text);
 test("scriptedSocket: connect ends normally when the connection closes", async () => {
   const { socket, connections } = scriptedSocket();
   const received: string[] = [];
-  const session = Effect.runPromise(socket.connect("wss://x", { a: "b" }, (text) => void received.push(text)));
+  const session = Effect.runPromise(
+    socket.connect("wss://x", { a: "b" }, (text) => void received.push(text)),
+  );
   await Effect.runPromise(settle);
   const [connection] = connections;
   assert.ok(connection?.isOpen());
@@ -33,7 +35,9 @@ test("scriptedSocket: connect ends normally when the connection closes", async (
 test("scriptedSocket: a refused connect fails with SocketError", async () => {
   const { socket, connections, setRefuse } = scriptedSocket();
   setRefuse(true);
-  const exit = await Effect.runPromise(Effect.exit(socket.connect("wss://x", {}, () => {})));
+  const exit = await Effect.runPromise(
+    Effect.exit(socket.connect("wss://x", {}, () => {})),
+  );
   assert.ok(Exit.isFailure(exit));
   assert.match(String(exit.cause), /SocketError/);
   assert.equal(connections.length, 0);
@@ -49,7 +53,10 @@ test("scriptedSocket: interrupting the session closes the connection", async () 
 });
 
 test("fakeHttpClient: captures the request and replies with json", async () => {
-  const { client, requests } = fakeHttpClient(() => ({ status: 200, json: { ok: true } }));
+  const { client, requests } = fakeHttpClient(() => ({
+    status: 200,
+    json: { ok: true },
+  }));
   const request = HttpClientRequest.post("https://example.test/a?b=1").pipe(
     HttpClientRequest.bodyText("hello", "text/plain"),
   );
@@ -73,12 +80,18 @@ test("fakeHttpClient: text, bytes and 204 replies", async () => {
         return { status: 204 };
     }
   });
-  const get = (path: string) => Effect.runPromise(client.execute(HttpClientRequest.get(`https://example.test${path}`)));
+  const get = (path: string) =>
+    Effect.runPromise(
+      client.execute(HttpClientRequest.get(`https://example.test${path}`)),
+    );
   const text = await get("/text");
   assert.equal(await Effect.runPromise(text.text), "plain");
   assert.equal(text.headers["x-a"], "1");
   const binary = await get("/bytes");
-  assert.deepEqual([...new Uint8Array(await Effect.runPromise(binary.arrayBuffer))], [1, 2, 255]);
+  assert.deepEqual(
+    [...new Uint8Array(await Effect.runPromise(binary.arrayBuffer))],
+    [1, 2, 255],
+  );
   const empty = await get("/none");
   assert.equal(empty.status, 204);
   assert.equal(await Effect.runPromise(empty.text), "");
@@ -97,7 +110,9 @@ test("fakeHttpClient: a body it cannot record fails loudly", async () => {
 
 test("spyObjectStore: records gets and puts and injects put failures", async () => {
   const spy = spyObjectStore(memoryObjectStore());
-  await Effect.runPromise(spy.store.put("a", bytes("1"), { contentType: "text/plain" }));
+  await Effect.runPromise(
+    spy.store.put("a", bytes("1"), { contentType: "text/plain" }),
+  );
   await Effect.runPromise(spy.store.get("a"));
   assert.deepEqual(spy.gets, ["a"]);
   assert.equal(spy.puts.length, 1);
@@ -105,26 +120,34 @@ test("spyObjectStore: records gets and puts and injects put failures", async () 
   assert.equal(spy.puts[0]?.options.contentType, "text/plain");
 
   spy.setFailing(true);
-  const exit = await Effect.runPromise(Effect.exit(spy.store.put("b", bytes("2"), { contentType: "text/plain" })));
+  const exit = await Effect.runPromise(
+    Effect.exit(spy.store.put("b", bytes("2"), { contentType: "text/plain" })),
+  );
   assert.ok(Exit.isFailure(exit));
   assert.match(String(exit.cause), /StoreError/);
   assert.equal(spy.puts.length, 1);
   assert.ok(Option.isNone(await Effect.runPromise(spy.store.get("b"))));
 
   spy.setFailing(false);
-  await Effect.runPromise(spy.store.put("b", bytes("2"), { contentType: "text/plain" }));
+  await Effect.runPromise(
+    spy.store.put("b", bytes("2"), { contentType: "text/plain" }),
+  );
   assert.equal(spy.puts.length, 2);
 });
 
 test("recordingAlerts: records what was sent", async () => {
   const { alerts, sent } = recordingAlerts();
-  await Effect.runPromise(alerts.send({ title: "t", message: "m", urgent: true }));
+  await Effect.runPromise(
+    alerts.send({ title: "t", message: "m", urgent: true }),
+  );
   assert.deepEqual(sent, [{ title: "t", message: "m", urgent: true }]);
 });
 
 test("memoryObjectStore: a returned body is a copy", async () => {
   const store = memoryObjectStore();
-  await Effect.runPromise(store.put("a", bytes("abc"), { contentType: "text/plain" }));
+  await Effect.runPromise(
+    store.put("a", bytes("abc"), { contentType: "text/plain" }),
+  );
   const first = await Effect.runPromise(store.get("a"));
   assert.ok(Option.isSome(first));
   first.value.body[0] = 0;

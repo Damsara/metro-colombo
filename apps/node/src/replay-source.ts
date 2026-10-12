@@ -3,22 +3,42 @@ import { parquetMetadata, parquetReadObjects } from "hyparquet";
 import { type ArchiveRow, colomboDay, optional } from "@metro/core";
 import { colomboDayStart } from "@metro/upstream";
 
-const compressors = { ZSTD: (input: Uint8Array, outputLength: number) => decompress(input, new Uint8Array(outputLength)) };
+const compressors = {
+  ZSTD: (input: Uint8Array, outputLength: number) =>
+    decompress(input, new Uint8Array(outputLength)),
+};
 
-const text = (value: unknown) => (typeof value === "string" && value.length > 0 ? value : undefined);
+const text = (value: unknown) =>
+  typeof value === "string" && value.length > 0 ? value : undefined;
 const number = (value: unknown) =>
-  typeof value === "bigint" ? Number(value) : typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  typeof value === "bigint"
+    ? Number(value)
+    : typeof value === "number" && Number.isFinite(value)
+      ? value
+      : undefined;
 export const replaySources = (day: string) => [
   `fixes/date=${day}/fixes.parquet`,
-  ...Array.from({ length: 23 }, (_, index) => `today/date=${day}/through=${String(23 - index).padStart(2, "0")}.parquet`),
+  ...Array.from(
+    { length: 23 },
+    (_, index) =>
+      `today/date=${day}/through=${String(23 - index).padStart(2, "0")}.parquet`,
+  ),
 ];
 
-export function fromParquetRow(row: Record<string, unknown>): ArchiveRow | undefined {
+export function fromParquetRow(
+  row: Record<string, unknown>,
+): ArchiveRow | undefined {
   const bus_id = text(row.bus_id);
   const lat = number(row.lat);
   const lng = number(row.lng);
   const received_at = number(row.received_at);
-  if (!bus_id || lat === undefined || lng === undefined || received_at === undefined) return undefined;
+  if (
+    !bus_id ||
+    lat === undefined ||
+    lng === undefined ||
+    received_at === undefined
+  )
+    return undefined;
   return {
     bus_id,
     ...optional("registration", text(row.registration)),
@@ -35,7 +55,10 @@ export function fromParquetRow(row: Record<string, unknown>): ArchiveRow | undef
   };
 }
 
-export async function hoursFromParquet(file: ArrayBuffer, day: string): Promise<Map<number, ArchiveRow[]>> {
+export async function hoursFromParquet(
+  file: ArrayBuffer,
+  day: string,
+): Promise<Map<number, ArchiveRow[]>> {
   const metadata = parquetMetadata(file);
   const rows = (await parquetReadObjects({ file, metadata, compressors }))
     .flatMap((row) => {

@@ -38,7 +38,9 @@ test("rejects buses without an id or finite coordinates", () => {
 test("corrects fixes offset by one degree north and east", () => {
   const fix = toFix({ id: "bus", lat: 7.85, lng: 80.86 }, 0);
   assert.ok(fix);
-  assert.ok(Math.abs(fix.lat - 6.85) < 1e-9 && Math.abs(fix.lng - 79.86) < 1e-9);
+  assert.ok(
+    Math.abs(fix.lat - 6.85) < 1e-9 && Math.abs(fix.lng - 79.86) < 1e-9,
+  );
   assert.equal(toFix({ id: "bus", lat: 6.85, lng: 79.86 }, 0)?.lat, 6.85);
 });
 

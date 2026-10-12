@@ -29,7 +29,9 @@ export const wsSocket: SocketShape = {
       });
       // 'close' always follows 'error'.
       socket.on("error", () => {});
-      socket.on("close", () => resume(opened ? Effect.void : Effect.fail(didNotOpen())));
+      socket.on("close", () =>
+        resume(opened ? Effect.void : Effect.fail(didNotOpen())),
+      );
       return Effect.sync(() => socket.terminate());
     }),
 };

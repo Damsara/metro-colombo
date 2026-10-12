@@ -13,5 +13,9 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/core" }, { "path": "../../packages/upstream" }, { "path": "../../packages/fleet" }]
+  "references": [
+    { "path": "../../packages/core" },
+    { "path": "../../packages/upstream" },
+    { "path": "../../packages/fleet" }
+  ]
 }

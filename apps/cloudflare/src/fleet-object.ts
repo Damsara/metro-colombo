@@ -2,13 +2,28 @@ import { DurableObject } from "cloudflare:workers";
 import { ConfigProvider, Effect, Layer, ManagedRuntime } from "effect";
 import { FetchHttpClient } from "effect/http";
 import { ObjectStore, Scheduler, Socket, StateStore } from "@metro/core";
-import { Fleet, type FleetShape, type FleetStatus, NtfyAlerts, type SubmitOutcome } from "@metro/fleet";
+import {
+  Fleet,
+  type FleetShape,
+  type FleetStatus,
+  NtfyAlerts,
+  type SubmitOutcome,
+} from "@metro/fleet";
 import { AuthClient, LiveFeedFromConfig } from "@metro/upstream";
 import type { Env } from "./env.js";
-import { alarmScheduler, doStateStore, r2ObjectStore, workerSocket } from "./ports.js";
+import {
+  alarmScheduler,
+  doStateStore,
+  r2ObjectStore,
+  workerSocket,
+} from "./ports.js";
 
 export const stringVars = (env: Record<string, unknown>) =>
-  Object.fromEntries(Object.entries(env).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+  Object.fromEntries(
+    Object.entries(env).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
 
 export const fleetLayer = (env: Env, state: DurableObjectState) => {
   const ports = Layer.mergeAll(
@@ -17,17 +32,21 @@ export const fleetLayer = (env: Env, state: DurableObjectState) => {
     Layer.succeed(Scheduler, alarmScheduler(state.storage)),
     Layer.succeed(Socket, workerSocket),
   );
-  const services = Layer.mergeAll(LiveFeedFromConfig, AuthClient.layer, NtfyAlerts).pipe(
-    Layer.provideMerge(ports),
-    Layer.provideMerge(FetchHttpClient.layer),
-  );
+  const services = Layer.mergeAll(
+    LiveFeedFromConfig,
+    AuthClient.layer,
+    NtfyAlerts,
+  ).pipe(Layer.provideMerge(ports), Layer.provideMerge(FetchHttpClient.layer));
   return Fleet.layer.pipe(
     Layer.provide(services),
-    Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord(stringVars(env)))),
+    Layer.provide(
+      ConfigProvider.layer(ConfigProvider.fromEnvRecord(stringVars(env))),
+    ),
   );
 };
 
-const makeRuntime = (env: Env, state: DurableObjectState) => ManagedRuntime.make(fleetLayer(env, state));
+const makeRuntime = (env: Env, state: DurableObjectState) =>
+  ManagedRuntime.make(fleetLayer(env, state));
 
 export class FleetObject extends DurableObject<Env> {
   private readonly runtime: ReturnType<typeof makeRuntime>;

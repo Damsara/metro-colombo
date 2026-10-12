@@ -1,6 +1,19 @@
-import { Clock, Effect, Layer, Option, Redacted, Schema, Semaphore } from "effect";
+import {
+  Clock,
+  Effect,
+  Layer,
+  Option,
+  Redacted,
+  Schema,
+  Semaphore,
+} from "effect";
 import { HttpBody, HttpClient } from "effect/http";
-import { type Alert, Alerts, COLOMBO_UTC_OFFSET_MS, StateStore } from "@metro/core";
+import {
+  type Alert,
+  Alerts,
+  COLOMBO_UTC_OFFSET_MS,
+  StateStore,
+} from "@metro/core";
 import { FleetConfig } from "./config.js";
 
 export const NtfyAlerts = Layer.effect(
@@ -33,7 +46,12 @@ export const NtfyAlerts = Layer.effect(
                 ),
                 Effect.timeout("10 seconds"),
                 // The error's message carries the request url, which is the secret.
-                Effect.catch((error) => Effect.logWarning("alert not sent", "reason" in error ? error.reason._tag : error._tag)),
+                Effect.catch((error) =>
+                  Effect.logWarning(
+                    "alert not sent",
+                    "reason" in error ? error.reason._tag : error._tag,
+                  ),
+                ),
               ),
         }),
     });
@@ -57,13 +75,17 @@ export type AlertBookShape = {
 };
 
 const HOUR_MS = 3_600_000;
-const Book = Schema.Record(Schema.String, Schema.Struct({ since: Schema.Number, sentAt: Schema.Number }));
+const Book = Schema.Record(
+  Schema.String,
+  Schema.Struct({ since: Schema.Number, sentAt: Schema.Number }),
+);
 type Stored = Option.Option<typeof Book.Type>;
 
 export const makeAlertBook = Effect.gen(function* () {
   const state = yield* StateStore;
   const alerts = yield* Alerts;
-  const empty = (reason: string) => Effect.as(Effect.logWarning(reason), Option.none() as Stored);
+  const empty = (reason: string) =>
+    Effect.as(Effect.logWarning(reason), Option.none() as Stored);
   const stored: Stored = yield* state.get("alerts").pipe(
     Effect.flatMap((found) =>
       Option.match(found, {
@@ -77,11 +99,20 @@ export const makeAlertBook = Effect.gen(function* () {
     ),
     Effect.catch(() => empty("alert book not loaded, starting empty")),
   );
-  const book: Record<string, { since: number; sentAt: number }> = Option.match(stored, {
-    onNone: () => ({}),
-    onSome: (entries) => ({ ...entries }),
-  });
-  const save = state.set("alerts", book).pipe(Effect.catch((error) => Effect.logWarning("alert book not saved", error.message)));
+  const book: Record<string, { since: number; sentAt: number }> = Option.match(
+    stored,
+    {
+      onNone: () => ({}),
+      onSome: (entries) => ({ ...entries }),
+    },
+  );
+  const save = state
+    .set("alerts", book)
+    .pipe(
+      Effect.catch((error) =>
+        Effect.logWarning("alert book not saved", error.message),
+      ),
+    );
   const lock = yield* Semaphore.make(1);
 
   const raise = (problem: Problem, alert: Alert) =>
@@ -106,6 +137,10 @@ export const makeAlertBook = Effect.gen(function* () {
       }),
     );
 
-  const shape: AlertBookShape = { raise, resolve, open: Effect.sync(() => Object.keys(book) as Problem[]) };
+  const shape: AlertBookShape = {
+    raise,
+    resolve,
+    open: Effect.sync(() => Object.keys(book) as Problem[]),
+  };
   return shape;
 });

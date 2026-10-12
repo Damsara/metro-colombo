@@ -9,21 +9,34 @@ export type FleetClientShape = {
   readonly submitCode: (code: string) => Effect.Effect<SubmitOutcome>;
 };
 
-export class FleetClient extends Context.Service<FleetClient, FleetClientShape>()("metro/FleetClient") {}
+export class FleetClient extends Context.Service<
+  FleetClient,
+  FleetClientShape
+>()("metro/FleetClient") {}
 
-const digest = async (text: string) => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)));
+const digest = async (text: string) =>
+  new Uint8Array(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)),
+  );
 
 export const bearerMatches = (header: string | undefined, secret: string) =>
   Effect.promise(async () => {
     if (header === undefined || secret.trim() === "") return false;
-    const [given, expected] = await Promise.all([digest(header), digest(`Bearer ${secret}`)]);
+    const [given, expected] = await Promise.all([
+      digest(header),
+      digest(`Bearer ${secret}`),
+    ]);
     let difference = 0;
-    for (let index = 0; index < expected.length; index++) difference |= given[index] ^ expected[index];
+    for (let index = 0; index < expected.length; index++)
+      difference |= given[index] ^ expected[index];
     return difference === 0;
   });
 
 const reply = (status: number, body: unknown) =>
-  HttpServerResponse.jsonUnsafe(body, { status, headers: { "cache-control": "no-store" } });
+  HttpServerResponse.jsonUnsafe(body, {
+    status,
+    headers: { "cache-control": "no-store" },
+  });
 
 const CodeBody = Schema.Struct({ code: Schema.String });
 
@@ -36,14 +49,20 @@ export const FleetRoutes = Layer.unwrap(
     const authorised = Effect.gen(function* () {
       if (Option.isNone(otpSecret)) return false;
       const request = yield* HttpServerRequest.HttpServerRequest;
-      return yield* bearerMatches(request.headers["authorization"], Redacted.value(otpSecret.value));
+      return yield* bearerMatches(
+        request.headers["authorization"],
+        Redacted.value(otpSecret.value),
+      );
     });
 
     const otp = Effect.gen(function* () {
       if (!(yield* authorised)) return reply(404, { error: "not found" });
-      const body = yield* HttpServerRequest.schemaBodyJson(CodeBody).pipe(Effect.option);
+      const body = yield* HttpServerRequest.schemaBodyJson(CodeBody).pipe(
+        Effect.option,
+      );
       const code = Option.map(body, ({ code }) => code.trim());
-      if (Option.isNone(code) || !/^\d{6}$/.test(code.value)) return reply(400, { error: "expected a six-digit code" });
+      if (Option.isNone(code) || !/^\d{6}$/.test(code.value))
+        return reply(400, { error: "expected a six-digit code" });
       const outcome = yield* client.submitCode(code.value);
       switch (outcome._tag) {
         case "Accepted":
@@ -60,6 +79,9 @@ export const FleetRoutes = Layer.unwrap(
       return reply(200, yield* client.status);
     });
 
-    return Layer.mergeAll(HttpRouter.add("POST", "/fleet/otp", otp), HttpRouter.add("GET", "/fleet/status", status));
+    return Layer.mergeAll(
+      HttpRouter.add("POST", "/fleet/otp", otp),
+      HttpRouter.add("GET", "/fleet/status", status),
+    );
   }),
 );

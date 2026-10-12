@@ -8,10 +8,16 @@ export type NodeTickerShape = {
   readonly drive: (tick: Effect.Effect<void>) => Effect.Effect<never>;
 };
 
-type Plan = { readonly next: Option.Option<number>; readonly changed: Deferred.Deferred<void> };
+type Plan = {
+  readonly next: Option.Option<number>;
+  readonly changed: Deferred.Deferred<void>;
+};
 
 export const makeNodeTicker = Effect.gen(function* () {
-  const plan = yield* Ref.make<Plan>({ next: Option.none(), changed: yield* Deferred.make<void>() });
+  const plan = yield* Ref.make<Plan>({
+    next: Option.none(),
+    changed: yield* Deferred.make<void>(),
+  });
   const replan = (next: Option.Option<number>) =>
     Effect.gen(function* () {
       const changed = yield* Deferred.make<void>();
@@ -20,7 +26,10 @@ export const makeNodeTicker = Effect.gen(function* () {
     });
 
   const scheduler: SchedulerShape = {
-    wakeAfter: (ms) => Effect.flatMap(Clock.currentTimeMillis, (now) => replan(Option.some(now + ms))),
+    wakeAfter: (ms) =>
+      Effect.flatMap(Clock.currentTimeMillis, (now) =>
+        replan(Option.some(now + ms)),
+      ),
     next: Effect.map(Ref.get(plan), ({ next }) => next),
   };
 
@@ -29,8 +38,14 @@ export const makeNodeTicker = Effect.gen(function* () {
     Effect.gen(function* () {
       const now = yield* Clock.currentTimeMillis;
       const { next, changed } = yield* Ref.get(plan);
-      const wait = Option.match(next, { onNone: () => IDLE_WAKE_MS, onSome: (at) => Math.max(0, at - now) });
-      const due = yield* Effect.raceFirst(Effect.as(Effect.sleep(wait), true), Effect.as(Deferred.await(changed), false));
+      const wait = Option.match(next, {
+        onNone: () => IDLE_WAKE_MS,
+        onSome: (at) => Math.max(0, at - now),
+      });
+      const due = yield* Effect.raceFirst(
+        Effect.as(Effect.sleep(wait), true),
+        Effect.as(Deferred.await(changed), false),
+      );
       if (!due) return;
       yield* replan(Option.none());
       yield* tick;
@@ -40,6 +55,8 @@ export const makeNodeTicker = Effect.gen(function* () {
   return shape;
 });
 
-export class NodeTicker extends Context.Service<NodeTicker, NodeTickerShape>()("metro/NodeTicker") {
+export class NodeTicker extends Context.Service<NodeTicker, NodeTickerShape>()(
+  "metro/NodeTicker",
+) {
   static readonly layer = Layer.effect(NodeTicker, makeNodeTicker);
 }

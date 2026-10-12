@@ -9,4 +9,5 @@ export type TestEnv = {
 
 export const testEnv = env as unknown as TestEnv;
 
-export const probe = () => testEnv.PROBE.get(testEnv.PROBE.idFromName(crypto.randomUUID()));
+export const probe = () =>
+  testEnv.PROBE.get(testEnv.PROBE.idFromName(crypto.randomUUID()));

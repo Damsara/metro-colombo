@@ -54,7 +54,8 @@ export const makeRecorder = (options: {
     let droppedRows = 0;
     const lock = yield* Semaphore.make(1);
 
-    const pendingTotal = () => pending.reduce((sum, chunk) => sum + chunk.rows.length, 0);
+    const pendingTotal = () =>
+      pending.reduce((sum, chunk) => sum + chunk.rows.length, 0);
 
     const trim = () => {
       let excess = pendingTotal() - cap;
@@ -71,7 +72,15 @@ export const makeRecorder = (options: {
     const upload = (key: string, bytes: Uint8Array, cacheControl: string) =>
       options.store.put(key, bytes, { contentType: NDJSON, cacheControl }).pipe(
         Effect.as(true),
-        Effect.catch((error) => Effect.as(Effect.logWarning("archive upload failed", { key, error: error.message }), false)),
+        Effect.catch((error) =>
+          Effect.as(
+            Effect.logWarning("archive upload failed", {
+              key,
+              error: error.message,
+            }),
+            false,
+          ),
+        ),
       );
 
     const flushNow = Effect.gen(function* () {
@@ -89,7 +98,9 @@ export const makeRecorder = (options: {
       let uploaded = false;
       while (pending.length) {
         const chunk = pending[0];
-        const bytes = yield* Effect.promise(() => encodeArchiveChunk(chunk.rows));
+        const bytes = yield* Effect.promise(() =>
+          encodeArchiveChunk(chunk.rows),
+        );
         if (!(yield* upload(chunk.key, bytes, CHUNK_CACHE))) {
           failingSince ??= now;
           break;
@@ -103,7 +114,9 @@ export const makeRecorder = (options: {
       if (!uploaded) return;
       const since = hourStartKey(now - HOUR_MS);
       recent = recent.filter((chunk) => chunk.key >= since);
-      const live = yield* Effect.promise(() => concatAsOneMember(recent.map((chunk) => chunk.bytes)));
+      const live = yield* Effect.promise(() =>
+        concatAsOneMember(recent.map((chunk) => chunk.bytes)),
+      );
       const liveUploaded = yield* upload(LIVE_ARCHIVE_KEY, live, LIVE_CACHE);
       liveFailingSince = liveUploaded ? null : (liveFailingSince ?? now);
     });
@@ -113,8 +126,16 @@ export const makeRecorder = (options: {
     const shape: RecorderShape = {
       record: (fix) => void buffer.push(fix),
       flush,
-      flushIfDue: Effect.flatMap(Clock.currentTimeMillis, (now) => (now - lastFlushAt >= FLUSH_EVERY_MS ? flush : Effect.void)),
-      status: Effect.sync(() => ({ lastWriteAt, failingSince, liveFailingSince, pendingRows: buffer.length + pendingTotal(), droppedRows })),
+      flushIfDue: Effect.flatMap(Clock.currentTimeMillis, (now) =>
+        now - lastFlushAt >= FLUSH_EVERY_MS ? flush : Effect.void,
+      ),
+      status: Effect.sync(() => ({
+        lastWriteAt,
+        failingSince,
+        liveFailingSince,
+        pendingRows: buffer.length + pendingTotal(),
+        droppedRows,
+      })),
     };
     return shape;
   });

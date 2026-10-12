@@ -13,7 +13,10 @@ const { values } = parseArgs({
   },
 });
 const day = values.date;
-if (!day || !isIsoDate(day)) throw new Error("usage: replay:prepare -- --date YYYY-MM-DD [--source URL] [--out DIR]");
+if (!day || !isIsoDate(day))
+  throw new Error(
+    "usage: replay:prepare -- --date YYYY-MM-DD [--source URL] [--out DIR]",
+  );
 const source = values.source.replace(/\/$/, "");
 
 let parquet: ArrayBuffer | undefined;
@@ -35,13 +38,19 @@ const write = (key: string, bytes: Uint8Array) => {
 
 const routesResponse = await fetch(`${source}/raw/reference/routes.json`);
 if (!routesResponse.ok) {
-  throw new Error(`no route list at ${source}/raw/reference/routes.json (HTTP ${routesResponse.status}); replayed buses would have no route codes`);
+  throw new Error(
+    `no route list at ${source}/raw/reference/routes.json (HTTP ${routesResponse.status}); replayed buses would have no route codes`,
+  );
 }
 const routes = new Uint8Array(await routesResponse.arrayBuffer());
-const routeCount = (JSON.parse(new TextDecoder().decode(routes)) as unknown[]).length;
+const routeCount = (JSON.parse(new TextDecoder().decode(routes)) as unknown[])
+  .length;
 
 const hours = await hoursFromParquet(parquet, day);
-for (const [hour, rows] of hours) write(replayHourKey(day, hour), await encodeArchiveChunk(rows));
+for (const [hour, rows] of hours)
+  write(replayHourKey(day, hour), await encodeArchiveChunk(rows));
 write(replayRoutesKey(day), routes);
 const total = [...hours.values()].reduce((sum, rows) => sum + rows.length, 0);
-console.log(`${used}: ${total} rows in ${hours.size} hour files and ${routeCount} routes under ${join(values.out, "replay", day)}`);
+console.log(
+  `${used}: ${total} rows in ${hours.size} hour files and ${routeCount} routes under ${join(values.out, "replay", day)}`,
+);

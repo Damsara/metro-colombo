@@ -3,11 +3,17 @@ import { Effect, Option } from "effect";
 import type { SchedulerShape } from "@metro/core";
 import type { Register } from "@metro/core/testing";
 
-export type WithScheduler = (body: (scheduler: SchedulerShape) => Promise<void>) => Promise<void>;
+export type WithScheduler = (
+  body: (scheduler: SchedulerShape) => Promise<void>,
+) => Promise<void>;
 
 const run = <A, E>(effect: Effect.Effect<A, E>) => Effect.runPromise(effect);
 
-export function schedulerSuite(test: Register, name: string, withScheduler: WithScheduler) {
+export function schedulerSuite(
+  test: Register,
+  name: string,
+  withScheduler: WithScheduler,
+) {
   test(`${name}: nothing is scheduled at first`, () =>
     withScheduler(async (scheduler) => {
       assert.ok(Option.isNone(await run(scheduler.next)));

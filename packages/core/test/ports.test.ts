@@ -1,5 +1,9 @@
 import { test } from "node:test";
-import { memoryObjectStore, memoryScheduler, memoryStateStore } from "@metro/core/testing";
+import {
+  memoryObjectStore,
+  memoryScheduler,
+  memoryStateStore,
+} from "@metro/core/testing";
 import { clockSuite } from "./suites/clock.suite.ts";
 import { objectStoreSuite } from "./suites/object-store.suite.ts";
 import { schedulerSuite } from "./suites/scheduler.suite.ts";

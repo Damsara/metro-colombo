@@ -1,5 +1,11 @@
 import { Effect, Option, Schema } from "effect";
-import { encodeVehiclePositions, type Fix, type ObjectStoreShape, parseJson, S } from "@metro/core";
+import {
+  encodeVehiclePositions,
+  type Fix,
+  type ObjectStoreShape,
+  parseJson,
+  S,
+} from "@metro/core";
 import type { RouteCode } from "@metro/upstream";
 import { liveDocument, type StaleReason } from "./snapshot.js";
 
@@ -25,7 +31,11 @@ export const makeLivePublisher = (store: ObjectStoreShape) =>
     const utf8 = new TextEncoder();
 
     const restore = store.get(LIVE_JSON_KEY).pipe(
-      Effect.map(Option.flatMap((object) => parseJson(new TextDecoder().decode(object.body)))),
+      Effect.map(
+        Option.flatMap((object) =>
+          parseJson(new TextDecoder().decode(object.body)),
+        ),
+      ),
       Effect.map(Option.flatMap(Schema.decodeUnknownOption(S.LiveFeed))),
       Effect.map(
         Option.map((previous) => {
@@ -33,7 +43,9 @@ export const makeLivePublisher = (store: ObjectStoreShape) =>
           frozenAt = previous.timestamp;
         }),
       ),
-      Effect.catch((error) => Effect.logWarning("previous live snapshot unreadable", error.message)),
+      Effect.catch((error) =>
+        Effect.logWarning("previous live snapshot unreadable", error.message),
+      ),
       Effect.asVoid,
     );
 
@@ -44,17 +56,34 @@ export const makeLivePublisher = (store: ObjectStoreShape) =>
           frozen = doc.buses;
           frozenAt = doc.timestamp;
         }
-        const key = JSON.stringify([doc.buses.length ? doc.timestamp : null, doc.stale, doc.reason ?? null, doc.buses]);
-        if (key === lastKey && input.now - lastWriteAt < REPUBLISH_EVERY_MS) return;
+        const key = JSON.stringify([
+          doc.buses.length ? doc.timestamp : null,
+          doc.stale,
+          doc.reason ?? null,
+          doc.buses,
+        ]);
+        if (key === lastKey && input.now - lastWriteAt < REPUBLISH_EVERY_MS)
+          return;
         const seconds = Math.floor((doc.timestamp || input.now) / 1000);
-        yield* store.put(LIVE_JSON_KEY, utf8.encode(JSON.stringify(doc)), { contentType: "application/json", cacheControl: LIVE_CACHE });
-        yield* store.put(VEHICLES_PB_KEY, encodeVehiclePositions(doc.buses, seconds), {
-          contentType: "application/x-protobuf",
+        yield* store.put(LIVE_JSON_KEY, utf8.encode(JSON.stringify(doc)), {
+          contentType: "application/json",
           cacheControl: LIVE_CACHE,
         });
+        yield* store.put(
+          VEHICLES_PB_KEY,
+          encodeVehiclePositions(doc.buses, seconds),
+          {
+            contentType: "application/x-protobuf",
+            cacheControl: LIVE_CACHE,
+          },
+        );
         lastKey = key;
         lastWriteAt = input.now;
-      }).pipe(Effect.catch((error) => Effect.logWarning("live publish failed", error.message)));
+      }).pipe(
+        Effect.catch((error) =>
+          Effect.logWarning("live publish failed", error.message),
+        ),
+      );
 
     return { restore, publish };
   });

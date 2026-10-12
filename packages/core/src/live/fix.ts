@@ -59,7 +59,8 @@ export function withRouteCodes(
 ): S.LiveBus[] {
   const codes = new Map(routes.map((route) => [route.id, route.code]));
   return buses.map((bus) => {
-    const route_code = bus.route_code ?? (bus.route_id && codes.get(bus.route_id));
+    const route_code =
+      bus.route_code ?? (bus.route_id && codes.get(bus.route_id));
     return route_code ? { ...bus, route_code } : bus;
   });
 }

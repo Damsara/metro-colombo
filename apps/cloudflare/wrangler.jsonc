@@ -4,9 +4,16 @@
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
-  "durable_objects": { "bindings": [{ "name": "FLEET", "class_name": "FleetObject" }] },
+  "durable_objects": {
+    "bindings": [{ "name": "FLEET", "class_name": "FleetObject" }],
+  },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["FleetObject"] }],
   "r2_buckets": [{ "binding": "ARCHIVE", "bucket_name": "metro-data-staging" }],
   "triggers": { "crons": ["*/5 * * * *"] },
-  "vars": { "LIVE_FEED": "replay", "REPLAY_DATE": "2026-10-12", "REPLAY_SPEED": "1", "FLEET_INSTANCE": "fleet" }
+  "vars": {
+    "LIVE_FEED": "replay",
+    "REPLAY_DATE": "2026-10-12",
+    "REPLAY_SPEED": "1",
+    "FLEET_INSTANCE": "fleet",
+  },
 }
