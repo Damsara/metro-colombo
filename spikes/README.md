@@ -19,6 +19,15 @@ shell so you can send it:
 Under `wrangler dev`, put `SPIKE_KEY=<key>` in the spike's `.dev.vars`
 (gitignored) instead.
 
+Deploy from the spike's own folder with the pinned binary; `npm --prefix ..
+exec` runs wrangler from `spikes/`, where it finds no `wrangler.jsonc`:
+
+    cd spikes/<name> && ../node_modules/.bin/wrangler deploy
+
+On this network IPv6 has no route and requests to Cloudflare sometimes time
+out; `NODE_OPTIONS="--dns-result-order=ipv4first --no-network-family-autoselection"`
+and a retry get through.
+
 Deploy only Workers named metro-spike-*, and delete them when done:
 
     npm --prefix spikes exec wrangler -- delete --name metro-spike-<name>
