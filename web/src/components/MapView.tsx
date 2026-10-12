@@ -58,6 +58,7 @@ import {
   chaseBearing,
   chaseOffset,
 } from "../lib/chaseCamera";
+import { BASEMAP_STYLE } from "../lib/basemap";
 import { Button } from "./ui/Button";
 import { Notice } from "./ui/Notice";
 import {
@@ -70,7 +71,6 @@ import {
 } from "../types";
 
 const COLOMBO: [number, number] = [79.8612, 6.9271];
-const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 const ROUTES = "metro-routes";
 const SPLIT = "metro-route-split";
 const STOPS = "metro-stops";

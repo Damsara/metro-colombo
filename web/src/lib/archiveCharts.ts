@@ -10,13 +10,28 @@ FROM load_by_route_hour
 WHERE route_code IS NOT NULL
 ORDER BY route_code, hour;`;
 
-// Mosaic's SQL builder quotes "metro.x" as one name, so the charts read local copies of the attached views.
-export function chartViews(catalogUrl: string): string[] {
+export function setupStatements(catalogUrl: string): string[] {
   return [
     `ATTACH '${catalogUrl.replaceAll("'", "''")}' AS metro (READ_ONLY)`,
-    `CREATE OR REPLACE VIEW hourly AS ${HOURLY_SQL.replace(/;$/, "").replace("FROM buses_per_hour", "FROM metro.buses_per_hour")}`,
-    `CREATE OR REPLACE VIEW crowding AS ${CROWDING_SQL.replace(/;$/, "").replace("FROM load_by_route_hour", "FROM metro.load_by_route_hour")}`,
+    // Charts keep their views in memory while the queries on the page still name the archive's tables bare.
+    "SET search_path = 'memory.main,metro.main'",
+    chartView("hourly", HOURLY_SQL),
+    chartView("crowding", CROWDING_SQL),
   ];
+}
+
+const statement = (sql: string) => sql.trim().replace(/;$/, "");
+
+export function chartView(name: string, sql: string, extra?: string): string {
+  return `CREATE OR REPLACE VIEW ${name} AS SELECT *${extra ? `, ${extra}` : ""} FROM (${statement(sql)})`;
+}
+
+export function withoutLimit(sql: string): string {
+  return statement(sql).replace(/\s+LIMIT\s+\d+\s*$/i, "");
+}
+
+export function forStop(sql: string, stopCode: string): string {
+  return sql.replace("'MCC5'", `'${stopCode.replaceAll("'", "''")}'`);
 }
 
 // The catalog's route list has no colours, so they come from the site's own routes.

@@ -1,15 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import * as vg from "@uwdata/vgplot";
-import {
-  CROWDING_SQL,
-  HOURLY_SQL,
-  chartViews,
-  routeScale,
-} from "../lib/archiveCharts";
-import { useRoutes } from "../api";
-import { duckdbShellLink } from "../lib/duckdbShell";
-import { HEADER_LINK } from "../classNames";
-import { palette } from "../theme";
+import { CROWDING_SQL, HOURLY_SQL, routeScale } from "../../lib/archiveCharts";
+import { useRoutes } from "../../api";
+import { duckdbShellLink } from "../../lib/duckdbShell";
+import { HEADER_LINK } from "../../classNames";
+import { palette } from "../../theme";
+import { openArchive } from "./archiveDb";
 
 type Status = "loading" | "ready" | "failed";
 
@@ -21,12 +16,12 @@ function ShellLink({ setup, sql }: { setup: string[]; sql: string }) {
       target="_blank"
       rel="noreferrer"
     >
-      Run in the DuckDB shell
+      Run in the DuckDB shell ↗
     </a>
   );
 }
 
-export default function ArchiveCharts({
+export default function OverviewCharts({
   catalogUrl,
   shellSetup,
 }: {
@@ -46,13 +41,9 @@ export default function ArchiveCharts({
     const slots = [picker.current, hourly.current, crowding.current];
     if (!settled || slots.some((slot) => !slot)) return;
     let cancelled = false;
-    const coordinator = new vg.Coordinator(vg.wasmConnector(), {
-      logger: null,
-    });
-    const api = vg.createAPIContext({ coordinator });
 
     (async () => {
-      await coordinator.exec(chartViews(catalogUrl));
+      const { api } = await openArchive(catalogUrl);
       if (cancelled) return;
       const { domain, range } = scale;
       const route = api.Selection.single();
@@ -78,6 +69,8 @@ export default function ArchiveCharts({
           api.colorRange(range),
           api.width(width),
           api.height(240),
+          // Archive times are Colombo wall-clock, so they must not shift to the reader's zone.
+          api.xScale("utc"),
           api.xLabel(null),
           api.yLabel("Buses moving"),
           api.yGrid(true),
@@ -111,7 +104,6 @@ export default function ArchiveCharts({
     return () => {
       cancelled = true;
       slots.forEach((slot) => slot?.replaceChildren());
-      coordinator.clear();
     };
   }, [catalogUrl, settled, scale]);
 
@@ -130,10 +122,10 @@ export default function ArchiveCharts({
         ref={picker}
         className="mb-3 text-sm [&_select]:ml-2 [&_select]:rounded-md [&_select]:border [&_select]:border-line [&_select]:bg-card [&_select]:px-2 [&_select]:py-1"
       />
-      <h3 className="mt-4 mb-1.5 text-md font-semibold">
+      <h3 className="mt-2 mb-1 text-lg leading-snug font-semibold">
         Buses on the road, by hour
       </h3>
-      <p>
+      <p className="text-muted">
         Buses that moved more than 200 m in the hour, so parked ones don't
         count.
       </p>
@@ -150,13 +142,15 @@ export default function ArchiveCharts({
         ))}
       </ul>
       <div ref={hourly} className="overflow-x-auto" />
-      <p>
+      <p className="text-right text-sm">
         <ShellLink setup={shellSetup} sql={HOURLY_SQL} />
       </p>
-      <h3 className="mt-6 mb-1.5 text-md font-semibold">
+      <h3 className="mt-8 mb-1 text-lg leading-snug font-semibold">
         How full each route gets
       </h3>
-      <p>Average load by hour of day across the whole archive.</p>
+      <p className="text-muted">
+        Average load by hour of day across the whole archive.
+      </p>
       <div className="mb-2 flex items-center gap-2 text-sm text-muted">
         Empty
         <span
@@ -169,7 +163,7 @@ export default function ArchiveCharts({
         Full
       </div>
       <div ref={crowding} className="overflow-x-auto" />
-      <p>
+      <p className="text-right text-sm">
         <ShellLink setup={shellSetup} sql={CROWDING_SQL} />
       </p>
     </div>

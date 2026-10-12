@@ -4,34 +4,83 @@ import { DOCS_MAIN, DOCS_TITLE, HEADER_LINK } from "./classNames";
 import { AppHeader } from "./components/AppHeader";
 import { Eyebrow } from "./components/ui/Eyebrow";
 import { duckdbShellLink } from "./lib/duckdbShell";
+import type { ChartKind } from "./components/archive/ExampleChart";
 
 // DuckDB in the browser is several megabytes, so it loads only with this page.
-const ArchiveCharts = lazy(() => import("./components/ArchiveCharts"));
+const OverviewCharts = lazy(
+  () => import("./components/archive/OverviewCharts"),
+);
+const ExampleChart = lazy(() => import("./components/archive/ExampleChart"));
 
 const DATA_HOST = "https://data.metro.manasa.ai";
 const BROWSER_CATALOG = `${DATA_HOST}/catalog/metro.duckdb`;
 
 const SHELL_SETUP = [`ATTACH '${BROWSER_CATALOG}' AS metro;`, "USE metro;"];
 
-type Example = { title: string; about?: string; sql: string };
+type Example = {
+  title: string;
+  about?: string;
+  sql: string;
+  chart?: ChartKind;
+};
 
-function Query({ title, about, sql }: Example) {
+const SUBHEADING = "mt-7 mb-2 text-lg leading-snug font-semibold";
+const CARD_TITLE = "mb-1 text-lg leading-snug font-semibold";
+
+function Card({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6">
-      <h3 className="mb-1.5 text-md font-semibold">{title}</h3>
-      {about && <p>{about}</p>}
-      <pre tabIndex={0}>{sql}</pre>
-      <p>
-        <a
-          className={HEADER_LINK}
-          href={duckdbShellLink([...SHELL_SETUP, sql])}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Run in the DuckDB shell
-        </a>
-      </p>
+    <div className="mt-5 rounded-xl border border-line bg-card p-4 shadow-card max-md:p-3.5 [&_p:last-child]:mb-0 [&_pre:last-child]:mb-0">
+      {children}
     </div>
+  );
+}
+
+function Query({ title, about, sql, chart }: Example) {
+  return (
+    <Card>
+      <h3 className={CARD_TITLE}>{title}</h3>
+      {about && <p className="text-muted">{about}</p>}
+      {chart && (
+        <Suspense fallback={null}>
+          <ExampleChart kind={chart} catalogUrl={BROWSER_CATALOG} sql={sql} />
+        </Suspense>
+      )}
+      <details className="group mt-2">
+        <summary className="flex min-h-9 cursor-pointer list-none items-center gap-3 text-sm font-semibold text-ink [&::-webkit-details-marker]:hidden">
+          <span className="inline-block transition-transform group-open:rotate-90 motion-reduce:transition-none">
+            ›
+          </span>
+          Show the query
+          <a
+            className={`${HEADER_LINK} ml-auto text-sm`}
+            href={duckdbShellLink([...SHELL_SETUP, sql])}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(event) => event.stopPropagation()}
+          >
+            Run in the DuckDB shell ↗
+          </a>
+        </summary>
+        <pre tabIndex={0} className="mt-2">
+          {sql}
+        </pre>
+      </details>
+    </Card>
+  );
+}
+
+function Glossary({ entries }: { entries: [string, string][] }) {
+  return (
+    <dl className="mb-3 grid grid-cols-[minmax(0,auto)_1fr] gap-x-5 gap-y-2.5 max-md:grid-cols-1 max-md:gap-y-0.5">
+      {entries.map(([name, about]) => (
+        <div key={name} className="contents">
+          <dt className="max-md:mt-2.5">
+            <code>{name}</code>
+          </dt>
+          <dd className="text-ink">{about}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -64,6 +113,7 @@ ORDER BY hour DESC, route_code;`,
   },
   {
     title: "Buses that went quiet the longest",
+    chart: "silences",
     about:
       "Gaps in the daytime, leaving out the nights when buses are switched off.",
     sql: `SELECT registration, route_code, silent_from, silent_for
@@ -78,6 +128,7 @@ LIMIT 10;`,
 const UNDERRATED: Example[] = [
   {
     title: "Bus bunching",
+    chart: "bunching",
     about:
       "Two buses on the same route and direction within 300 m of each other: the reason you wait 20 minutes and then two arrive at once. Buses waiting together at the end of a route show up too.",
     sql: `WITH f AS (
@@ -99,8 +150,9 @@ LIMIT 20;`,
   },
   {
     title: "Real gaps between buses at your stop",
+    chart: "gaps",
     about:
-      "When buses on every route that serves a stop actually passed it, and how long people waited between them. Change MCC5 to any stop_code from the stops table.",
+      "When buses on every route that serves a stop actually passed it, and how long people waited between them. Pick a stop here, or change MCC5 in the query to any stop_code.",
     sql: `WITH stop AS (
   SELECT direction_id, lat, lng FROM stops WHERE stop_code = 'MCC5'
 ), near AS (
@@ -122,6 +174,7 @@ ORDER BY passed_at DESC;`,
   },
   {
     title: "Where the buses sleep",
+    chart: "sleep",
     about:
       "Positions between midnight and 5 am reveal the depots, without anyone publishing where they are.",
     sql: `SELECT round(lat, 3) AS lat, round(lng, 3) AS lng,
@@ -134,6 +187,7 @@ LIMIT 10;`,
   },
   {
     title: "The slowest streets, by hour",
+    chart: "slow",
     about:
       "Speed between consecutive reports, grouped into blocks about 100 m across. The slowest blocks are congestion, junctions and bus stands.",
     sql: `WITH steps AS (
@@ -155,6 +209,7 @@ LIMIT 20;`,
   },
   {
     title: "When each route really starts and stops",
+    chart: "spans",
     about:
       "The first and last time a bus was seen moving on each route, on the latest finished day. Buses parked overnight keep reporting, so standing still doesn't count.",
     sql: `WITH steps AS (
@@ -176,6 +231,7 @@ ORDER BY route_code;`,
   },
   {
     title: "Buses that change routes",
+    chart: "swaps",
     about:
       "Which vehicles worked more than one route in a day, showing how the fleet is shared across the network.",
     sql: `SELECT ts::DATE AS day, registration, list(DISTINCT route_code) AS routes
@@ -187,6 +243,7 @@ ORDER BY day DESC;`,
   },
   {
     title: "How live is live?",
+    chart: "lag",
     about:
       "The delay between a bus sending its position and this site receiving it.",
     sql: `SELECT quantile_cont((received_at - reported_at) / 1000, [0.5, 0.9, 0.99])
@@ -199,13 +256,13 @@ WHERE reported_at IS NOT NULL;`,
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section
-      className="mt-9 border-t border-line pt-2"
+      className="mt-12 scroll-mt-6 border-t border-line pt-3"
       id={title
         .toLowerCase()
         .replace(/[^\w]+/g, "-")
         .replace(/^-|-$/g, "")}
     >
-      <h2 className="mt-4.5 mb-3 text-lg leading-snug font-semibold">
+      <h2 className="mt-5 mb-3 text-2xl leading-tight font-semibold tracking-tight max-md:text-xl">
         {title}
       </h2>
       {children}
@@ -267,66 +324,67 @@ export default function DataDocs() {
         <Eyebrow>FLEET ARCHIVE</Eyebrow>
         <h1 className={DOCS_TITLE}>Every bus position, as a database</h1>
         <p className="text-xl max-md:text-lg">
-          Each position Lanka Metro buses report, about every five seconds per
-          bus, recorded since 12 October 2026. Query it with DuckDB from your
-          computer or your browser. No account, no key, no download first.
+          Every position Lanka Metro buses report, about every five seconds,
+          kept since 12 October 2026. Query it with DuckDB on your computer or
+          in your browser: no account, no key, nothing to download first.
         </p>
-        <p>
-          The data is bus positions and the load counts buses report. It holds
-          nothing about passengers. Prefer plain HTTP calls? See the{" "}
+        <p className="text-muted">
+          It holds bus positions and the load counts buses report, nothing about
+          passengers. Prefer plain HTTP calls? See the{" "}
           <Link className={HEADER_LINK} to="/docs">
             API
           </Link>
           .
         </p>
+        <nav
+          aria-label="On this page"
+          className="mt-5 flex flex-wrap gap-2 text-sm"
+        >
+          {[
+            ["at-a-glance", "At a glance"],
+            ["get-started", "Get started"],
+            ["things-to-try", "Things to try"],
+            ["underrated-things-to-do-with-it", "Underrated uses"],
+            ["reference", "Tables and columns"],
+          ].map(([id, label]) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              className="rounded-full border border-line bg-card px-3 py-1.5 font-semibold text-ink hover-fine:bg-tint-50"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
 
         <Section title="At a glance">
-          <p>
-            These charts run DuckDB in your browser against the archive, so they
-            are as fresh as the data.
+          <p className="text-muted">
+            Live from the archive: DuckDB runs these in your browser, so they're
+            as fresh as the data.
           </p>
-          <Suspense fallback={<p role="status">Loading the charts…</p>}>
-            <ArchiveCharts
-              catalogUrl={BROWSER_CATALOG}
-              shellSetup={SHELL_SETUP}
-            />
-          </Suspense>
+          <Card>
+            <Suspense fallback={<p role="status">Loading the charts…</p>}>
+              <OverviewCharts
+                catalogUrl={BROWSER_CATALOG}
+                shellSetup={SHELL_SETUP}
+              />
+            </Suspense>
+          </Card>
         </Section>
 
-        <Section title="On your computer">
-          <p>Install the DuckDB command line once (macOS, Linux or Windows):</p>
-          <pre tabIndex={0}>{`# macOS
-brew install duckdb
-
-# macOS or Linux
-curl https://install.duckdb.org | sh
-
-# Windows
-winget install DuckDB.cli`}</pre>
-          <p>Then start it and attach this site:</p>
-          <pre tabIndex={0}>{`duckdb
-ATTACH '${site}' AS metro;
-USE metro;
-SHOW TABLES;`}</pre>
+        <Section title="Get started">
+          <h3 className={SUBHEADING}>In your browser</h3>
           <p>
-            Keep the trailing <code>/</code>. Attaching reads a small catalog of
-            views; queries then fetch only the columns and parts of the Parquet
-            files they need, not the whole archive.
-          </p>
-        </Section>
-
-        <Section title="In your browser">
-          <p>
-            Nothing to install:{" "}
+            Nothing to install.{" "}
             <a
               className={HEADER_LINK}
               href={duckdbShellLink([...SHELL_SETUP, "SHOW TABLES;"])}
               target="_blank"
               rel="noreferrer"
             >
-              open the DuckDB web shell with the archive attached
+              Open the DuckDB web shell with the archive attached
             </a>
-            . Or open{" "}
+            , or paste this into{" "}
             <a
               className={HEADER_LINK}
               href="https://shell.duckdb.org"
@@ -334,82 +392,75 @@ SHOW TABLES;`}</pre>
               rel="noreferrer"
             >
               shell.duckdb.org
-            </a>{" "}
-            and paste:
+            </a>
+            :
           </p>
           <pre tabIndex={0}>{SHELL_SETUP.join("\n")}</pre>
-          <p>
-            Browsers attach the catalog by its own address rather than this
-            site's, because a browser can't tell the site it is DuckDB. It runs
-            entirely on your machine, with the same tables. Every query below
-            has a link that opens it in the shell, ready to run.
+          <p className="text-sm text-muted">
+            Browsers attach the catalog by its own address, because a browser
+            can't tell this site it is DuckDB. Everything runs on your machine.
           </p>
-        </Section>
 
-        <Section title="Python, R and notebooks">
-          <pre tabIndex={0}>{`pip install duckdb
+          <h3 className={SUBHEADING}>On your computer</h3>
+          <p>Install the DuckDB command line once:</p>
+          <pre tabIndex={0}>{`brew install duckdb                    # macOS
+curl https://install.duckdb.org | sh   # macOS or Linux
+winget install DuckDB.cli              # Windows`}</pre>
+          <p>Then attach this site, keeping the trailing slash:</p>
+          <pre tabIndex={0}>{`duckdb
+ATTACH '${site}' AS metro;
+USE metro;
+SHOW TABLES;`}</pre>
+          <p className="text-sm text-muted">
+            Attaching reads a small catalog. Queries then fetch only the columns
+            and parts of the Parquet files they need, never the whole archive.
+          </p>
 
-import duckdb
+          <h3 className={SUBHEADING}>Python, R and notebooks</h3>
+          <pre tabIndex={0}>{`import duckdb  # pip install duckdb
 con = duckdb.connect()
 con.sql("ATTACH '${site}' AS metro")
 df = con.sql("SELECT * FROM metro.fixes_today").df()`}</pre>
           <p>
             Each finished day is also a plain Parquet file that Polars, pandas,
-            Spark or R read directly:
+            Spark or R can read directly:
           </p>
           <pre tabIndex={0}>{`import polars as pl
 pl.read_parquet("${DATA_HOST}/fixes/date=2026-10-12/fixes.parquet")`}</pre>
         </Section>
 
-        <Section title="Tables">
-          <ul>
-            {TABLES.map(([name, about]) => (
-              <li key={name}>
-                <code>{name}</code>: {about}
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        <Section title="Columns">
-          <p>
-            <code>fixes</code>, <code>fixes_today</code> and{" "}
-            <code>all_fixes</code> share these columns:
-          </p>
-          <ul>
-            {COLUMNS.map(([name, about]) => (
-              <li key={name}>
-                <code>{name}</code>: {about}
-              </li>
-            ))}
-          </ul>
-        </Section>
-
         <Section title="Things to try">
-          <p>
-            These assume <code>USE metro;</code> after attaching.
+          <p className="text-muted">
+            Each query assumes <code>USE metro;</code> after attaching. Open any
+            of them in the shell to change it.
           </p>
           {BASICS.map((query) => (
             <Query key={query.title} {...query} />
           ))}
-          <p>Take a route's history with you, on your computer:</p>
-          <pre
-            tabIndex={0}
-          >{`COPY (SELECT * FROM all_fixes WHERE route_code = 'CM01')
+          <Card>
+            <h3 className={CARD_TITLE}>Take a route's history with you</h3>
+            <p className="text-muted">
+              Save everything about one route to a Parquet file on your
+              computer.
+            </p>
+            <pre
+              tabIndex={0}
+            >{`COPY (SELECT * FROM all_fixes WHERE route_code = 'CM01')
 TO 'cm01.parquet';`}</pre>
+          </Card>
         </Section>
 
         <Section title="Underrated things to do with it">
-          <p>
+          <p className="text-muted">
             A position every few seconds from every bus answers questions a
-            timetable can't. Distances use a flat-earth approximation that is
+            timetable can't. Distances use a flat-earth approximation that's
             accurate to a few metres across Colombo.
           </p>
           {UNDERRATED.map((query) => (
             <Query key={query.title} {...query} />
           ))}
-          <p>A few more ideas:</p>
-          <ul>
+          <h3 className={SUBHEADING}>More ideas</h3>
+          <ul className="list-disc">
             <li>
               Compare the timetable from the{" "}
               <Link className={HEADER_LINK} to="/docs">
@@ -427,32 +478,40 @@ TO 'cm01.parquet';`}</pre>
               holidays and rainy afternoons.
             </li>
             <li>
-              Trace the road network the buses really use, including detours
-              that differ from the drawn route line.
+              Trace the roads the buses really use, including detours from the
+              drawn route line.
             </li>
           </ul>
         </Section>
 
+        <Section title="Reference">
+          <h3 className={SUBHEADING}>Tables</h3>
+          <Glossary entries={TABLES} />
+          <h3 className={SUBHEADING}>Columns</h3>
+          <p>
+            <code>fixes</code>, <code>fixes_today</code> and{" "}
+            <code>all_fixes</code> share these:
+          </p>
+          <Glossary entries={COLUMNS} />
+        </Section>
+
         <Section title="How fresh, and where it lives">
-          <ul>
+          <ul className="list-disc">
             <li>
-              Positions are recorded as they arrive and written out every five
-              minutes, so <code>fixes_today</code> is at most about five minutes
-              behind.
+              Positions are written out every five minutes, so{" "}
+              <code>fixes_today</code> is at most about five minutes behind.
             </li>
             <li>
-              Finished days are compacted into one zstd-compressed Parquet file
-              each, sorted by bus and time, and never change afterwards.
+              Finished days become one zstd-compressed Parquet file each, sorted
+              by bus and time, and never change afterwards.
             </li>
             <li>
               Everything is served from Cloudflare's edge at{" "}
-              <code>{DATA_HOST}</code>, which allows browser access from any
-              site.
+              <code>{DATA_HOST}</code>, readable from any site.
             </li>
             <li>
-              Positions are already corrected for a known upstream fault that
-              puts some fixes a degree north and east of Colombo. Times are
-              Colombo time.
+              Positions are corrected for a known upstream fault that puts some
+              fixes a degree north and east of Colombo. Times are Colombo time.
             </li>
             <li>
               This is an unofficial archive of Lanka Metro's live feed, not
