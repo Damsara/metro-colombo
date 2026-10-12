@@ -1,5 +1,5 @@
 export const CHASE_PITCH = 72;
-export const CHASE_ZOOM = 20.3;
+export const CHASE_ZOOM = 18.8;
 export const CHASE_MAX_PITCH = 80;
 // Share of the map's height the bus sits below the centre, leaving the road ahead in view.
 const BUS_DROP = 0.2;
