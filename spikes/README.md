@@ -7,7 +7,7 @@ Load credentials without printing them:
 
     set -a; . ./.cloudflare-spike.env; set +a
 
-The container and upstream spikes answer only requests carrying an
+The container, socket and upstream spikes answer only requests carrying an
 `x-spike-key` header that matches their `SPIKE_KEY` secret, so a found URL
 can't start paid container runs or call the upstream. Keep the key in the
 shell so you can send it:

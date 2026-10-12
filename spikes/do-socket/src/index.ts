@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 
-type Env = { PROBE: DurableObjectNamespace<Probe> };
+type Env = { PROBE: DurableObjectNamespace<Probe>; SPIKE_KEY?: string };
 
 const ECHO_URL = "https://echo.websocket.org";
 const ALARM_MS = 5_000;
@@ -63,6 +63,12 @@ export class Probe extends DurableObject<Env> {
     await this.ctx.storage.setAlarm(Date.now() + 1_000);
   }
 
+  async stop() {
+    await this.ctx.storage.deleteAlarm();
+    this.socket?.close(1000, "stopped");
+    this.socket = null;
+  }
+
   async stats() {
     const counters = Object.fromEntries(
       await Promise.all(
@@ -83,9 +89,12 @@ export class Probe extends DurableObject<Env> {
 
 export default {
   async fetch(request: Request, env: Env) {
+    if (!env.SPIKE_KEY || request.headers.get("x-spike-key") !== env.SPIKE_KEY)
+      return new Response("not found", { status: 404 });
     const probe = env.PROBE.get(env.PROBE.idFromName("probe"));
     const path = new URL(request.url).pathname;
     if (path === "/start") await probe.start();
+    if (path === "/stop") await probe.stop();
     return Response.json(await probe.stats());
   },
 };
