@@ -494,3 +494,30 @@ test("interrupting a token call while the refresh request is in flight stops it 
   assert.deepEqual(log.filter((line) => line.startsWith("save session")), []);
   assert.equal(JSON.parse(backing.get("session") ?? "{}").refreshToken, "stored");
 });
+
+test("a hung verify-otp is rejected after 15 seconds and frees the lock for a waiting caller", async () => {
+  const backing = new Map([
+    ["session", JSON.stringify(expired)],
+    ["login", JSON.stringify(awaitingCode)],
+  ]);
+  const { upstream, run } = setup({ state: memoryStateStore(backing) });
+  upstream.settings.verifyHangs = true;
+  const settle = Effect.forEach(Array.from({ length: 200 }), () => Effect.yieldNow, { discard: true });
+  const result = await run((session) =>
+    Effect.gen(function* () {
+      const submitting = yield* Effect.forkChild(session.submitCode("123456"));
+      yield* settle;
+      const waiting = yield* Effect.forkChild(session.token);
+      yield* settle;
+      const blocked = waiting.pollUnsafe() === undefined;
+      yield* TestClock.adjust("15 seconds");
+      return { blocked, submitted: yield* Fiber.join(submitting), token: tokenText(yield* Fiber.join(waiting)) };
+    }),
+  );
+  assert.equal(result.blocked, true);
+  assert.equal(result.submitted._tag, "CodeRejected");
+  assert.match((result.submitted as { message: string }).message, /timed out/);
+  assert.equal(result.token, undefined);
+  assert.equal(upstream.calls.verify, 1);
+  assert.equal(backing.has("login"), true);
+});

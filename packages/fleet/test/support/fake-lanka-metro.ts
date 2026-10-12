@@ -4,7 +4,7 @@ import { fakeHttpClient } from "@metro/core/testing";
 
 export const fakeLankaMetro = (log: string[] = []) => {
   const calls = { refresh: [] as string[], webview: 0, checkPhone: [] as string[], verify: 0, routes: 0 };
-  const settings = { refreshStatus: 200, webviewStatus: 200, refreshHangs: false };
+  const settings = { refreshStatus: 200, webviewStatus: 200, refreshHangs: false, verifyHangs: false };
   let issued = 0;
   const http = fakeHttpClient((request) => {
     const path = request.url.pathname;
@@ -43,7 +43,10 @@ export const fakeLankaMetro = (log: string[] = []) => {
   // A hung refresh reaches upstream, which rotates the token, but the reply never arrives.
   const client = http.client.pipe(
     HttpClient.transform((response, request) =>
-      settings.refreshHangs && request.url.endsWith("/auth/refresh") ? Effect.andThen(response, Effect.never) : response,
+      (settings.refreshHangs && request.url.endsWith("/auth/refresh")) ||
+      (settings.verifyHangs && request.url.endsWith("/auth/customer/verify-otp"))
+        ? Effect.andThen(response, Effect.never)
+        : response,
     ),
   );
   return { client, requests: http.requests, calls, settings };

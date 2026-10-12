@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ConfigProvider, Effect, Layer } from "effect";
+import { ConfigProvider, Effect, Fiber, Layer } from "effect";
 import { HttpClient } from "effect/http";
-import { fakeHttpClient, type FakeReply, type FakeRequest } from "@metro/core/testing";
+import { TestClock } from "effect/testing";
+import { fakeHttpClient, type FakeReply, type FakeRequest, testClockAt } from "@metro/core/testing";
 import { AuthClient, type AuthClientShape, isDeadToken, normalizePhone } from "@metro/upstream";
 
 const BASE = "https://metrobusapiprod.eimsky.com/user-service/api/v1/auth";
@@ -72,6 +73,34 @@ test("verify-otp finds the nested tokens, and a reply without them is an error",
   assert.equal(empty.message, "verify-otp returned no tokens");
   const wrong = await setup(() => ({ status: 400, json: { error: { code: "INVALID_OTP" } } })).run((auth) => Effect.flip(auth.verifyOtp("ref-1", "000000")));
   assert.equal(wrong.status, 400);
+});
+
+test("a request that never answers fails after 15 seconds as an outage", async () => {
+  const http = fakeHttpClient(() => ({ status: 200, json: {} }));
+  const hanging = http.client.pipe(HttpClient.transform((response) => Effect.andThen(response, Effect.never)));
+  const layer = AuthClient.layer.pipe(
+    Layer.provide(Layer.succeed(HttpClient.HttpClient, hanging)),
+    Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({}))),
+    Layer.provideMerge(testClockAt(0)),
+  );
+  const errors = await Effect.runPromise(
+    Effect.gen(function* () {
+      const auth = yield* AuthClient;
+      const calls = [auth.refresh("r1"), auth.webview("a1"), auth.checkPhone("+94710000000"), auth.verifyOtp("ref-1", "123456")];
+      const fibers = yield* Effect.forEach(calls, (call) => Effect.forkChild(Effect.flip(call)));
+      yield* TestClock.adjust("14999 millis");
+      const early = fibers.map((fiber) => fiber.pollUnsafe());
+      yield* TestClock.adjust("1 millis");
+      return { early, late: yield* Effect.forEach(fibers, Fiber.join) };
+    }).pipe(Effect.provide(layer)),
+  );
+  assert.deepEqual(errors.early, [undefined, undefined, undefined, undefined]);
+  for (const error of errors.late) {
+    assert.equal(error._tag, "AuthHttpError");
+    assert.equal(error.status, undefined);
+    assert.equal(isDeadToken(error), false);
+    assert.match(error.message, /timed out/);
+  }
 });
 
 test("Sri Lankan numbers are normalised and anything else is rejected", () => {

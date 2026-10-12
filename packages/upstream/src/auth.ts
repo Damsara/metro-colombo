@@ -12,6 +12,8 @@ export class AuthHttpError extends Data.TaggedError("AuthHttpError")<{
 export const isDeadToken = (error: AuthHttpError) =>
   error.status !== undefined && error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429;
 
+const REQUEST_TIMEOUT = "15 seconds";
+
 export type TokenPair = { readonly accessToken: string; readonly refreshToken: string };
 export type WebviewToken = { readonly token: string; readonly expiresInSeconds: number };
 
@@ -89,6 +91,16 @@ export class AuthClient extends Context.Service<AuthClient, AuthClientShape>()("
             ),
           );
 
+      const limited =
+        (endpoint: string) =>
+        <A>(call: Effect.Effect<A, AuthHttpError>) =>
+          call.pipe(
+            Effect.timeout(REQUEST_TIMEOUT),
+            Effect.catchTag("TimeoutError", () =>
+              Effect.fail(new AuthHttpError({ endpoint, message: `upstream /auth/${endpoint} timed out` })),
+            ),
+          );
+
       const readWith =
         <A>(endpoint: string, decode: (input: unknown) => Effect.Effect<A, Schema.SchemaError>) =>
         (response: HttpClientResponse.HttpClientResponse) =>
@@ -102,16 +114,19 @@ export class AuthClient extends Context.Service<AuthClient, AuthClientShape>()("
           send("refresh", { refresh_token: refreshToken }).pipe(
             Effect.flatMap(readWith("refresh", Schema.decodeUnknownEffect(RefreshResponse))),
             Effect.map(({ data }) => ({ accessToken: data.access_token, refreshToken: data.refresh_token })),
+            limited("refresh"),
           ),
         webview: (accessToken) =>
           send("webview-token", {}, accessToken).pipe(
             Effect.flatMap(readWith("webview-token", Schema.decodeUnknownEffect(WebviewResponse))),
             Effect.map(({ data }) => ({ token: data.webview_token, expiresInSeconds: data.expires_in })),
+            limited("webview-token"),
           ),
         checkPhone: (phone) =>
           send("customer/check-phone", { phone }).pipe(
             Effect.flatMap(readWith("customer/check-phone", Schema.decodeUnknownEffect(CheckPhoneResponse))),
             Effect.map(({ data }) => data.otp_reference),
+            limited("customer/check-phone"),
           ),
         verifyOtp: (reference, code) =>
           send("customer/verify-otp", { otp_reference: reference, otp_code: code }).pipe(
@@ -122,6 +137,7 @@ export class AuthClient extends Context.Service<AuthClient, AuthClientShape>()("
                 ? Effect.succeed({ accessToken: tokens.access, refreshToken: tokens.refresh })
                 : Effect.fail(new AuthHttpError({ endpoint: "customer/verify-otp", message: "verify-otp returned no tokens" }));
             }),
+            limited("customer/verify-otp"),
           ),
       });
     }),
