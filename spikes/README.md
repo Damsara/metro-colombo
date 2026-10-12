@@ -9,9 +9,15 @@ Load credentials without printing them:
 
 The container and upstream spikes answer only requests carrying an
 `x-spike-key` header that matches their `SPIKE_KEY` secret, so a found URL
-can't start paid container runs or call the upstream:
+can't start paid container runs or call the upstream. Keep the key in the
+shell so you can send it:
 
-    openssl rand -hex 16 | npm --prefix spikes exec wrangler -- secret put SPIKE_KEY --name metro-spike-<name>
+    SPIKE_KEY=$(openssl rand -hex 16)
+    printf %s "$SPIKE_KEY" | npm --prefix spikes exec wrangler -- secret put SPIKE_KEY --name metro-spike-<name>
+    curl -s -H "x-spike-key: $SPIKE_KEY" https://metro-spike-<name>.<subdomain>.workers.dev/
+
+Under `wrangler dev`, put `SPIKE_KEY=<key>` in the spike's `.dev.vars`
+(gitignored) instead.
 
 Deploy only Workers named metro-spike-*, and delete them when done:
 
