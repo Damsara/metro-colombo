@@ -453,3 +453,44 @@ test("logs never carry tokens, codes, references or the phone number", async () 
   assert.ok(logs.length > 0);
   for (const line of logs) assert.doesNotMatch(line, /stored|refresh-|access-|webview-|ref-\d|999999|123456|0771234567|94771234567/);
 });
+
+test("a hung refresh times out after 15 seconds as an outage and lets a waiting caller through", async () => {
+  const { upstream, alerts, backing, run } = setup({ session: expired });
+  upstream.settings.refreshHangs = true;
+  const settle = Effect.forEach(Array.from({ length: 200 }), () => Effect.yieldNow, { discard: true });
+  const result = await run((session) =>
+    Effect.gen(function* () {
+      const hung = yield* Effect.forkChild(session.token);
+      yield* settle;
+      const waiting = yield* Effect.forkChild(session.token);
+      yield* settle;
+      upstream.settings.refreshHangs = false;
+      yield* TestClock.adjust("15 seconds");
+      return { hung: tokenText(yield* Fiber.join(hung)), waiting: tokenText(yield* Fiber.join(waiting)), status: yield* session.status };
+    }),
+  );
+  assert.deepEqual(result, { hung: undefined, waiting: "webview-1", status: "ok" });
+  assert.deepEqual(upstream.calls.refresh, ["stored", "stored"]);
+  assert.deepEqual(upstream.calls.checkPhone, []);
+  assert.deepEqual(alerts.sent, []);
+  assert.equal(JSON.parse(backing.get("session") ?? "{}").refreshToken, "refresh-2");
+});
+
+test("interrupting a token call while the refresh request is in flight stops it promptly and leaves storage alone", async () => {
+  const { upstream, backing, log, run } = setup({ session: expired });
+  upstream.settings.refreshHangs = true;
+  const settle = Effect.forEach(Array.from({ length: 200 }), () => Effect.yieldNow, { discard: true });
+  const interrupted = await run((session) =>
+    Effect.gen(function* () {
+      const caller = yield* Effect.forkChild(session.token);
+      yield* settle;
+      const interrupting = yield* Effect.forkChild(Fiber.interrupt(caller));
+      yield* settle;
+      return interrupting.pollUnsafe() !== undefined;
+    }),
+  );
+  assert.equal(interrupted, true);
+  assert.deepEqual(upstream.calls.refresh, ["stored"]);
+  assert.deepEqual(log.filter((line) => line.startsWith("save session")), []);
+  assert.equal(JSON.parse(backing.get("session") ?? "{}").refreshToken, "stored");
+});

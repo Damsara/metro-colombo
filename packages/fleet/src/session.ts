@@ -1,10 +1,11 @@
 import { Clock, Effect, Option, Redacted, Schema, Semaphore } from "effect";
 import { StateStore } from "@metro/core";
-import { AuthClient, isDeadToken, LankaMetroConfig, normalizePhone } from "@metro/upstream";
+import { AuthClient, AuthHttpError, isDeadToken, LankaMetroConfig, normalizePhone } from "@metro/upstream";
 import type { AlertBookShape } from "./alerts.js";
 
 export const RENEW_MARGIN_MS = 2 * 60_000;
 export const CODE_EVERY_MS = 10 * 60_000;
+const REFRESH_TIMEOUT = "15 seconds";
 
 export type LoginStatus = "ok" | "login_needed" | "upstream_error";
 
@@ -155,10 +156,17 @@ export const makeSession = (alerts: AlertBookShape) =>
         if (login || fresh(now)) return;
         const current = session;
         if (!current?.refreshToken) return yield* needLogin("no refresh token");
-        // Upstream rotates the token as it answers, so an interrupt before the save would lose the only live one.
-        const pair = yield* auth.refresh(current.refreshToken).pipe(
-          Effect.tap((rotated) => saveSession({ ...current, refreshToken: rotated.refreshToken, webviewToken: "", expiresAt: 0 })),
-          Effect.uninterruptible,
+        // Once upstream has answered, the old token is spent, so nothing may interrupt before the new one is saved.
+        const pair = yield* Effect.uninterruptibleMask((restore) =>
+          restore(
+            auth.refresh(current.refreshToken).pipe(
+              Effect.timeout(REFRESH_TIMEOUT),
+              Effect.catchTag("TimeoutError", () =>
+                Effect.fail(new AuthHttpError({ endpoint: "refresh", message: "upstream /auth/refresh timed out" })),
+              ),
+            ),
+          ).pipe(Effect.tap((rotated) => saveSession({ ...current, refreshToken: rotated.refreshToken, webviewToken: "", expiresAt: 0 }))),
+        ).pipe(
           Effect.map(Option.some),
           Effect.catchTag("AuthHttpError", (error) =>
             isDeadToken(error)
