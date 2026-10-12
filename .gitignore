@@ -15,7 +15,9 @@ re/
 # Brainstorming mockups
 .superpowers/
 .otp-reference
-spikes/**/node_modules
-spikes/**/.wrangler
 .dev.vars
 .handoff/
+.fleet-state.json*
+.fleet-data/
+.replay/
+**/.wrangler

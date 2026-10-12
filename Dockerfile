@@ -9,6 +9,8 @@ FROM node:${NODE_VERSION}-alpine AS api
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/core/package.json ./packages/core/
+COPY packages/upstream/package.json ./packages/upstream/
+COPY packages/fleet/package.json ./packages/fleet/
 RUN npm ci
 COPY tsconfig.json ./
 COPY packages/core/tsconfig.json ./packages/core/

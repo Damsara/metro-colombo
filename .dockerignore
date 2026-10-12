@@ -13,6 +13,9 @@ tests
 web/tests
 deploy
 *.md
-spikes
 .dev.vars
 .handoff
+apps/cloudflare
+**/.replay
+**/.fleet-data
+**/.fleet-state.json*

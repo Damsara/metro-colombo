@@ -4,7 +4,9 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 const FORBIDDEN =
-  /(?:from\s+|import\s*\(?\s*)["'](node:[^"']+|ws|undici|cloudflare:[^"']+|@cloudflare\/[^"']+|(?:\.\.\/)+(?:src|apps)\/[^"']*)["']/;
+  /(?:from\s+|import\s*\(?\s*)["'](node:[^"']+|ws|undici|cloudflare:[^"']+|@cloudflare\/[^"']+|@effect\/platform-[^"']+|(?:\.\.\/)+(?:src|apps|core|upstream|fleet)\/[^"']*)["']/;
+
+const root = new URL("../packages", import.meta.url).pathname;
 
 const sources = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
@@ -15,8 +17,11 @@ const sources = (dir: string): string[] =>
         : [],
   );
 
+test("the boundary covers every shared package", () => {
+  assert.deepEqual(readdirSync(root).sort(), ["core", "fleet", "upstream"]);
+});
+
 test("shared packages import nothing runtime-specific", () => {
-  const root = new URL("../packages", import.meta.url).pathname;
   const offenders = readdirSync(root).flatMap((name) =>
     sources(join(root, name, "src")).flatMap((file) =>
       readFileSync(file, "utf8")
