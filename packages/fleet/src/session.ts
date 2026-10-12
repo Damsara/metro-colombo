@@ -119,8 +119,12 @@ export const makeSession = (alerts: AlertBookShape) =>
       if (!current || Option.isNone(phone)) return;
       if (current.lastCodeRequestAt !== null && now - current.lastCodeRequestAt < CODE_EVERY_MS) return;
       yield* saveLogin({ ...current, lastCodeRequestAt: now });
-      const reference = yield* auth.checkPhone(phone.value);
-      yield* saveLogin({ ...current, lastCodeRequestAt: now, otpReference: reference });
+      // Once upstream has texted the code, nothing may interrupt before its reference is saved.
+      yield* Effect.uninterruptibleMask((restore) =>
+        Effect.flatMap(restore(auth.checkPhone(phone.value)), (reference) =>
+          saveLogin({ ...current, lastCodeRequestAt: now, otpReference: reference }),
+        ),
+      );
       yield* Effect.logInfo("login code requested");
     }).pipe(Effect.catch((error) => Effect.logWarning("login code request failed", error.message)));
 

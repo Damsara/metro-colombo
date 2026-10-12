@@ -103,15 +103,16 @@ const makeFleet = Effect.gen(function* () {
       if (running && fiber && (mustStop || now - lastMessageAt > SILENT_AFTER_MS)) yield* Fiber.interrupt(fiber);
       if (shutDown || running || now < reconnectAt) return;
       if (feed.needsLogin && Option.isNone(current)) return;
-      running = true;
-      sessionHadData = false;
-      sessionHeardFrom = false;
-      lastMessageAt = now;
-      fiber = yield* feed.run(current, handlers).pipe(
-        Effect.catch((error) => Effect.logWarning("live feed closed", error.message)),
-        Effect.ensuring(closed),
-        Effect.forkIn(scope, { startImmediately: true }),
-      );
+      fiber = yield* Effect.uninterruptibleMask((restore) => {
+        running = true;
+        sessionHadData = false;
+        sessionHeardFrom = false;
+        lastMessageAt = now;
+        return restore(feed.run(current, handlers).pipe(Effect.catch((error) => Effect.logWarning("live feed closed", error.message)))).pipe(
+          Effect.ensuring(closed),
+          Effect.forkIn(scope, { startImmediately: true }),
+        );
+      });
     });
 
   const refreshRoutes = (current: Option.Option<Redacted.Redacted<string>>) =>
@@ -171,12 +172,16 @@ const makeFleet = Effect.gen(function* () {
     Effect.catchCause((cause) => Effect.logError("fleet tick failed", cause)),
   );
 
-  // Overlapping ticks would race the publisher, so a tick that finds one running only reschedules.
-  const tick = Effect.suspend(() => {
-    if (ticking) return Effect.void;
-    ticking = true;
-    return Effect.ensuring(work, Effect.sync(() => void (ticking = false)));
-  }).pipe(Effect.ensuring(scheduler.wakeAfter(TICK_MS)), Effect.withSpan("Fleet.tick"));
+  // Overlapping ticks would race the publisher, so a tick that finds one running only reschedules; after shutdown a tick does nothing.
+  const tick = Effect.suspend(() =>
+    shutDown
+      ? Effect.void
+      : Effect.uninterruptibleMask((restore) => {
+          if (ticking) return Effect.void;
+          ticking = true;
+          return Effect.ensuring(restore(work), Effect.sync(() => void (ticking = false)));
+        }).pipe(Effect.ensuring(scheduler.wakeAfter(TICK_MS))),
+  ).pipe(Effect.withSpan("Fleet.tick"));
 
   const start = Effect.gen(function* () {
     if (!restored) {

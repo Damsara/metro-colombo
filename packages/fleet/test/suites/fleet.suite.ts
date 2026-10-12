@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { ConfigProvider, Effect, Layer, Option } from "effect";
+import { ConfigProvider, Deferred, Effect, Fiber, Layer, Option } from "effect";
 import { HttpClient } from "effect/http";
 import { TestClock } from "effect/testing";
 import {
@@ -14,7 +14,7 @@ import {
   type StateStoreShape,
   StoreError,
 } from "@metro/core";
-import { recordingAlerts, type Register, scriptedSocket, settle, spyObjectStore, testClockAt } from "@metro/core/testing";
+import { recordingAlerts, type Register, scriptedSocket, spyObjectStore, testClockAt } from "@metro/core/testing";
 import { AuthClient, LankaMetroFeed } from "@metro/upstream";
 import { Fleet, type FleetShape, LIVE_ARCHIVE_KEY, LIVE_CACHE, LIVE_JSON_KEY, VEHICLES_PB_KEY } from "@metro/fleet";
 import { fakeLankaMetro } from "../support/fake-lanka-metro.ts";
@@ -84,13 +84,41 @@ const failingGets = (inner: ObjectStoreShape): ObjectStoreShape => ({
   delete: (key) => inner.delete(key),
 });
 
-type Controls = { hangRoutes: boolean; hangLivePuts: boolean; yieldingPuts: boolean; tickMayFail: boolean };
+type Controls = {
+  hangRoutes: boolean;
+  hangLivePuts: boolean;
+  yieldingPuts: boolean;
+  tickMayFail: boolean;
+  hung: Deferred.Deferred<boolean> | undefined;
+};
+
+const hang = (controls: Controls) =>
+  Effect.andThen(
+    Effect.suspend(() => (controls.hung ? Deferred.succeed(controls.hung, true) : Effect.void)),
+    Effect.never,
+  );
+
+// The latch makes the test advance the clock only once the hang is reached, whatever real I/O came before it.
+const tickThrough = (fleet: FleetShape, controls: Controls, hangFor: number) =>
+  Effect.gen(function* () {
+    const hung = yield* Deferred.make<boolean>();
+    controls.hung = hung;
+    const tick = yield* Effect.forkChild(fleet.tick);
+    yield* Effect.forkChild(Effect.andThen(Fiber.await(tick), Deferred.succeed(hung, false)));
+    if (yield* Deferred.await(hung)) yield* TestClock.adjust(hangFor);
+    yield* Fiber.join(tick);
+  });
+
+const untilDown = (fleet: FleetShape) =>
+  Effect.gen(function* () {
+    while ((yield* fleet.status).feed !== "down") yield* Effect.yieldNow;
+  });
 
 const controlledStore = (inner: ObjectStoreShape, controls: Controls): ObjectStoreShape => ({
   get: (key) => inner.get(key),
   put: (key, body, options) =>
     controls.hangLivePuts && key === LIVE_JSON_KEY
-      ? Effect.never
+      ? hang(controls)
       : controls.yieldingPuts
         ? Effect.andThen(Effect.yieldNow, inner.put(key, body, options))
         : inner.put(key, body, options),
@@ -104,12 +132,12 @@ const harness = (wiring: FleetWiring, env: Record<string, string> = {}) => {
   const upstream = fakeLankaMetro();
   const socket = scriptedSocket();
   const alerts = recordingAlerts();
-  const controls: Controls = { hangRoutes: false, hangLivePuts: false, yieldingPuts: false, tickMayFail: false };
+  const controls: Controls = { hangRoutes: false, hangLivePuts: false, yieldingPuts: false, tickMayFail: false, hung: undefined };
   const objects = spyObjectStore(controlledStore(wiring.objects, controls));
   const logs = capturedLogs();
   const client = upstream.client.pipe(
     HttpClient.transform((response, request) =>
-      controls.hangRoutes && request.url.endsWith("/routes/geo") ? Effect.andThen(response, Effect.never) : response,
+      controls.hangRoutes && request.url.endsWith("/routes/geo") ? Effect.andThen(response, hang(controls)) : response,
     ),
   );
   const fleetAt = (at: number) =>
@@ -247,7 +275,7 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           const observed: number[] = [];
           for (let attempt = 1; attempt <= 7; attempt++) {
             h.socket.connections.at(-1)?.close();
-            yield* settle;
+            yield* untilDown(fleet);
             const before = h.socket.connections.length;
             let waited = 0;
             while (h.socket.connections.length === before && waited < 120 * SECOND) {
@@ -272,7 +300,7 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
           yield* fleet.tick;
           h.socket.connections[0].send(gps([bus("bus-a")]));
           h.socket.connections[0].close();
-          yield* settle;
+          yield* untilDown(fleet);
           yield* TestClock.adjust(999);
           yield* fleet.tick;
           assert.equal(h.socket.connections.length, 1);
@@ -683,15 +711,12 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       await h.seed("session", validSession);
       await h.runFleet(T0, (fleet) =>
         Effect.gen(function* () {
-          yield* Effect.forkChild(fleet.tick);
-          yield* TestClock.adjust(15 * SECOND);
-          yield* settle;
+          yield* tickThrough(fleet, h.controls, 15 * SECOND);
           assert.equal(h.putsTo(LIVE_JSON_KEY).length, 1);
           for (let elapsed = 15 * SECOND; elapsed < 4 * MINUTE; elapsed += 5 * SECOND) {
             h.socket.connections.at(-1)?.send(JSON.stringify({ type: "ping" }));
-            yield* Effect.forkChild(fleet.tick);
             yield* TestClock.adjust(5 * SECOND);
-            yield* settle;
+            yield* tickThrough(fleet, h.controls, 15 * SECOND);
           }
         }),
       );
@@ -707,9 +732,7 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       await h.seed("session", validSession);
       const next = await h.runFleet(T0, (fleet) =>
         Effect.gen(function* () {
-          yield* Effect.forkChild(fleet.tick);
-          yield* TestClock.adjust(30 * SECOND);
-          yield* settle;
+          yield* tickThrough(fleet, h.controls, 30 * SECOND);
           const next = yield* wiring.scheduler.next;
           h.controls.hangLivePuts = false;
           yield* fleet.tick;
@@ -721,21 +744,55 @@ export function fleetSuite(test: Register, name: string, withWiring: WithFleetWi
       assert.equal(h.logs.lines.some((line) => line.includes("fleet tick failed")), true);
     }));
 
-  test(`${name}: after shutdown, ticks don't reopen the feed`, () =>
+  test(`${name}: after shutdown, a tick doesn't publish, alert or reopen the feed`, () =>
     withWiring(async (wiring) => {
       const h = harness(wiring);
       await h.seed("session", validSession);
-      await h.runFleet(T0, (fleet) =>
+      const writes = await h.runFleet(T0, (fleet) =>
         Effect.gen(function* () {
           yield* fleet.tick;
           yield* fleet.shutdown;
-          yield* TestClock.adjust(2 * MINUTE);
+          const writes = h.objects.puts.length;
+          yield* TestClock.adjust(3 * MINUTE);
           yield* fleet.tick;
           yield* fleet.tick;
+          return writes;
         }),
       );
+      assert.equal(h.objects.puts.length, writes);
+      assert.deepEqual(h.alerts.sent, []);
       assert.equal(h.socket.connections.length, 1);
       assert.equal(h.socket.connections[0].isOpen(), false);
+    }));
+
+  test(`${name}: a texted code's reference is saved even when the tick deadline lands during the save`, () =>
+    withWiring(async (wiring) => {
+      const reached = Deferred.makeUnsafe<void>();
+      let slow = true;
+      const slowCodeSaves = (inner: StateStoreShape): StateStoreShape => ({
+        get: (key) => inner.get(key),
+        set: (key, value) =>
+          slow && key === "login" && (value as { otpReference: string | null }).otpReference !== null
+            ? Effect.andThen(Deferred.succeed(reached, undefined), Effect.andThen(Effect.sleep(40 * SECOND), inner.set(key, value)))
+            : inner.set(key, value),
+        delete: (key) => inner.delete(key),
+      });
+      const h = harness({ ...wiring, openState: () => slowCodeSaves(wiring.openState()) });
+      h.controls.tickMayFail = true;
+      h.upstream.settings.refreshStatus = 400;
+      await h.seed("session", { ...validSession, refreshToken: "dead", expiresAt: T0 - MINUTE });
+      await h.runFleet(T0, (fleet) =>
+        Effect.gen(function* () {
+          const tick = yield* Effect.forkChild(fleet.tick);
+          yield* Deferred.await(reached);
+          yield* TestClock.adjust(40 * SECOND);
+          yield* Fiber.join(tick);
+        }),
+      );
+      slow = false;
+      const outcome = await h.runFleet(T0 + 5 * MINUTE, (fleet) => fleet.submitCode("123456"));
+      assert.equal(outcome._tag, "Accepted");
+      assert.deepEqual(h.upstream.calls.checkPhone, ["+94771234567"]);
     }));
 
   test(`${name}: an open socket that only sends pings counts as connected`, () =>
