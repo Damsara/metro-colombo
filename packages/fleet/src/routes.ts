@@ -3,9 +3,11 @@ import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
 import { FleetConfig } from "./config.js";
 import type { FleetStatus } from "./fleet.js";
 import type { SubmitOutcome } from "./session.js";
+import type { LiveDocument } from "./snapshot.js";
 
 export type FleetClientShape = {
   readonly status: Effect.Effect<FleetStatus>;
+  readonly live: Effect.Effect<LiveDocument>;
   readonly submitCode: (code: string) => Effect.Effect<SubmitOutcome>;
   readonly token: Effect.Effect<Option.Option<Redacted.Redacted<string>>>;
 };

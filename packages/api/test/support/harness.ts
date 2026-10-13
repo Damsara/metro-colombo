@@ -57,6 +57,7 @@ export const harness = async (
   };
   const client = FleetClient.of({
     status: unused,
+    live: unused,
     submitCode: () => unused,
     token: Effect.succeed(Option.none()),
     ...options.client,

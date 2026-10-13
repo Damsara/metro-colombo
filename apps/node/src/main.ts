@@ -55,6 +55,7 @@ const Client = Layer.effect(
     const fleet = yield* Fleet;
     return FleetClient.of({
       status: fleet.status,
+      live: fleet.live,
       submitCode: fleet.submitCode,
       token: fleet.token,
     });

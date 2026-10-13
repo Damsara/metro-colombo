@@ -13,6 +13,7 @@ import {
   Fleet,
   type FleetShape,
   type FleetStatus,
+  type LiveDocument,
   NtfyAlerts,
   type SubmitOutcome,
 } from "@metro/fleet";
@@ -109,6 +110,10 @@ export class FleetObject extends DurableObject<Env> {
 
   async status(): Promise<FleetStatus> {
     return this.use((fleet) => fleet.status);
+  }
+
+  async live(): Promise<LiveDocument> {
+    return this.use((fleet) => fleet.live);
   }
 
   async submitCode(code: string): Promise<SubmitOutcome> {

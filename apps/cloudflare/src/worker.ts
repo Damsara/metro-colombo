@@ -5,6 +5,7 @@ import { EdgeCache, ObjectStore } from "@metro/core";
 import {
   FleetClient,
   type FleetStatus,
+  type LiveDocument,
   type SubmitOutcome,
 } from "@metro/fleet";
 import { ReferenceUpstreamFromConfig } from "@metro/upstream";
@@ -20,6 +21,9 @@ const fleetClient = (env: Env) =>
   FleetClient.of({
     status: Effect.promise(
       async () => (await fleetStub(env).status()) as FleetStatus,
+    ),
+    live: Effect.promise(
+      async () => (await fleetStub(env).live()) as LiveDocument,
     ),
     submitCode: (code) =>
       Effect.promise(

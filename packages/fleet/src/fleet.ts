@@ -19,7 +19,12 @@ import {
   NO_CODE_PENDING,
   type SubmitOutcome,
 } from "./session.js";
-import { FEED_QUIET_MS, FRESH_FIX_MS, staleReason } from "./snapshot.js";
+import {
+  FEED_QUIET_MS,
+  FRESH_FIX_MS,
+  type LiveDocument,
+  staleReason,
+} from "./snapshot.js";
 
 export const TICK_MS = 5_000;
 // The feed chats every few seconds, so a longer silence means the line is dead.
@@ -50,6 +55,7 @@ export type FleetShape = {
   readonly start: Effect.Effect<void>;
   readonly tick: Effect.Effect<void>;
   readonly status: Effect.Effect<FleetStatus>;
+  readonly live: Effect.Effect<LiveDocument>;
   readonly submitCode: (code: string) => Effect.Effect<SubmitOutcome>;
   readonly token: Effect.Effect<Option.Option<Redacted.Redacted<string>>>;
   readonly shutdown: Effect.Effect<void>;
@@ -168,23 +174,28 @@ const makeFleet = Effect.gen(function* () {
       ),
     );
 
-  const publish = Effect.gen(function* () {
-    const now = yield* Clock.currentTimeMillis;
-    for (const [id, fix] of fixes)
-      if (now - fix.receivedAt > FRESH_FIX_MS) fixes.delete(id);
-    const reason = staleReason({
-      now,
-      lastBatchAt,
-      loginNeeded: yield* loginNeeded,
-    });
-    yield* publisher.publish({
+  const snapshotInput = (now: number) =>
+    Effect.map(loginNeeded, (needed) => ({
       now,
       fixes: [...fixes.values()],
       routes,
       lastBatchAt,
-      reason,
-    });
+      reason: staleReason({ now, lastBatchAt, loginNeeded: needed }),
+    }));
+
+  const publish = Effect.gen(function* () {
+    const now = yield* Clock.currentTimeMillis;
+    for (const [id, fix] of fixes)
+      if (now - fix.receivedAt > FRESH_FIX_MS) fixes.delete(id);
+    yield* publisher.publish(yield* snapshotInput(now));
   });
+
+  const live = Effect.suspend(() =>
+    Effect.map(
+      snapshotInput(clock.currentTimeMillisUnsafe()),
+      publisher.current,
+    ),
+  );
 
   const checkAlerts = Effect.gen(function* () {
     const now = yield* Clock.currentTimeMillis;
@@ -292,6 +303,7 @@ const makeFleet = Effect.gen(function* () {
     start,
     tick,
     status,
+    live,
     submitCode: (code) =>
       feed.needsLogin
         ? session.submitCode(code)

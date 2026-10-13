@@ -7,7 +7,11 @@ import {
   S,
 } from "@metro/core";
 import type { RouteCode } from "@metro/upstream";
-import { liveDocument, type StaleReason } from "./snapshot.js";
+import {
+  liveDocument,
+  type LiveDocument,
+  type StaleReason,
+} from "./snapshot.js";
 
 export const LIVE_JSON_KEY = "live/live.json";
 export const VEHICLES_PB_KEY = "live/vehicles.pb";
@@ -49,9 +53,12 @@ export const makeLivePublisher = (store: ObjectStoreShape) =>
       Effect.asVoid,
     );
 
+    const current = (input: PublishInput): LiveDocument =>
+      liveDocument({ ...input, frozen, frozenAt });
+
     const publish = (input: PublishInput) =>
       Effect.gen(function* () {
-        const doc = liveDocument({ ...input, frozen, frozenAt });
+        const doc = current(input);
         if (!doc.stale && doc.buses.length) {
           frozen = doc.buses;
           frozenAt = doc.timestamp;
@@ -85,5 +92,5 @@ export const makeLivePublisher = (store: ObjectStoreShape) =>
         ),
       );
 
-    return { restore, publish };
+    return { restore, publish, current };
   });

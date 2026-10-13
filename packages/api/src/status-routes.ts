@@ -1,4 +1,4 @@
-import { Clock, Effect, Layer, Option } from "effect";
+import { Clock, Effect, Exit, Layer, Option, Schema } from "effect";
 import { HttpMiddleware, HttpRouter } from "effect/http";
 import {
   ReferenceName,
@@ -7,11 +7,12 @@ import {
   S,
   STATUS_KEY,
 } from "@metro/core";
-import { LIVE_JSON_KEY } from "@metro/fleet";
+import { FleetClient, LIVE_JSON_KEY } from "@metro/fleet";
 import { ReferenceReader } from "./reader.js";
 import { json, noStore, unavailable } from "./responses.js";
 
 export const LIVE_TTL_SECONDS = 5;
+export const LIVE_FLEET_TIMEOUT_MS = 1_000;
 export const STATUS_TTL_SECONDS = 60;
 export const REACHABLE_WITHIN_MS = 2 * 3_600_000;
 
@@ -25,10 +26,30 @@ export const StatusRoutes = Layer.unwrap(
   Effect.gen(function* () {
     const reader = yield* ReferenceReader;
     const clock = yield* Clock.Clock;
-    const live = reader.direct(LIVE_JSON_KEY, S.LiveFeed, LIVE_TTL_SECONDS);
+    const client = yield* FleetClient;
+    const isLive = Schema.is(S.LiveFeed);
+    const published = reader.direct(
+      LIVE_JSON_KEY,
+      S.LiveFeed,
+      LIVE_TTL_SECONDS,
+    );
+
+    // The published file trails the Fleet by up to a tick, so it only stands in when the Fleet can't answer.
+    const live = client.live.pipe(
+      Effect.timeout(LIVE_FLEET_TIMEOUT_MS),
+      Effect.provideService(Clock.Clock, clock),
+      Effect.exit,
+      Effect.flatMap((exit) =>
+        Exit.isSuccess(exit) && isLive(exit.value)
+          ? Effect.succeed(Option.some<S.LiveFeed>(exit.value))
+          : Effect.andThen(
+              Effect.logWarning("live snapshot from the Fleet unavailable"),
+              published,
+            ),
+      ),
+    );
 
     const health = Effect.gen(function* () {
-      const now = clock.currentTimeMillisUnsafe();
       const routes = yield* Effect.option(
         reader.typed(ReferenceName.routes, RoutesFile),
       );
@@ -38,6 +59,7 @@ export const StatusRoutes = Layer.unwrap(
         ),
       );
       const snapshot = Option.flatten(yield* Effect.option(live));
+      const now = clock.currentTimeMillisUnsafe();
       const reachable = Option.exists(
         status,
         (last) => last.ok && now - last.checked_at <= REACHABLE_WITHIN_MS,
@@ -69,8 +91,8 @@ export const StatusRoutes = Layer.unwrap(
     });
 
     const snapshot = Effect.gen(function* () {
-      const now = clock.currentTimeMillisUnsafe();
       const doc = yield* live;
+      const now = clock.currentTimeMillisUnsafe();
       return noStore(
         json(
           Option.match(doc, {

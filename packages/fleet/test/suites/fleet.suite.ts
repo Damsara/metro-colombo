@@ -524,6 +524,62 @@ export function fleetSuite(
       assert.ok(pb[1].body.length > 0);
     }));
 
+  test(`${name}: the in-memory snapshot shows each batch as it lands, without writing`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      await h.seed("session", validSession);
+      const seen = await h.runFleet(T0, (fleet) =>
+        Effect.gen(function* () {
+          yield* fleet.tick;
+          const published = yield* fleet.live;
+          h.socket.connections[0].send(gps([bus("bus-a"), bus("bus-b", 6.8)]));
+          yield* TestClock.adjust(300);
+          const first = yield* fleet.live;
+          h.socket.connections[0].send(gps([bus("bus-c")]));
+          yield* TestClock.adjust(200);
+          const second = yield* fleet.live;
+          return { published, first, second };
+        }),
+      );
+      const writes = h.putsTo(LIVE_JSON_KEY);
+      assert.equal(writes.length, 1);
+      assert.deepEqual(seen.published, decodeJson(writes[0].body));
+      assert.equal(seen.first.success, true);
+      assert.equal(seen.first.stale, false);
+      assert.equal(seen.first.timestamp, T0);
+      assert.equal(seen.first.age_ms, 300);
+      assert.deepEqual(
+        seen.first.buses.map((entry) => entry.id),
+        ["bus-a", "bus-b"],
+      );
+      assert.equal(seen.second.timestamp, T0 + 300);
+      assert.equal(seen.second.age_ms, 200);
+      assert.deepEqual(
+        seen.second.buses.map((entry) => entry.id),
+        ["bus-a", "bus-b", "bus-c"],
+      );
+    }));
+
+  test(`${name}: the in-memory snapshot is the document the next tick writes`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      await h.seed("session", validSession);
+      const live = await h.runFleet(T0, (fleet) =>
+        Effect.gen(function* () {
+          yield* fleet.tick;
+          h.socket.connections[0].send(gps([bus("bus-a"), bus("bus-b", 6.8)]));
+          yield* fleet.tick;
+          return yield* fleet.live;
+        }),
+      );
+      const written = h.putsTo(LIVE_JSON_KEY).at(-1);
+      assert.ok(written);
+      assert.equal(
+        JSON.stringify(live),
+        new TextDecoder().decode(written.body),
+      );
+    }));
+
   test(`${name}: both live files carry their content type and cache header, and vehicles.pb decodes`, () =>
     withWiring(async (wiring) => {
       const h = harness(wiring);

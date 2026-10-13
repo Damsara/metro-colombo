@@ -26,6 +26,7 @@ const handlerWith = (
   const submitted: string[] = [];
   const client = FleetClient.of({
     status: Effect.succeed(STATUS),
+    live: Effect.die("not used by this test"),
     submitCode: (code) => Effect.sync(() => (submitted.push(code), outcome)),
     token: Effect.succeed(Option.none()),
   });

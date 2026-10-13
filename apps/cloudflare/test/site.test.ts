@@ -34,8 +34,8 @@ test("the Worker answers /api/routes from R2, byte for byte", async () => {
   expect(await response.text()).toBe(JSON.stringify({ routes: ROUTES }));
 });
 
-test("/api/live is the Fleet's snapshot in production's shape", async () => {
-  await testEnv.ARCHIVE.put(
+const publishedLive = () =>
+  testEnv.ARCHIVE.put(
     "live/live.json",
     JSON.stringify({
       success: true,
@@ -46,7 +46,27 @@ test("/api/live is the Fleet's snapshot in production's shape", async () => {
       reason: "feed_down",
     }),
   );
+
+test("/api/live is the Fleet's in-memory snapshot over RPC, in production's shape", async () => {
+  await publishedLive();
   const response = await get("/api/live");
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(await response.text()).toBe(
+    '{"success":false,"count":0,"timestamp":0,"buses":[]}',
+  );
+});
+
+test("/api/live falls back to the published file when the Fleet can't answer", async () => {
+  await publishedLive();
+  const broken = {
+    idFromName: () => ({}),
+    get: () => ({ live: () => Promise.reject(new Error("rpc failed")) }),
+  };
+  const response = await makeSite({
+    ...testEnv,
+    FLEET: broken,
+    ASSETS: assets,
+  } as never).handler(new Request("https://metro-staging.test/api/live"));
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.text()).toBe(
     '{"success":true,"count":0,"timestamp":0,"buses":[]}',
