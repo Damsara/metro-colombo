@@ -72,31 +72,48 @@ export const LankaMetroReference = Layer.effect(
     const http = yield* HttpClient.HttpClient;
     const fareApi = `${eimskyBase}/fare-service/api/v1`;
 
-    const authed = <A>(
+    const session = (
       token: Token,
-      url: string,
-      schema: Schema.Codec<A, unknown>,
-    ): Effect.Effect<A, UpstreamError> =>
+    ): Effect.Effect<Redacted.Redacted<string>, UpstreamError> =>
       Option.match(token, {
         onNone: () =>
           Effect.fail(
             new UpstreamError({ message: "no upstream session", status: 502 }),
           ),
-        onSome: (value) =>
-          fetchJson(http, url, {
-            headers: { authorization: `Bearer ${Redacted.value(value)}` },
-            detail: eimskyDetail,
-          }).pipe(Effect.flatMap(decodeWith(schema))),
+        onSome: Effect.succeed,
       });
 
+    const withSession = <A>(
+      value: Redacted.Redacted<string>,
+      url: string,
+      schema: Schema.Codec<A, unknown>,
+    ) =>
+      fetchJson(http, url, {
+        headers: { authorization: `Bearer ${Redacted.value(value)}` },
+        detail: eimskyDetail,
+      }).pipe(Effect.flatMap(decodeWith(schema)));
+
+    const authed = <A>(
+      token: Token,
+      url: string,
+      schema: Schema.Codec<A, unknown>,
+    ) =>
+      session(token).pipe(
+        Effect.flatMap((value) => withSession(value, url, schema)),
+      );
+
+    // Without lankametro.lk's colours the operator's own still serve, as production does once its stale colours expire.
     const colours = fetchJson(http, `${lankametroBase}/api/routes`).pipe(
       Effect.flatMap(decodeWith(ColoursResponse)),
       Effect.map(
         (body) =>
           new Map(body.routes.map((route) => [route.code, route.color_hex])),
       ),
-      Effect.mapError(
-        () => new UpstreamError({ message: "route colours unavailable" }),
+      Effect.catch((error) =>
+        Effect.logWarning("route colours unavailable", {
+          message: error.message,
+          status: error.status,
+        }).pipe(Effect.as(new Map<string, string>())),
       ),
     );
 
@@ -118,14 +135,20 @@ export const LankaMetroReference = Layer.effect(
     return ReferenceUpstream.of({
       needsLogin: true,
       routes: (token) =>
-        Effect.gen(function* () {
-          const body = yield* authed(
-            token,
-            `${fareApi}/routes/geo`,
-            RoutesResponse,
-          );
-          return colourRoutes(body.data.routes, yield* colours);
-        }),
+        session(token).pipe(
+          Effect.flatMap((value) =>
+            Effect.all(
+              [
+                withSession(value, `${fareApi}/routes/geo`, RoutesResponse),
+                colours,
+              ],
+              { concurrency: 2 },
+            ),
+          ),
+          Effect.map(([body, byCode]) =>
+            colourRoutes(body.data.routes, byCode),
+          ),
+        ),
       stops: (token, route, direction) =>
         authed(
           token,

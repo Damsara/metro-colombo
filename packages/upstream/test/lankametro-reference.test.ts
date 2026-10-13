@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ConfigProvider, Effect, Layer, Option, Redacted } from "effect";
+import {
+  ConfigProvider,
+  Effect,
+  Layer,
+  Logger,
+  Option,
+  Redacted,
+} from "effect";
 import { HttpClient } from "effect/http";
 import {
   fakeHttpClient,
@@ -127,6 +134,12 @@ const setup = (overrides: Replies = {}, env: Record<string, string> = {}) => {
           json: { error: { message: "no such path" } },
         });
   });
+  const lines: string[] = [];
+  const logs = Logger.layer([
+    Logger.make(({ logLevel, message }) =>
+      lines.push(`${logLevel} ${JSON.stringify(message)}`),
+    ),
+  ]);
   const layer = LankaMetroReference.pipe(
     Layer.provide(Layer.succeed(HttpClient.HttpClient, http.client)),
     Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord(env))),
@@ -134,9 +147,10 @@ const setup = (overrides: Replies = {}, env: Record<string, string> = {}) => {
   const use = <A, E>(f: (u: ReferenceUpstreamShape) => Effect.Effect<A, E>) =>
     Effect.gen(function* () {
       return yield* f(yield* ReferenceUpstream);
-    }).pipe(Effect.provide(layer));
+    }).pipe(Effect.provide(layer), Effect.provide(logs));
   return {
     http,
+    lines,
     run: <A, E>(f: (u: ReferenceUpstreamShape) => Effect.Effect<A, E>) =>
       Effect.runPromise(use(f)),
     fail: <A, E>(f: (u: ReferenceUpstreamShape) => Effect.Effect<A, E>) =>
@@ -155,22 +169,49 @@ test("routes need a session, and without one nothing is asked", async () => {
 test("routes are read with the session and coloured as production colours them", async () => {
   const { run, http } = setup();
   const routes = await run((u) => u.routes(TOKEN));
-  assert.equal(http.requests[0].headers.authorization, `Bearer ${SECRET}`);
+  const sent = (url: string) =>
+    http.requests.find((request) => request.url.href === url);
+  assert.equal(
+    sent(`${EIMSKY}/routes/geo`)?.headers.authorization,
+    `Bearer ${SECRET}`,
+  );
+  assert.equal(sent(`${LK}/api/routes`)?.headers.authorization, undefined);
   assert.equal(
     JSON.stringify(routes),
     '[{"code":"CM06","id":"route-1","name":"Kollupitiya Circular Route","status":"active","is_favorite":false,"directions":[{"id":"d1","start_location":"Kollupitiya","end_location":"Bambalapitiya","status":"active","geojson_url":"https://storage.googleapis.com/lmt/CM06-0.geojson"}],"color_hex":"#491C80"}]',
   );
 });
 
-test("routes fail when lankametro.lk's colours fail, so the last coloured file is kept", async () => {
-  const { fail } = setup({
-    [`${LK}/api/routes`]: { status: 500, text: "down" },
+for (const [why, reply, inner] of [
+  ["answer 500", { status: 500, text: "down" }, "upstream answered HTTP 500"],
+  [
+    "can't be read",
+    { status: 200, json: { routes: [{ code: "CM06" }] } },
+    "upstream reply unreadable",
+  ],
+] as const) {
+  test(`routes keep the operator's own colours when lankametro.lk's colours ${why}`, async () => {
+    const { run, lines } = setup({
+      [`${EIMSKY}/routes/geo`]: {
+        status: 200,
+        json: {
+          data: { routes: [{ ...upstreamRoute, color_hex: "#00AA00" }] },
+        },
+      },
+      [`${LK}/api/routes`]: reply,
+    });
+    const routes = await run((u) => u.routes(TOKEN));
+    assert.deepEqual(
+      routes.map((route) => route.color_hex),
+      ["#00AA00"],
+    );
+    const warnings = lines.filter((line) => line.startsWith("Warn"));
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /route colours unavailable/);
+    assert.ok(warnings[0].includes(inner), warnings[0]);
+    assert.doesNotMatch(lines.join("\n"), new RegExp(SECRET));
   });
-  assert.equal(
-    (await fail((u) => u.routes(TOKEN))).message,
-    "route colours unavailable",
-  );
-});
+}
 
 test("an upstream refusal keeps its status and message, and never the token", async () => {
   const { fail } = setup({
@@ -209,6 +250,24 @@ test("a journey drops the booking token and keeps the rest", async () => {
   assert.equal(
     http.requests[0].url.search,
     "?from_stop_id=stop-1&to_stop_id=stop-2&date=2026-10-13",
+  );
+});
+
+test("a journey the upstream refuses keeps its status and detail", async () => {
+  const { fail } = setup({
+    [`${EIMSKY}/journeys/plan`]: {
+      status: 400,
+      json: { error: { message: "Invalid date" } },
+    },
+  });
+  const error = await fail((u) =>
+    u.journey(TOKEN, "stop-1", "stop-2", "2026-10-13"),
+  );
+  assert.equal(error.status, 400);
+  assert.equal(error.detail, "Invalid date");
+  assert.doesNotMatch(
+    `${JSON.stringify(error)} ${String(error)}`,
+    new RegExp(SECRET),
   );
 });
 
