@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 const FORBIDDEN =
-  /(?:from\s+|import\s*\(?\s*)["'](node:[^"']+|ws|undici|cloudflare:[^"']+|@cloudflare\/[^"']+|@effect\/platform-[^"']+|(?:\.\.\/)+(?:src|apps|core|upstream|fleet)\/[^"']*)["']/;
+  /(?:from\s+|import\s*\(?\s*)["'](node:[^"']+|ws|undici|cloudflare:[^"']+|@cloudflare\/[^"']+|@effect\/platform-[^"']+|(?:\.\.\/)+(?:src|apps|core|upstream|fleet|publisher|api)\/[^"']*)["']/;
 
 const root = new URL("../packages", import.meta.url).pathname;
 
@@ -18,7 +18,13 @@ const sources = (dir: string): string[] =>
   );
 
 test("the boundary covers every shared package", () => {
-  assert.deepEqual(readdirSync(root).sort(), ["core", "fleet", "upstream"]);
+  assert.deepEqual(readdirSync(root).sort(), [
+    "api",
+    "core",
+    "fleet",
+    "publisher",
+    "upstream",
+  ]);
 });
 
 test("shared packages import nothing runtime-specific", () => {

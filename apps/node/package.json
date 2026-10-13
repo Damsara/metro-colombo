@@ -9,8 +9,10 @@
   },
   "dependencies": {
     "@effect/platform-node": "4.0.1",
+    "@metro/api": "0.0.0",
     "@metro/core": "0.0.0",
     "@metro/fleet": "0.0.0",
+    "@metro/publisher": "0.0.0",
     "@metro/upstream": "0.0.0",
     "aws4fetch": "1.0.20",
     "effect": "4.0.1",
