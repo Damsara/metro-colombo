@@ -29,6 +29,8 @@
     "production": {
       "name": "metro",
       "workers_dev": false,
+      "preview_urls": false,
+      "observability": { "enabled": true },
       "routes": [{ "pattern": "metro.manasa.ai/*", "zone_name": "manasa.ai" }],
       "durable_objects": {
         "bindings": [{ "name": "FLEET", "class_name": "FleetObject" }],
