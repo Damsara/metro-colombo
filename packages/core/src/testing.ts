@@ -218,6 +218,7 @@ export const settle = Effect.promise(
 
 export const manualClock = (start: number) => {
   let now = start;
+  const sleepers: Array<{ wakeAt: number; wake: () => void }> = [];
   const nanos = () => BigInt(now) * 1_000_000n;
   const clock: Clock.Clock = {
     currentTimeMillisUnsafe: () => now,
@@ -226,17 +227,37 @@ export const manualClock = (start: number) => {
     currentTimeNanos: Effect.sync(nanos),
     monotonicTimeNanosUnsafe: nanos,
     monotonicTimeNanos: Effect.sync(nanos),
-    sleep: (duration) =>
-      Effect.promise(
-        () =>
-          new Promise<void>((resolve) =>
-            setTimeout(resolve, Duration.toMillis(duration)),
-          ),
-      ),
+    sleep: (duration) => {
+      const ms = Duration.toMillis(duration);
+      if (ms <= 0) return Effect.void;
+      if (!Number.isFinite(ms)) return Effect.never;
+      return Effect.callback<void>((resume) => {
+        const sleeper = {
+          wakeAt: now + ms,
+          wake: () => resume(Effect.void),
+        };
+        sleepers.push(sleeper);
+        return Effect.sync(() => {
+          const index = sleepers.indexOf(sleeper);
+          if (index >= 0) sleepers.splice(index, 1);
+        });
+      });
+    },
   };
   return {
     clock,
     layer: Layer.succeed(Clock.Clock, clock),
-    advance: (ms: number) => void (now += ms),
+    advance: (ms: number) => {
+      if (!(ms >= 0)) throw new Error(`Cannot advance the clock by ${ms}`);
+      now += ms;
+      const due = sleepers
+        .filter((sleeper) => sleeper.wakeAt <= now)
+        .sort((a, b) => a.wakeAt - b.wakeAt);
+      for (const sleeper of due) {
+        sleepers.splice(sleepers.indexOf(sleeper), 1);
+        sleeper.wake();
+      }
+    },
+    pending: () => sleepers.length,
   };
 };
