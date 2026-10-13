@@ -1,4 +1,4 @@
-import { Cause, Clock, Data, Effect, Layer } from "effect";
+import { Cause, Clock, Data, Effect, Layer, Schedule } from "effect";
 import {
   HttpClient,
   HttpClientRequest,
@@ -60,7 +60,7 @@ export const makeCatalogRoutes = (timeoutMs = CATALOG_TIMEOUT_MS) =>
           )
           .pipe(
             Effect.flatMap((response) =>
-              response.status >= 500
+              response.status >= 500 || response.status === 429
                 ? Effect.andThen(
                     Effect.ignore(response.arrayBuffer),
                     Effect.fail(
@@ -70,7 +70,10 @@ export const makeCatalogRoutes = (timeoutMs = CATALOG_TIMEOUT_MS) =>
                 : Effect.succeed(response),
             ),
             Effect.timeout(timeoutMs),
-            Effect.retry({ times: 1 }),
+            Effect.retry({
+              schedule: Schedule.exponential("100 millis"),
+              times: 2,
+            }),
             Effect.provideService(Clock.Clock, clock),
           );
 

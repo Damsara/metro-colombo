@@ -100,24 +100,60 @@ test("a matching etag is 304", async () => {
   assert.equal(response.headers.get("etag"), ETAG);
 });
 
-test("a failing origin is tried once more, then the archive is 502", async () => {
+const answered = async (count: number, requests: ReadonlyArray<unknown>) => {
+  for (let tries = 0; requests.length < count && tries < 500; tries++)
+    await new Promise((resolve) => setTimeout(resolve, 1));
+  assert.equal(requests.length, count);
+  await new Promise((resolve) => setTimeout(resolve, 1));
+};
+
+test("a failing origin is tried twice more, 100 ms then 200 ms later, then the archive is 502", async () => {
   const fails = (): FakeReply => ({ status: 500, text: "boom" });
-  const twice = origin([fails, fails]);
-  const response = await (
-    await site(twice.client)
-  ).get("/", { headers: { "user-agent": DUCKDB } });
+  const thrice = origin([fails, fails, fails]);
+  const { get, time } = await site(thrice.client);
+  const pending = get("/", { headers: { "user-agent": DUCKDB } });
+  await answered(1, thrice.requests);
+  time.advance(99);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(thrice.requests.length, 1);
+  time.advance(1);
+  await answered(2, thrice.requests);
+  time.advance(199);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(thrice.requests.length, 2);
+  time.advance(1);
+  const response = await pending;
   assert.equal(response.status, 502);
   assert.equal(response.headers.get("cache-control"), "no-store");
   assert.equal(
     await response.text(),
     "The fleet archive is unavailable right now.",
   );
-  assert.equal(twice.requests.length, 2);
-  const once = origin([fails]);
-  const recovered = await (
-    await site(once.client)
+  assert.equal(thrice.requests.length, 3);
+});
+
+test("a throttled or failing origin that recovers within the retries gets the catalog through", async () => {
+  const throttled = (): FakeReply => ({ status: 429, text: "slow down" });
+  const fails = (): FakeReply => ({ status: 500, text: "boom" });
+  const flaky = origin([throttled, fails]);
+  const { get, time } = await site(flaky.client);
+  const pending = get("/", { headers: { "user-agent": DUCKDB } });
+  await answered(1, flaky.requests);
+  time.advance(100);
+  await answered(2, flaky.requests);
+  time.advance(200);
+  const response = await pending;
+  assert.equal(response.status, 200);
+  assert.equal(flaky.requests.length, 3);
+});
+
+test("a refusal other than 429 is passed on without a retry", async () => {
+  const refused = origin([() => ({ status: 403, text: "no" })]);
+  const response = await (
+    await site(refused.client)
   ).get("/", { headers: { "user-agent": DUCKDB } });
-  assert.equal(recovered.status, 200);
+  assert.equal(response.status, 403);
+  assert.equal(refused.requests.length, 1);
 });
 
 test(
@@ -131,16 +167,17 @@ test(
     });
     const { get, time } = await site(silent, {}, makeCatalogRoutes(50));
     const pending = get("/", { headers: { "user-agent": DUCKDB } });
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      for (let tries = 0; attempts.length < attempt && tries < 500; tries++)
-        await new Promise((resolve) => setTimeout(resolve, 1));
-      assert.equal(attempts.length, attempt);
-      await new Promise((resolve) => setTimeout(resolve, 1));
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await answered(attempt, attempts);
       time.advance(50);
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        time.advance(100 * 2 ** (attempt - 1));
+      }
     }
     const response = await pending;
     assert.equal(response.status, 502);
-    assert.equal(attempts.length, 2);
+    assert.equal(attempts.length, 3);
   },
 );
 
