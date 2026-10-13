@@ -520,28 +520,39 @@ test("a route without a colour and nothing published before stays without one", 
   );
 });
 
-test("a route listed twice gives the archive one shape per direction, from the first", async () => {
+test("a route listed twice is published as listed, and the archive keeps the first of it", async () => {
   const h = setup();
-  h.fake.data.routes = [
-    CM06,
-    CM01,
-    {
-      ...CM01,
-      id: "route-1b",
-      directions: [dir("c2", "Makumbura", "Kaduwela")],
-    },
-  ];
+  const twice = {
+    ...CM01,
+    id: "route-1b",
+    name: "Makumbura - Kaduwela",
+    directions: [dir("c2", "Makumbura", "Kaduwela")],
+  };
+  h.fake.data.routes = [CM06, CM01, twice];
   h.fake.data.stops = { ...h.fake.data.stops, c2: [stop("s8", "KDW100")] };
   h.fake.lines.c2 = 79.99;
   assert.equal((await h.at(T0, h.publisher.run)).ok, true);
   const files = await unzip(
     (await h.read((await h.manifest()).files["gtfs/static"])).body,
   );
-  const shapes = new TextDecoder()
-    .decode(files.get("shapes.txt")!.bytes)
-    .trim()
-    .split("\r\n")
-    .slice(1);
+  const rows = (name: string) =>
+    new TextDecoder()
+      .decode(files.get(name)!.bytes)
+      .trim()
+      .split("\r\n")
+      .slice(1);
+  assert.equal(
+    JSON.stringify(await h.file("routes")),
+    JSON.stringify([CM06, CM01, twice]),
+  );
+  assert.deepEqual(
+    rows("routes.txt").map((row) => row.split(",").slice(0, 4).join(",")),
+    [
+      "CM06,LMT,CM06,Kollupitiya Circular Route",
+      "CM01,LMT,CM01,Makumbura - Colombo Fort",
+    ],
+  );
+  const shapes = rows("shapes.txt");
   assert.deepEqual(shapes, [
     "CM06_0,6.9,79.85,1",
     "CM06_1,6.9,79.86,1",
@@ -561,4 +572,69 @@ test("directions are fetched four at a time", async () => {
   h.fake.slow = true;
   assert.equal((await h.at(T0, h.publisher.run)).ok, true);
   assert.equal(h.fake.mostInFlight, 4);
+});
+
+test("a direction that is no longer listed leaves the manifest", async () => {
+  const h = setup();
+  await h.at(T0, h.publisher.run);
+  h.fake.data.routes = [{ ...CM06, directions: [CM06.directions[0]] }, CM01];
+  assert.equal((await h.at(T0 + HOUR, h.publisher.run)).ok, true);
+  const names = Object.keys((await h.manifest()).files);
+  assert.equal(names.includes("paths/CM06/d2"), false);
+  assert.equal(names.includes("paths/CM06/d1"), true);
+  assert.equal(names.includes("paths/CM01/c1"), true);
+});
+
+test("a status that can't be written leaves the run's report as it was", async () => {
+  const h = setup();
+  await h.at(T0, h.publisher.run);
+  h.fake.data.stops = { ...h.fake.data.stops, c1: [stop("s9", "MKB101")] };
+  h.storage.refuseWhen((key) => key === STATUS_KEY);
+  const report = await h.at(T0 + HOUR, h.publisher.run);
+  const manifest = await h.manifest();
+  assert.deepEqual(report, {
+    ok: true,
+    failed: [],
+    written: [
+      manifest.files["stops/CM01"],
+      manifest.files["stop-ids"],
+      manifest.files["gtfs/static"],
+      MANIFEST_KEY,
+    ],
+  });
+  assert.equal((await h.json(STATUS_KEY)).checked_at, T0);
+  assert.deepEqual(h.alerts, [
+    "resolve reference_failing",
+    "resolve reference_failing",
+  ]);
+  h.storage.refuseWhen(() => false);
+  await h.at(T0 + 2 * HOUR, h.publisher.run);
+  const status = await h.json(STATUS_KEY);
+  assert.deepEqual(
+    [status.checked_at, status.ok, status.consecutive_failures],
+    [T0 + 2 * HOUR, true, 0],
+  );
+});
+
+test("a run where one file changes and another fetch fails publishes the new key beside the old one", async () => {
+  const h = setup();
+  await h.at(T0, h.publisher.run);
+  const first = await h.manifest();
+  h.fake.data.stops = { ...h.fake.data.stops, c1: [stop("s9", "MKB101")] };
+  h.fake.failing.add("places");
+  const report = await h.at(T0 + HOUR, h.publisher.run);
+  assert.deepEqual(report.failed, ["places"]);
+  const manifest = await h.manifest();
+  assert.notEqual(manifest.files["stops/CM01"], first.files["stops/CM01"]);
+  assert.equal(manifest.files.places, first.files.places);
+  assert.deepEqual(await h.file("stops/CM01"), [
+    {
+      route_code: "CM01",
+      route_name: "Makumbura - Colombo Fort",
+      direction_id: "c1",
+      direction_label: "Makumbura -> Colombo",
+      stops: [stop("s9", "MKB101")],
+    },
+  ]);
+  assert.deepEqual(await h.file("places"), [PLACE]);
 });

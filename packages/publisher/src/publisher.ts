@@ -83,12 +83,11 @@ const keepColours = (
       : route,
   );
 
-const firstShapes = (paths: ReadonlyArray<GtfsPath>) => {
+const firstOf = <A>(items: ReadonlyArray<A>, key: (item: A) => string) => {
   const seen = new Set<string>();
-  return paths.filter((path) => {
-    const key = `${path.code}\u0000${path.directionIndex}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
+  return items.filter((item) => {
+    if (seen.has(key(item))) return false;
+    seen.add(key(item));
     return true;
   });
 };
@@ -206,9 +205,12 @@ const fetchAll = (
         Effect.tryPromise({
           try: () =>
             buildStaticGtfs({
-              routes: routes.value,
+              routes: firstOf(routes.value, (route) => route.code),
               stops: stops.value.flat(2),
-              paths: firstShapes(shapes.value.flat()),
+              paths: firstOf(
+                shapes.value.flat(),
+                (path) => `${path.code}\u0000${path.directionIndex}`,
+              ),
             }),
           catch: () => new UpstreamError({ message: "static GTFS not built" }),
         }),
@@ -274,10 +276,16 @@ export const makeReferencePublisher = ({
           consecutive_failures: ok ? 0 : (last?.consecutive_failures ?? 0) + 1,
           last_success_at: ok ? now : (last?.last_success_at ?? null),
         };
-        yield* store.put(STATUS_KEY, encode(status), {
-          contentType: "application/json",
-          cacheControl: STATUS_CACHE,
-        });
+        yield* store
+          .put(STATUS_KEY, encode(status), {
+            contentType: "application/json",
+            cacheControl: STATUS_CACHE,
+          })
+          .pipe(
+            Effect.catch((error) =>
+              Effect.logWarning("reference status not written", error.message),
+            ),
+          );
         if (status.consecutive_failures >= ALERT_AFTER_FAILURES)
           yield* book.raise(
             "reference_failing",
@@ -320,9 +328,19 @@ export const makeReferencePublisher = ({
       const files: Record<string, string> = { ...before };
       if (Option.isSome(routes)) {
         const listed = new Set(routes.value.map((route) => route.code));
+        const paths = new Set(
+          routes.value.flatMap((route) =>
+            route.directions.map((direction) =>
+              ReferenceName.path(route.code, direction.id),
+            ),
+          ),
+        );
         for (const name of Object.keys(files)) {
           const [kind, code] = name.split("/");
-          if ((kind === "stops" || kind === "paths") && !listed.has(code))
+          if (
+            (kind === "stops" && !listed.has(code)) ||
+            (kind === "paths" && !paths.has(name))
+          )
             delete files[name];
         }
       }
@@ -366,12 +384,7 @@ export const makeReferencePublisher = ({
         failed: [reason],
         written: [],
       };
-      return settle(report.failed).pipe(
-        Effect.catch((error) =>
-          Effect.logWarning("reference status not written", error.message),
-        ),
-        Effect.as(report),
-      );
+      return Effect.as(settle(report.failed), report);
     };
 
     const bounded = publish.pipe(
