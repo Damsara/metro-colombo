@@ -167,7 +167,7 @@ test("the production env is metro on metro.manasa.ai, recording live data into m
   expect(JSON.stringify(production)).not.toMatch(/staging/);
 });
 
-test("the Fleet's publisher records a failed run and waits before the next", async () => {
+test("the Fleet's publisher records a failed run and tries again while no routes are published", async () => {
   await emptyArchive();
   const stub = fleet();
   const report = await stub.publishReferenceIfDue();
@@ -181,7 +181,7 @@ test("the Fleet's publisher records a failed run and waits before the next", asy
     consecutive_failures: 1,
     last_success_at: null,
   });
-  expect(await stub.publishReferenceIfDue()).toBeNull();
+  expect((await stub.publishReferenceIfDue())?.ok).toBe(false);
 });
 
 test("a replaying Fleet hands out no session token", async () => {
