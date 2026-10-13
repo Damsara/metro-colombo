@@ -6,3 +6,4 @@ export * from "./from-config.js";
 export * from "./reference.js";
 export * from "./http-json.js";
 export * from "./proxy.js";
+export * from "./lankametro-reference.js";
