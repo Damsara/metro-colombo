@@ -184,6 +184,17 @@ test("the Fleet's publisher records a failed run and tries again while no routes
   expect((await stub.publishReferenceIfDue())?.ok).toBe(false);
 });
 
+test("the Fleet's alarm runs the publisher without waiting for the cron", async () => {
+  await emptyArchive();
+  const stub = fleet();
+  await stub.ensureRunning();
+  const report = await runInDurableObject(stub, async (instance) => {
+    await instance.alarm();
+    return instance.publishing;
+  });
+  expect(report?.failed).toEqual(["occasions", "places", "routes"]);
+});
+
 test("a replaying Fleet hands out no session token", async () => {
   expect(await fleet().sessionToken()).toBeNull();
 });
