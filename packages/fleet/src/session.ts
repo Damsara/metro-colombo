@@ -224,7 +224,11 @@ export const makeSession = (alerts: AlertBookShape) =>
         ),
         Effect.catchTag("AuthHttpError", (error) =>
           Effect.andThen(
-            Effect.sync(() => void (lastError = "upstream_error")),
+            Effect.gen(function* () {
+              refreshBackoffUntil =
+                (yield* Clock.currentTimeMillis) + REFRESH_BACKOFF_MS;
+              lastError = "upstream_error";
+            }),
             Effect.logWarning("webview token failed", error.message),
           ),
         ),

@@ -103,20 +103,29 @@ test("the new refresh token is saved before the new session is used", async () =
   ]);
 });
 
-test("if the webview call fails after a refresh, the new refresh token is kept for the next try", async () => {
+test("if the webview call fails after a refresh, the new refresh token is kept and not spent again for a minute", async () => {
   const { upstream, backing, run } = setup({ session: expired });
   upstream.settings.webviewStatus = 503;
-  const first = await run((session) =>
-    Effect.all([session.token, session.status]),
+  const result = await run((session) =>
+    Effect.gen(function* () {
+      const token = yield* session.token;
+      const status = yield* session.status;
+      const saved = JSON.parse(backing.get("session") ?? "{}").refreshToken;
+      upstream.settings.webviewStatus = 200;
+      yield* TestClock.adjust("1 second");
+      const early = yield* session.token;
+      const callsEarly = [...upstream.calls.refresh];
+      yield* TestClock.adjust("60 seconds");
+      const later = yield* session.token;
+      return { token, status, saved, early, callsEarly, later };
+    }),
   );
-  assert.equal(tokenText(first[0]), undefined);
-  assert.equal(first[1], "upstream_error");
-  assert.equal(
-    JSON.parse(backing.get("session") ?? "{}").refreshToken,
-    "refresh-1",
-  );
-  upstream.settings.webviewStatus = 200;
-  await run((session) => session.token);
+  assert.equal(tokenText(result.token), undefined);
+  assert.equal(result.status, "upstream_error");
+  assert.equal(result.saved, "refresh-1");
+  assert.equal(tokenText(result.early), undefined);
+  assert.deepEqual(result.callsEarly, ["stored"]);
+  assert.equal(tokenText(result.later), "webview-2");
   assert.deepEqual(upstream.calls.refresh, ["stored", "refresh-1"]);
 });
 
