@@ -248,13 +248,15 @@ export const manualClock = (start: number) => {
     clock,
     layer: Layer.succeed(Clock.Clock, clock),
     advance: (ms: number) => {
-      if (!(ms >= 0)) throw new Error(`Cannot advance the clock by ${ms}`);
+      if (!Number.isFinite(ms) || ms < 0)
+        throw new Error(`Cannot advance the clock by ${ms}`);
       now += ms;
       const due = sleepers
         .filter((sleeper) => sleeper.wakeAt <= now)
         .sort((a, b) => a.wakeAt - b.wakeAt);
       for (const sleeper of due) {
-        sleepers.splice(sleepers.indexOf(sleeper), 1);
+        const index = sleepers.indexOf(sleeper);
+        if (index >= 0) sleepers.splice(index, 1);
         sleeper.wake();
       }
     },

@@ -105,20 +105,27 @@ test("an interrupted manual clock sleeper is removed", async () => {
 
 test("Effect.timeout under a manual clock fires on advance", async () => {
   const time = manualClock(T0);
-  const result = Effect.runPromise(
+  let settled: string | undefined;
+  void Effect.runPromise(
     Effect.never.pipe(
       Effect.timeout(5000),
       Effect.flip,
       Effect.provide(time.layer),
     ),
-  );
+  ).then((error) => void (settled = error._tag));
   await tick();
-  time.advance(5000);
-  assert.equal((await result)._tag, "TimeoutError");
+  assert.equal(time.pending(), 1);
+  time.advance(4999);
+  await tick();
+  assert.equal(settled, undefined);
+  time.advance(1);
+  await tick();
+  assert.equal(settled, "TimeoutError");
 });
 
-test("advance rejects negative and NaN amounts", () => {
+test("advance rejects negative, NaN and infinite amounts", () => {
   const time = manualClock(T0);
   assert.throws(() => time.advance(-1), Error);
   assert.throws(() => time.advance(Number.NaN), Error);
+  assert.throws(() => time.advance(Infinity), Error);
 });
