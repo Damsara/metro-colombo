@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { Context, Effect, Layer } from "effect";
+import { HttpMiddleware, HttpRouter } from "effect/http";
 import { SiteRoutes } from "@metro/api";
 import { harness } from "./support/harness.ts";
 
@@ -37,4 +39,24 @@ test("the site answers the API, the root and the Fleet's routes, all with CORS",
       .status,
     404,
   );
+});
+
+test("health and live checks are not traced, and nothing else is", async () => {
+  const { app, dispose } = await harness(SiteRoutes);
+  const context = await Effect.runPromise(
+    Effect.scoped(
+      Layer.build(
+        (app as Layer.Layer<never>).pipe(Layer.provideMerge(HttpRouter.layer)),
+      ),
+    ),
+  );
+  const untraced = Context.get(
+    context as Context.Context<never>,
+    HttpMiddleware.TracerDisabledWhen,
+  );
+  const request = (url: string) => ({ url }) as never;
+  assert.equal(untraced(request("/api/health")), true);
+  assert.equal(untraced(request("/api/live")), true);
+  assert.equal(untraced(request("/api/routes")), false);
+  await dispose();
 });

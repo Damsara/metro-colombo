@@ -94,5 +94,5 @@ export const harness = async (
   const { handler, dispose } = HttpRouter.toWebHandler(app as never);
   const get = (path: string, init?: RequestInit) =>
     handler(new Request(`https://metro.test${path}`, init));
-  return { handler, dispose, get, time, objects, upstream };
+  return { app, handler, dispose, get, time, objects, upstream };
 };
