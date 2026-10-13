@@ -41,14 +41,35 @@ const concat = (parts: ReadonlyArray<Uint8Array>) => {
   return out;
 };
 
-export const zip = async (entries: ReadonlyArray<ZipEntry>) => {
+const ZIP32_LIMIT = 2 ** 32;
+const MAX_16 = 0xffff;
+
+const guard = (value: number, limit: number) => {
+  if (value >= limit)
+    throw new Error("zip: archive exceeds 4 GiB (ZIP64 unsupported)");
+};
+
+export const zip = async (
+  entries: ReadonlyArray<ZipEntry>,
+  limit = ZIP32_LIMIT,
+) => {
+  if (entries.length > MAX_16) throw new Error("zip: more than 65535 entries");
   const utf8 = new TextEncoder();
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    if (seen.has(entry.name)) throw new Error("zip: duplicate entry name");
+    seen.add(entry.name);
+    if (utf8.encode(entry.name).length > MAX_16)
+      throw new Error("zip: entry name too long");
+  }
   const locals: Uint8Array[] = [];
   const centrals: Uint8Array[] = [];
   let offset = 0;
   for (const entry of entries) {
     const name = utf8.encode(entry.name);
+    guard(entry.bytes.length, limit);
     const data = await deflateRaw(entry.bytes);
+    guard(data.length, limit);
     const crc = crc32(entry.bytes);
 
     const local = new Uint8Array(30 + name.length);
@@ -82,8 +103,10 @@ export const zip = async (entries: ReadonlyArray<ZipEntry>) => {
     locals.push(local, data);
     centrals.push(central);
     offset += local.length + data.length;
+    guard(offset, limit);
   }
   const directory = concat(centrals);
+  guard(directory.length, limit);
   const end = new Uint8Array(22);
   const e = new DataView(end.buffer);
   e.setUint32(0, 0x06054b50, true);

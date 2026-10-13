@@ -39,3 +39,75 @@ test("an archive with no entries is just the end record", async () => {
   assert.equal(archive.length, 22);
   assert.equal(new DataView(archive.buffer).getUint32(0, true), 0x06054b50);
 });
+
+test("more than 65535 entries are refused", async () => {
+  const entries = Array.from({ length: 65536 }, (_, index) => ({
+    name: String(index),
+    bytes: new Uint8Array(),
+  }));
+  await assert.rejects(zip(entries), {
+    message: "zip: more than 65535 entries",
+  });
+});
+
+test("an entry name over 65535 UTF-8 bytes is refused", async () => {
+  await assert.rejects(
+    zip([{ name: "a".repeat(65536), bytes: new Uint8Array() }]),
+    { message: "zip: entry name too long" },
+  );
+});
+
+test("duplicate entry names are refused", async () => {
+  const entry = { name: "a.txt", bytes: utf8.encode("x") };
+  await assert.rejects(zip([entry, entry]), {
+    message: "zip: duplicate entry name",
+  });
+});
+
+const tooBig = { message: "zip: archive exceeds 4 GiB (ZIP64 unsupported)" };
+
+test("a raw size at the limit is refused", async () => {
+  await assert.rejects(
+    zip([{ name: "a", bytes: new Uint8Array(100) }], 100),
+    tooBig,
+  );
+  await zip([{ name: "a", bytes: new Uint8Array(99) }], 100);
+});
+
+test("a compressed size at the limit is refused", async () => {
+  const bytes = utf8.encode("x".repeat(8));
+  const compressed = new DataView(
+    (await zip([{ name: "a", bytes }])).buffer,
+  ).getUint32(18, true);
+  await assert.rejects(zip([{ name: "a", bytes }], compressed), tooBig);
+});
+
+test("a running offset at the limit is refused", async () => {
+  const entries = [
+    { name: "a", bytes: utf8.encode("x") },
+    { name: "b", bytes: utf8.encode("y") },
+  ];
+  await assert.rejects(zip(entries, 40), tooBig);
+});
+
+test("a central directory at the limit is refused", async () => {
+  const entries = [
+    { name: "a", bytes: new Uint8Array() },
+    { name: "b", bytes: new Uint8Array() },
+  ];
+  await assert.rejects(zip(entries, 94), tooBig);
+  await zip(entries, 95);
+});
+
+test("headers carry a zero time, the 1980 date and the UTF-8 flag", async () => {
+  const archive = await zip([{ name: "කොළඹ", bytes: utf8.encode("x") }]);
+  const view = new DataView(archive.buffer);
+  assert.equal(view.getUint16(6, true), 0x0800);
+  assert.equal(view.getUint16(10, true), 0);
+  assert.equal(view.getUint16(12, true), 0x21);
+  const central = view.getUint32(archive.length - 6, true);
+  assert.equal(view.getUint32(central, true), 0x02014b50);
+  assert.equal(view.getUint16(central + 8, true), 0x0800);
+  assert.equal(view.getUint16(central + 12, true), 0);
+  assert.equal(view.getUint16(central + 14, true), 0x21);
+});
