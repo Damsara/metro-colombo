@@ -456,15 +456,26 @@ export const makeReferencePublisher = ({
         if (published) return false;
       }
       // A run before the first login could only fail, and its status would hold off the next one for an hour.
-      return !upstream.needsLogin || Option.isSome(yield* token);
+      if (!upstream.needsLogin || Option.isSome(yield* token)) return true;
+      yield* Effect.logInfo("reference publish waits for a session");
+      return false;
     });
 
+    const logged = bounded.pipe(
+      Effect.tap((report) =>
+        report.ok
+          ? Effect.logInfo("reference published", report.written.length)
+          : Effect.logWarning("reference publish incomplete", report.failed),
+      ),
+      Effect.tapDefect(() => Effect.logError("reference publish crashed")),
+    );
+
     const shape: ReferencePublisherShape = {
-      run: lock.withPermits(1)(bounded),
+      run: lock.withPermits(1)(logged),
       runIfDue: lock.withPermits(1)(
         Effect.gen(function* () {
           return (yield* due)
-            ? Option.some(yield* bounded)
+            ? Option.some(yield* logged)
             : Option.none<PublishReport>();
         }),
       ),
