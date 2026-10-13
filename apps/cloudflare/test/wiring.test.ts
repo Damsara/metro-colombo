@@ -15,7 +15,7 @@ import {
 } from "@metro/upstream";
 import worker from "../src/worker.ts";
 import stagingConfig from "../wrangler.jsonc?raw";
-import { testEnv } from "./env.ts";
+import { emptyArchive, testEnv } from "./env.ts";
 
 const DAY = "2026-10-11";
 const HOUR_MS = 3_600_000;
@@ -134,6 +134,54 @@ test("the staging Worker writes only to the staging bucket, on workers.dev, repl
   ]);
   expect(config.vars.LIVE_FEED).toBe("replay");
   expect(Object.keys(config.vars)).not.toContain("METRO_REFRESH_TOKEN");
+  expect(config.vars.UPSTREAM).toBe("proxy");
+  expect(config.vars.UPSTREAM_PROXY_URL).toBe("https://metro.manasa.ai");
+  expect(config.vars.PUBLIC_DATA_URL).toBe("https://data.metro.manasa.ai");
+  expect(config.assets).toEqual({
+    directory: "../../web/dist",
+    binding: "ASSETS",
+    not_found_handling: "single-page-application",
+    run_worker_first: ["/", "/.wal", "/api/*", "/fleet/*"],
+  });
+});
+
+test("the production env is metro on metro.manasa.ai, recording live data into metro-data, with no secrets in config", () => {
+  const config = JSON.parse(stagingConfig.replace(/,(\s*[}\]])/g, "$1"));
+  const production = config.env.production;
+  expect(production.name).toBe("metro");
+  expect(production.workers_dev).toBe(false);
+  expect(production.routes).toEqual([
+    { pattern: "metro.manasa.ai/*", zone_name: "manasa.ai" },
+  ]);
+  expect(production.r2_buckets).toEqual([
+    { binding: "ARCHIVE", bucket_name: "metro-data" },
+  ]);
+  expect(production.durable_objects).toEqual(config.durable_objects);
+  expect(production.migrations).toEqual(config.migrations);
+  expect(production.vars).toEqual({
+    LIVE_FEED: "lankametro",
+    FLEET_INSTANCE: "fleet",
+    UPSTREAM: "lankametro",
+    PUBLIC_DATA_URL: "https://data.metro.manasa.ai",
+  });
+  expect(JSON.stringify(production)).not.toMatch(/staging/);
+});
+
+test("the Fleet's publisher records a failed run and waits before the next", async () => {
+  await emptyArchive();
+  const stub = fleet();
+  const report = await stub.publishReferenceIfDue();
+  expect(report?.ok).toBe(false);
+  expect(report?.failed).toEqual(["occasions", "places", "routes"]);
+  const status = await (
+    await testEnv.ARCHIVE.get("reference/status.json")
+  )?.json();
+  expect(status).toMatchObject({
+    ok: false,
+    consecutive_failures: 1,
+    last_success_at: null,
+  });
+  expect(await stub.publishReferenceIfDue()).toBeNull();
 });
 
 test("a replaying Fleet hands out no session token", async () => {

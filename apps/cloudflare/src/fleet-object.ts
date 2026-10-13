@@ -16,7 +16,16 @@ import {
   NtfyAlerts,
   type SubmitOutcome,
 } from "@metro/fleet";
-import { AuthClient, LiveFeedFromConfig } from "@metro/upstream";
+import {
+  type PublishReport,
+  ReferencePublisher,
+  type ReferencePublisherShape,
+} from "@metro/publisher";
+import {
+  AuthClient,
+  LiveFeedFromConfig,
+  ReferenceUpstreamFromConfig,
+} from "@metro/upstream";
 import type { Env } from "./env.js";
 import {
   alarmScheduler,
@@ -43,8 +52,10 @@ export const fleetLayer = (env: Env, state: DurableObjectState) => {
     LiveFeedFromConfig,
     AuthClient.layer,
     NtfyAlerts,
+    ReferenceUpstreamFromConfig,
   ).pipe(Layer.provideMerge(ports), Layer.provideMerge(FetchHttpClient.layer));
-  return Fleet.layer.pipe(
+  return ReferencePublisher.layer.pipe(
+    Layer.provideMerge(Fleet.layer),
     Layer.provide(services),
     Layer.provide(
       ConfigProvider.layer(ConfigProvider.fromEnvRecord(stringVars(env))),
@@ -64,10 +75,15 @@ export class FleetObject extends DurableObject<Env> {
     void state.blockConcurrencyWhile(() => this.use((fleet) => fleet.start));
   }
 
-  private use<A>(run: (fleet: FleetShape) => Effect.Effect<A>) {
+  private use<A>(
+    run: (
+      fleet: FleetShape,
+      publisher: ReferencePublisherShape,
+    ) => Effect.Effect<A>,
+  ) {
     return this.runtime.runPromise(
       Effect.gen(function* () {
-        return yield* run(yield* Fleet);
+        return yield* run(yield* Fleet, yield* ReferencePublisher);
       }),
     );
   }
@@ -86,6 +102,12 @@ export class FleetObject extends DurableObject<Env> {
 
   async submitCode(code: string): Promise<SubmitOutcome> {
     return this.use((fleet) => fleet.submitCode(code));
+  }
+
+  async publishReferenceIfDue(): Promise<PublishReport | null> {
+    return this.use((_fleet, publisher) =>
+      Effect.map(publisher.runIfDue, Option.getOrNull),
+    );
   }
 
   async sessionToken(): Promise<string | null> {

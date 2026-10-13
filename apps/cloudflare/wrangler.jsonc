@@ -4,6 +4,12 @@
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "assets": {
+    "directory": "../../web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/", "/.wal", "/api/*", "/fleet/*"],
+  },
   "durable_objects": {
     "bindings": [{ "name": "FLEET", "class_name": "FleetObject" }],
   },
@@ -15,5 +21,26 @@
     "REPLAY_DATE": "2026-10-12",
     "REPLAY_SPEED": "1",
     "FLEET_INSTANCE": "fleet",
+    "UPSTREAM": "proxy",
+    "UPSTREAM_PROXY_URL": "https://metro.manasa.ai",
+    "PUBLIC_DATA_URL": "https://data.metro.manasa.ai",
+  },
+  "env": {
+    "production": {
+      "name": "metro",
+      "workers_dev": false,
+      "routes": [{ "pattern": "metro.manasa.ai/*", "zone_name": "manasa.ai" }],
+      "durable_objects": {
+        "bindings": [{ "name": "FLEET", "class_name": "FleetObject" }],
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["FleetObject"] }],
+      "r2_buckets": [{ "binding": "ARCHIVE", "bucket_name": "metro-data" }],
+      "vars": {
+        "LIVE_FEED": "lankametro",
+        "FLEET_INSTANCE": "fleet",
+        "UPSTREAM": "lankametro",
+        "PUBLIC_DATA_URL": "https://data.metro.manasa.ai",
+      },
+    },
   },
 }

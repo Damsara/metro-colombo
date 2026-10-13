@@ -1,5 +1,6 @@
 import { Clock, Duration, Effect, Option } from "effect";
 import {
+  type EdgeCacheShape,
   type ObjectStoreShape,
   type SchedulerShape,
   SocketError,
@@ -188,3 +189,34 @@ export const makeWorkerSocket = ({
 });
 
 export const workerSocket: SocketShape = makeWorkerSocket();
+
+export const EDGE_CACHE_ORIGIN = "https://edge-cache.metro.invalid/";
+export const EDGE_CACHE_TIMEOUT_MS = 2_000;
+
+// The Cache API does nothing on *.workers.dev, so staging always misses.
+export const cacheApiEdgeCache = (): EdgeCacheShape => {
+  const url = (key: string) => `${EDGE_CACHE_ORIGIN}${encodeURIComponent(key)}`;
+  const quietly = <A>(fallback: A, run: () => Promise<A>) =>
+    Effect.tryPromise({ try: run, catch: () => "cache unavailable" }).pipe(
+      Effect.timeout(Duration.millis(EDGE_CACHE_TIMEOUT_MS)),
+      Effect.orElseSucceed(() => fallback),
+    );
+  return {
+    get: (key) =>
+      quietly(Option.none<Uint8Array>(), async () => {
+        const found = await caches.default.match(url(key));
+        return found
+          ? Option.some(new Uint8Array(await found.arrayBuffer()))
+          : Option.none<Uint8Array>();
+      }),
+    put: (key, body, ttlSeconds) =>
+      quietly(undefined, () =>
+        caches.default.put(
+          url(key),
+          new Response(new Uint8Array(body), {
+            headers: { "cache-control": `public, max-age=${ttlSeconds}` },
+          }),
+        ),
+      ),
+  };
+};
