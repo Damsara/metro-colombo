@@ -91,8 +91,8 @@ export const harness = async (
     Layer.provide(ReferenceReader.layer),
     Layer.provide(deps),
   );
-  const { handler } = HttpRouter.toWebHandler(app as never);
+  const { handler, dispose } = HttpRouter.toWebHandler(app as never);
   const get = (path: string, init?: RequestInit) =>
     handler(new Request(`https://metro.test${path}`, init));
-  return { handler, get, time, objects, upstream };
+  return { handler, dispose, get, time, objects, upstream };
 };

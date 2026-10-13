@@ -7,10 +7,12 @@ import {
   ObjectStore,
   type ObjectStoreShape,
   parseJson,
+  REFERENCE_PREFIX,
 } from "@metro/core";
 
 export const MANIFEST_TTL_MS = 60_000;
 export const FILE_TTL_SECONDS = 86_400;
+export const MANIFEST_STALE_MS = 86_400_000;
 
 export class ReferenceMissing extends Data.TaggedError("ReferenceMissing")<{
   readonly message: string;
@@ -43,7 +45,11 @@ export const makeReferenceReader = (
 ) =>
   Effect.map(Clock.Clock, (clock): ReferenceReaderShape => {
     let held:
-      | { readonly manifest: Manifest; readonly until: number }
+      | {
+          readonly manifest: Manifest;
+          readonly fetchedAt: number;
+          readonly until: number;
+        }
       | undefined;
 
     const get = (key: string) =>
@@ -59,9 +65,7 @@ export const makeReferenceReader = (
         return Option.some(stored.value.body);
       });
 
-    const manifest = Effect.gen(function* () {
-      const now = clock.currentTimeMillisUnsafe();
-      if (held && now < held.until) return held.manifest;
+    const fresh = Effect.gen(function* () {
       const found = Option.flatMap(yield* get(MANIFEST_KEY), (object) =>
         Option.flatMap(
           parseJson(decoder.decode(object.body)),
@@ -69,14 +73,49 @@ export const makeReferenceReader = (
         ),
       );
       if (Option.isNone(found)) return yield* missing("no reference manifest");
-      held = { manifest: found.value, until: now + MANIFEST_TTL_MS };
       return found.value;
+    });
+
+    const manifest = Effect.suspend(() => {
+      const now = clock.currentTimeMillisUnsafe();
+      const last = held;
+      if (last && now < last.until) return Effect.succeed(last.manifest);
+      return fresh.pipe(
+        Effect.tap((value) =>
+          Effect.sync(() => {
+            held = {
+              manifest: value,
+              fetchedAt: now,
+              until: now + MANIFEST_TTL_MS,
+            };
+          }),
+        ),
+        Effect.catch((error) =>
+          last && now < last.fetchedAt + MANIFEST_STALE_MS
+            ? Effect.as(
+                Effect.andThen(
+                  Effect.sync(() => {
+                    held = { ...last, until: now + MANIFEST_TTL_MS };
+                  }),
+                  Effect.logWarning(
+                    "reference manifest refresh failed, serving the last good one",
+                    error.message,
+                  ),
+                ),
+                last.manifest,
+              )
+            : Effect.fail(error),
+        ),
+      );
     });
 
     const file = (name: string) =>
       Effect.gen(function* () {
         const { files } = yield* manifest;
-        if (!Object.hasOwn(files, name))
+        if (
+          !Object.hasOwn(files, name) ||
+          !files[name].startsWith(REFERENCE_PREFIX)
+        )
           return yield* missing(`no reference file ${name}`);
         const body = yield* cachedBody(files[name], FILE_TTL_SECONDS);
         if (Option.isNone(body))

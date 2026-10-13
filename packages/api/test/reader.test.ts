@@ -131,3 +131,121 @@ test("an unversioned key is read directly, cached for its TTL, and none when abs
     ),
   );
 });
+
+const putText = (store: ObjectStoreShape, key: string, text: string) =>
+  Effect.runPromise(
+    store.put(key, new TextEncoder().encode(text), {
+      contentType: "application/json",
+    }),
+  );
+
+const togglingStore = () => {
+  const inner = memoryObjectStore();
+  let broken = false;
+  const store: ObjectStoreShape = {
+    ...inner,
+    get: (key) =>
+      broken
+        ? Effect.fail(new StoreError({ message: `R2 read of ${key} failed` }))
+        : inner.get(key),
+  };
+  return { store, setBroken: (value: boolean) => void (broken = value) };
+};
+
+test("a corrupt or wrong-shaped manifest is ReferenceMissing", async () => {
+  for (const text of [
+    "{",
+    JSON.stringify({ version: 2, updated_at: 0, files: {} }),
+  ]) {
+    const h = await setup(null);
+    await putText(h.spy.store, MANIFEST_KEY, text);
+    assert.equal((await h.fail(h.reader.manifest))._tag, "ReferenceMissing");
+    assert.equal(
+      (await h.fail(h.reader.file("routes")))._tag,
+      "ReferenceMissing",
+    );
+  }
+});
+
+test("a manifest entry whose file is missing from the store is ReferenceMissing", async () => {
+  const h = await setup();
+  const [key] = await h.run(h.spy.store.list("reference/routes."));
+  await h.run(h.spy.store.delete(key));
+  assert.equal(
+    (await h.fail(h.reader.file("routes")))._tag,
+    "ReferenceMissing",
+  );
+});
+
+test("a manifest entry outside the reference prefix is never served", async () => {
+  const h = await setup(null);
+  await putText(h.spy.store, "live/live.json", '{"count":1}');
+  await putText(
+    h.spy.store,
+    MANIFEST_KEY,
+    JSON.stringify({
+      version: 1,
+      updated_at: 0,
+      files: { live: "live/live.json" },
+    }),
+  );
+  assert.equal((await h.fail(h.reader.file("live")))._tag, "ReferenceMissing");
+  assert.ok(!h.spy.gets.includes("live/live.json"));
+});
+
+test("direct is none for an unreadable body and ReferenceMissing when the store fails", async () => {
+  const Live = Schema.Struct({ count: Schema.Number });
+  const h = await setup();
+  await putText(h.spy.store, "live/live.json", "{");
+  assert.ok(
+    Option.isNone(await h.run(h.reader.direct("live/live.json", Live, 5))),
+  );
+  const failing: ObjectStoreShape = {
+    ...memoryObjectStore(),
+    get: (key) =>
+      Effect.fail(new StoreError({ message: `R2 read of ${key} failed` })),
+  };
+  const broken = await setup(null, failing);
+  assert.equal(
+    (await broken.fail(broken.reader.direct("live/live.json", Live, 5)))._tag,
+    "ReferenceMissing",
+  );
+});
+
+test("a failed refresh keeps serving the last good manifest for up to a day", async () => {
+  const toggle = togglingStore();
+  const h = await setup({ routes: ROUTES_TEXT }, toggle.store);
+  const good = await h.run(h.reader.manifest);
+  h.time.advance(60_000);
+  toggle.setBroken(true);
+  assert.deepEqual(await h.run(h.reader.manifest), good);
+  toggle.setBroken(false);
+  await putText(h.spy.store, MANIFEST_KEY, "{");
+  h.time.advance(60_000);
+  assert.deepEqual(await h.run(h.reader.manifest), good);
+  await putText(
+    h.spy.store,
+    MANIFEST_KEY,
+    JSON.stringify({ version: 2, updated_at: 0, files: {} }),
+  );
+  h.time.advance(60_000);
+  assert.deepEqual(await h.run(h.reader.manifest), good);
+  await h.run(h.spy.store.delete(MANIFEST_KEY));
+  h.time.advance(60_000);
+  assert.deepEqual(await h.run(h.reader.manifest), good);
+  const reads = h.spy.gets.filter((key) => key === MANIFEST_KEY).length;
+  h.time.advance(59_999);
+  await h.run(h.reader.manifest);
+  assert.equal(h.spy.gets.filter((key) => key === MANIFEST_KEY).length, reads);
+  h.time.advance(24 * 60 * 60_000);
+  assert.equal((await h.fail(h.reader.manifest))._tag, "ReferenceMissing");
+});
+
+test("a failed refresh with no manifest held is ReferenceMissing", async () => {
+  const toggle = togglingStore();
+  const h = await setup({ routes: ROUTES_TEXT }, toggle.store);
+  toggle.setBroken(true);
+  assert.equal((await h.fail(h.reader.manifest))._tag, "ReferenceMissing");
+  toggle.setBroken(false);
+  assert.equal((await h.run(h.reader.manifest)).version, 1);
+});
