@@ -1,4 +1,4 @@
-import { Clock, Effect, Exit, Layer, Option, Schema } from "effect";
+import { Cause, Clock, Effect, Exit, Layer, Option, Schema } from "effect";
 import { HttpMiddleware, HttpRouter } from "effect/http";
 import {
   ReferenceName,
@@ -43,7 +43,14 @@ export const StatusRoutes = Layer.unwrap(
         Exit.isSuccess(exit) && isLive(exit.value)
           ? Effect.succeed(Option.some<S.LiveFeed>(exit.value))
           : Effect.andThen(
-              Effect.logWarning("live snapshot from the Fleet unavailable"),
+              Effect.logWarning(
+                "live snapshot from the Fleet unavailable",
+                Exit.isSuccess(exit)
+                  ? "invalid document"
+                  : Cause.squash(exit.cause) instanceof Error
+                    ? (Cause.squash(exit.cause) as Error).name
+                    : "failed",
+              ),
               published,
             ),
       ),
