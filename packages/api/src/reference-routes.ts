@@ -3,6 +3,7 @@ import { HttpRouter, HttpServerRequest } from "effect/http";
 import {
   colomboDay,
   directionMatches,
+  FALLBACK_OCCASIONS,
   OccasionsFile,
   PlacesFile,
   ReferenceName,
@@ -80,7 +81,19 @@ export const ReferenceRoutes = Layer.unwrap(
     });
 
     const occasions = Effect.gen(function* () {
-      const all = yield* reader.typed(ReferenceName.occasions, OccasionsFile);
+      const all = yield* reader
+        .typed(ReferenceName.occasions, OccasionsFile)
+        .pipe(
+          Effect.catch((error) =>
+            Effect.as(
+              Effect.logWarning(
+                "published occasions unavailable, using the built-in list",
+                error.message,
+              ),
+              FALLBACK_OCCASIONS,
+            ),
+          ),
+        );
       return {
         occasions: upcomingFrom(
           all,

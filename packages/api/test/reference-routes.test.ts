@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Layer } from "effect";
 import { HttpRouter } from "effect/http";
-import { upcomingFrom } from "@metro/core";
+import { colomboDay, FALLBACK_OCCASIONS, upcomingFrom } from "@metro/core";
 import { ReferenceRoutes } from "@metro/api";
 import {
   CM06,
@@ -13,6 +13,7 @@ import {
   ROUTES,
   STOPS_CM01,
   STOPS_CM06,
+  T0,
 } from "./support/fixtures.ts";
 import { harness, type HarnessOptions } from "./support/harness.ts";
 
@@ -208,4 +209,71 @@ test("a CORS preflight allows GET, as production's does", async () => {
   assert.equal(response.status, 204);
   assert.equal(response.headers.get("access-control-allow-methods"), "GET");
   assert.equal(response.headers.get("access-control-allow-origin"), "*");
+});
+
+const fallbackBody = (at: number) =>
+  JSON.stringify({
+    occasions: upcomingFrom(FALLBACK_OCCASIONS, colomboDay(at)),
+  });
+
+test("occasions fall back to the built-in list when nothing is published, as production does", async () => {
+  const empty = await site({ reference: null });
+  await expectJson(
+    await empty.get("/api/occasions"),
+    200,
+    fallbackBody(T0),
+    REFERENCE_CACHE,
+  );
+  await expectJson(
+    await empty.get("/api/routes"),
+    502,
+    UNAVAILABLE,
+    "no-store",
+  );
+});
+
+test("occasions fall back when their file is missing or unreadable", async () => {
+  const { occasions: _, ...withoutOccasions } = REFERENCE;
+  for (const reference of [
+    withoutOccasions,
+    { ...REFERENCE, occasions: "{" },
+  ]) {
+    const { get } = await site({ reference });
+    await expectJson(
+      await get("/api/occasions"),
+      200,
+      fallbackBody(T0),
+      REFERENCE_CACHE,
+    );
+  }
+});
+
+test("today is worked out on each request, not when the site starts", async () => {
+  const { get, time } = await site({ at: Date.parse("2026-10-12T18:29:59Z") });
+  assert.equal(
+    await (await get("/api/occasions")).text(),
+    JSON.stringify({
+      occasions: upcomingFrom(OCCASIONS as never, "2026-10-12"),
+    }),
+  );
+  time.advance(1_000);
+  const body = await (await get("/api/occasions")).text();
+  assert.equal(
+    body,
+    JSON.stringify({
+      occasions: upcomingFrom(OCCASIONS as never, "2026-10-13"),
+    }),
+  );
+  assert.equal(body.includes("Yesterday"), false);
+});
+
+test("a repeated direction is production's invalid query parameters", async () => {
+  const { get } = await site();
+  for (const what of ["geometry", "stops"])
+    await expectJson(
+      await get(`/api/routes/CM06/${what}?direction=a&direction=b`),
+      400,
+      '{"error":"invalid query parameters"}',
+      "no-store",
+    );
 });
