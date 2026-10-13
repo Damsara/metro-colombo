@@ -83,7 +83,7 @@ export const probes = (
       : []),
     get("site root for a browser", "/", "none", {
       headers: { "user-agent": BROWSER_AGENT },
-      skipHeaders: ["etag", "last-modified"],
+      skipHeaders: ["etag", "last-modified", "content-length"],
     }),
     get("duckdb write-ahead log", "/.wal"),
     {

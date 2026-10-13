@@ -123,6 +123,13 @@ const liveProblem = (value: unknown): string | undefined => {
     !Array.isArray(value.buses)
   )
     return "wrong types";
+  const ordered = LIVE_KEYS.filter((key) => keys.includes(key));
+  if (keys.join() !== ordered.join())
+    return `key order ${keys.join(", ")} (expected ${ordered.join(", ")})`;
+  if ((value.timestamp !== 0) !== keys.includes("age_ms"))
+    return value.timestamp === 0
+      ? "age_ms present although timestamp is zero"
+      : "age_ms missing although timestamp is not zero";
   for (const bus of value.buses) {
     if (!isRecord(bus)) return "a bus is not an object";
     const odd = Object.keys(bus).filter((key) => !BUS_KEYS.includes(key));
@@ -189,6 +196,18 @@ const bodyDifferences = (
           base: Object.keys(a).join(", "),
           candidate: Object.keys(b).join(", "),
         });
+      const misordered = (keys: string[]) =>
+        keys.join() !==
+        [
+          ...HEALTH_SHARED.filter((key) => keys.includes(key)),
+          ...keys.filter((key) => !HEALTH_SHARED.includes(key)),
+        ].join();
+      if (misordered(Object.keys(a)) || misordered(Object.keys(b)))
+        found.push({
+          what: "health key order",
+          base: Object.keys(a).join(", "),
+          candidate: Object.keys(b).join(", "),
+        });
       return found;
     }
     case "journey":
@@ -226,7 +245,19 @@ export const compare = (
         candidate: b ?? "(absent)",
       });
   }
-  if (presence(base) !== presence(candidate))
+  const lengthMatters =
+    (probe.method === "HEAD" || probe.body === "none") &&
+    !probe.skipHeaders?.includes("content-length");
+  const lengthA = base.headers["content-length"];
+  const lengthB = candidate.headers["content-length"];
+  if (lengthMatters) {
+    if (lengthA !== lengthB)
+      found.push({
+        what: "header content-length",
+        base: lengthA ?? "(absent)",
+        candidate: lengthB ?? "(absent)",
+      });
+  } else if (presence(base) !== presence(candidate))
     found.push({
       what: "content-length presence",
       base: presence(base),
