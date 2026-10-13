@@ -171,7 +171,18 @@ test("production's 400 carries its message as the detail, and a 502 its status",
     status: 502,
     json: { error: "transit data is temporarily unavailable" },
   }));
-  assert.equal((await down.fail((u) => u.routes(none))).status, 502);
+  const failure = await down.fail((u) => u.routes(none));
+  assert.equal(failure.status, 502);
+  assert.equal(failure.detail, undefined);
+});
+
+test("a 400's detail is cut to 200 characters", async () => {
+  const { fail } = setup(() => ({
+    status: 400,
+    json: { error: "x".repeat(300) },
+  }));
+  const refused = await fail((u) => u.journey(none, "a", "b", "2026-10-13"));
+  assert.equal(refused.detail, "x".repeat(200));
 });
 
 test("a body of the wrong shape is unreadable", async () => {

@@ -5,10 +5,12 @@ import { ProxyConfig } from "./config.js";
 import { checkedAs, fetchJson } from "./http-json.js";
 import { ReferenceUpstream } from "./reference.js";
 
-const proxyDetail = (body: unknown) =>
+// Production only turns a 400's message into the caller's error.
+const proxyDetail = (body: unknown, status: number) =>
+  status === 400 &&
   Predicate.isObject(body) &&
   typeof (body as { error?: unknown }).error === "string"
-    ? (body as { error: string }).error
+    ? (body as { error: string }).error.slice(0, 200)
     : undefined;
 
 const RoutesBody = Schema.Struct({ routes: RoutesFile });

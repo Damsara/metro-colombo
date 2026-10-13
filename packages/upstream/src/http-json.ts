@@ -1,10 +1,11 @@
-import { Cause, Effect, Schema } from "effect";
+import { Cause, Effect, Option, Schema } from "effect";
+import { parseJson } from "@metro/core";
 import type { HttpClient, HttpClientResponse } from "effect/http";
 import { UpstreamError } from "./reference.js";
 
 export const REFERENCE_TIMEOUT = "15 seconds";
 
-export type Detail = (body: unknown) => string | undefined;
+export type Detail = (body: unknown, status: number) => string | undefined;
 const noDetail: Detail = () => undefined;
 
 // Reading the refusal's body also drains it, which workerd needs.
@@ -13,7 +14,7 @@ const refused = (
   detail: Detail,
 ) =>
   response.json.pipe(
-    Effect.map(detail),
+    Effect.map((body) => detail(body, response.status)),
     Effect.orElseSucceed(() => undefined),
     Effect.flatMap((found) =>
       Effect.fail(
@@ -55,6 +56,9 @@ const read = <A, E>(
     ),
   );
 
+const unreadable = () =>
+  new UpstreamError({ message: "upstream reply unreadable" });
+
 export const fetchJson = (
   http: HttpClient.HttpClient,
   url: string,
@@ -63,12 +67,15 @@ export const fetchJson = (
     readonly detail?: Detail;
   } = {},
 ) =>
-  read(
-    http,
-    url,
-    options.headers ?? {},
-    options.detail ?? noDetail,
-    (r) => r.json,
+  read(http, url, options.headers ?? {}, options.detail ?? noDetail, (r) =>
+    r.text.pipe(
+      Effect.flatMap((text) =>
+        Option.match(parseJson(text), {
+          onNone: () => Effect.fail(unreadable()),
+          onSome: Effect.succeed,
+        }),
+      ),
+    ),
   );
 
 export const fetchText = (http: HttpClient.HttpClient, url: string) =>
@@ -77,17 +84,9 @@ export const fetchText = (http: HttpClient.HttpClient, url: string) =>
 export const decodeWith =
   <A>(schema: Schema.Codec<A, unknown>) =>
   (body: unknown) =>
-    Schema.decodeUnknownEffect(schema)(body).pipe(
-      Effect.mapError(
-        () => new UpstreamError({ message: "upstream reply unreadable" }),
-      ),
-    );
+    Schema.decodeUnknownEffect(schema)(body).pipe(Effect.mapError(unreadable));
 
 export const checkedAs =
   <A>(schema: Schema.Codec<A, unknown>) =>
   (body: unknown): Effect.Effect<A, UpstreamError> =>
-    Schema.is(schema)(body)
-      ? Effect.succeed(body)
-      : Effect.fail(
-          new UpstreamError({ message: "upstream reply unreadable" }),
-        );
+    Schema.is(schema)(body) ? Effect.succeed(body) : Effect.fail(unreadable());
