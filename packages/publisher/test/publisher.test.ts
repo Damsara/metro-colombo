@@ -195,6 +195,9 @@ const flaky = (inner: ObjectStoreShape) => {
 };
 
 const setup = () => {
+  let session: Option.Option<Redacted.Redacted<string>> = Option.some(
+    Redacted.make("webview-1"),
+  );
   const storage = flaky(memoryObjectStore());
   const objects = spyObjectStore(storage.store);
   const fake = fakeUpstream();
@@ -211,9 +214,14 @@ const setup = () => {
       store: objects.store,
       upstream: fake.upstream,
       book,
-      token: Effect.succeed(Option.some(Redacted.make("webview-1"))),
+      token: Effect.sync(() => session),
     }),
   );
+  const signIn = (signedIn: boolean) => {
+    session = signedIn
+      ? Option.some(Redacted.make("webview-1"))
+      : Option.none();
+  };
   const at = <A>(ms: number, effect: Effect.Effect<A>) =>
     Effect.runPromise(effect.pipe(Effect.provide(testClockAt(ms))));
   const read = async (key: string) => {
@@ -239,6 +247,7 @@ const setup = () => {
     manifest,
     file,
     putsSince,
+    signIn,
   };
 };
 
@@ -451,6 +460,26 @@ test("runIfDue runs with no status, waits 55 minutes, and doesn't wait on a stat
   assert.ok(Option.isSome(await h.at(T0 - 10 * HOUR, h.publisher.runIfDue)));
 });
 
+test("before the first login a due run waits without writing anything, and runs once signed in", async () => {
+  const h = setup();
+  h.signIn(false);
+  assert.ok(Option.isNone(await h.at(T0, h.publisher.runIfDue)));
+  assert.deepEqual(h.putsSince(0), []);
+  h.signIn(true);
+  assert.ok(Option.isSome(await h.at(T0 + 5 * MINUTE, h.publisher.runIfDue)));
+  await h.manifest();
+});
+
+test("a failed run with nothing published stays due", async () => {
+  const h = setup();
+  h.fake.failing.add("routes");
+  assert.ok(Option.isSome(await h.at(T0, h.publisher.runIfDue)));
+  h.fake.failing.delete("routes");
+  assert.ok(Option.isSome(await h.at(T0 + 5 * MINUTE, h.publisher.runIfDue)));
+  await h.manifest();
+  assert.ok(Option.isNone(await h.at(T0 + 10 * MINUTE, h.publisher.runIfDue)));
+});
+
 test("a run whose upstream never answers gives up at 5 minutes, records it and frees the lock", async () => {
   const h = setup();
   h.fake.hanging.add("routes");
@@ -479,9 +508,9 @@ test("a run whose upstream never answers gives up at 5 minutes, records it and f
     [status.ok, status.failed, status.consecutive_failures],
     [false, ["timeout"], 1],
   );
-  assert.ok(Option.isNone(await h.at(T0 + 59 * MINUTE, h.publisher.runIfDue)));
   h.fake.hanging.clear();
   assert.equal((await h.at(T0 + 6 * MINUTE, h.publisher.run)).ok, true);
+  assert.ok(Option.isNone(await h.at(T0 + 60 * MINUTE, h.publisher.runIfDue)));
   assert.ok(Option.isSome(await h.at(T0 + 61 * MINUTE, h.publisher.runIfDue)));
 });
 

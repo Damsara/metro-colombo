@@ -408,11 +408,26 @@ export const makeReferencePublisher = ({
       const status = yield* readStored(STATUS_KEY, ReferenceStatus).pipe(
         Effect.orElseSucceed(() => Option.none()),
       );
-      return Option.match(status, {
+      const elapsed = Option.match(status, {
         onNone: () => true,
         onSome: (last) =>
           now < last.checked_at || now - last.checked_at >= PUBLISH_EVERY_MS,
       });
+      if (!elapsed) {
+        const published = yield* readStored(MANIFEST_KEY, Manifest).pipe(
+          Effect.map(
+            Option.match({
+              onNone: () => false,
+              onSome: (manifest) =>
+                Object.hasOwn(manifest.files, ReferenceName.routes),
+            }),
+          ),
+          Effect.orElseSucceed(() => true),
+        );
+        if (published) return false;
+      }
+      // A run before the first login could only fail, and its status would hold off the next one for an hour.
+      return !upstream.needsLogin || Option.isSome(yield* token);
     });
 
     const shape: ReferencePublisherShape = {
