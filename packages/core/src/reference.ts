@@ -30,7 +30,10 @@ export const ReferenceStatus = Schema.Struct({
   checked_at: Schema.Number,
   ok: Schema.Boolean,
   failed: Schema.Array(Schema.String),
-  consecutive_failures: Schema.Number,
+  consecutive_failures: Schema.Number.check(
+    Schema.isInt(),
+    Schema.isGreaterThanOrEqualTo(0),
+  ),
   last_success_at: Schema.NullOr(Schema.Number),
 });
 export type ReferenceStatus = Schema.Schema.Type<typeof ReferenceStatus>;
@@ -60,7 +63,14 @@ export const versionedKey = (
   name: string,
   hash: string,
   extension: "json" | "zip",
-) => `${REFERENCE_PREFIX}${name}.${hash.slice(0, 16)}.${extension}`;
+) => {
+  if (!/^[0-9a-f]{16,}$/.test(hash)) {
+    throw new Error(
+      "versionedKey needs a lowercase hex hash of 16 or more digits",
+    );
+  }
+  return `${REFERENCE_PREFIX}${name}.${hash.slice(0, 16)}.${extension}`;
+};
 
 export const colourRoutes = <
   R extends { readonly code: string; readonly color_hex?: string },
@@ -70,7 +80,7 @@ export const colourRoutes = <
 ) =>
   routes.map((route) => ({
     ...route,
-    color_hex: colours.get(route.code) ?? route.color_hex,
+    ...(colours.has(route.code) ? { color_hex: colours.get(route.code)! } : {}),
   }));
 
 export const stopIdsByCode = (
