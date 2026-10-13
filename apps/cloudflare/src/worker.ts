@@ -13,6 +13,7 @@ import type { Env } from "./env.js";
 import { stringVars } from "./fleet-object.js";
 import { cacheApiEdgeCache, r2ObjectStore } from "./ports.js";
 
+export { Compactor } from "./compactor.js";
 export { FleetObject } from "./fleet-object.js";
 
 const fleetStub = (env: Env) => env.FLEET.get(env.FLEET.idFromName("fleet"));
@@ -78,9 +79,5 @@ export default {
   fetch(request, env) {
     site ??= makeSite(env);
     return site.handler(request);
-  },
-  async scheduled(_controller, env) {
-    const stub = fleetStub(env);
-    await Promise.all([stub.ensureRunning(), stub.publishReferenceIfDue()]);
   },
 } satisfies ExportedHandler<Env>;

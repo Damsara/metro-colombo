@@ -7,10 +7,12 @@
     "bindings": [
       { "name": "FLEET", "class_name": "FleetObject" },
       { "name": "PROBE", "class_name": "StorageProbe" },
+      { "name": "COMPACTOR", "class_name": "Compactor" },
     ],
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["FleetObject", "StorageProbe"] },
+    { "tag": "v2", "new_sqlite_classes": ["Compactor"] },
   ],
   "r2_buckets": [{ "binding": "ARCHIVE", "bucket_name": "metro-data-test" }],
   "vars": {
@@ -22,5 +24,6 @@
     "UPSTREAM": "proxy",
     "UPSTREAM_PROXY_URL": "http://127.0.0.1:9",
     "PUBLIC_DATA_URL": "http://127.0.0.1:9",
+    "ARCHIVE_ROOT": "r2://metro-data-test",
   },
 }

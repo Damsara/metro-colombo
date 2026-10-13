@@ -4,6 +4,7 @@ export type TestEnv = {
   readonly ARCHIVE: R2Bucket;
   readonly PROBE: DurableObjectNamespace;
   readonly FLEET: DurableObjectNamespace;
+  readonly COMPACTOR: DurableObjectNamespace;
   readonly OTP_SECRET: string;
 };
 

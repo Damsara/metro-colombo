@@ -10,12 +10,26 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/", "/.wal", "/api/*", "/fleet/*"],
   },
+  "containers": [
+    {
+      "class_name": "Compactor",
+      "image": "../../ops/archive/Dockerfile",
+      "image_build_context": "../../ops/archive",
+      "instance_type": "basic",
+      "max_instances": 1,
+    },
+  ],
   "durable_objects": {
-    "bindings": [{ "name": "FLEET", "class_name": "FleetObject" }],
+    "bindings": [
+      { "name": "FLEET", "class_name": "FleetObject" },
+      { "name": "COMPACTOR", "class_name": "Compactor" },
+    ],
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["FleetObject"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["FleetObject"] },
+    { "tag": "v2", "new_sqlite_classes": ["Compactor"] },
+  ],
   "r2_buckets": [{ "binding": "ARCHIVE", "bucket_name": "metro-data-staging" }],
-  "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "LIVE_FEED": "replay",
     "REPLAY_DATE": "2026-10-12",
@@ -24,6 +38,7 @@
     "UPSTREAM": "proxy",
     "UPSTREAM_PROXY_URL": "https://metro.manasa.ai",
     "PUBLIC_DATA_URL": "https://data.metro.manasa.ai",
+    "ARCHIVE_ROOT": "r2://metro-data-staging",
   },
   "env": {
     "production": {
@@ -32,16 +47,32 @@
       "preview_urls": false,
       "observability": { "enabled": true },
       "routes": [{ "pattern": "metro.manasa.ai/*", "zone_name": "manasa.ai" }],
+      "containers": [
+        {
+          "class_name": "Compactor",
+          "image": "../../ops/archive/Dockerfile",
+          "image_build_context": "../../ops/archive",
+          "instance_type": "basic",
+          "max_instances": 1,
+        },
+      ],
       "durable_objects": {
-        "bindings": [{ "name": "FLEET", "class_name": "FleetObject" }],
+        "bindings": [
+          { "name": "FLEET", "class_name": "FleetObject" },
+          { "name": "COMPACTOR", "class_name": "Compactor" },
+        ],
       },
-      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["FleetObject"] }],
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["FleetObject"] },
+        { "tag": "v2", "new_sqlite_classes": ["Compactor"] },
+      ],
       "r2_buckets": [{ "binding": "ARCHIVE", "bucket_name": "metro-data" }],
       "vars": {
         "LIVE_FEED": "lankametro",
         "FLEET_INSTANCE": "fleet",
         "UPSTREAM": "lankametro",
         "PUBLIC_DATA_URL": "https://data.metro.manasa.ai",
+        "ARCHIVE_ROOT": "r2://metro-data",
       },
     },
   },

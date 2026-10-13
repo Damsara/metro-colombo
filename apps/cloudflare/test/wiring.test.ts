@@ -1,10 +1,4 @@
-import {
-  createExecutionContext,
-  createScheduledController,
-  runDurableObjectAlarm,
-  runInDurableObject,
-  waitOnExecutionContext,
-} from "cloudflare:test";
+import { runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { expect, test } from "vitest";
 import { encodeArchiveChunk } from "@metro/core";
 import {
@@ -102,26 +96,6 @@ test("the Worker hides the Fleet's endpoints without the secret and forwards the
   expect(((await status.json()) as Status).login).toBe("not_used");
 });
 
-test("the cron puts the Fleet's alarm back if it is missing", async () => {
-  const stub = fleet();
-  await stub.status();
-  await runInDurableObject(stub, (_instance, state) =>
-    state.storage.deleteAlarm(),
-  );
-  const context = createExecutionContext();
-  await worker.scheduled(
-    createScheduledController(),
-    testEnv as never,
-    context,
-  );
-  await waitOnExecutionContext(context);
-  expect(
-    await runInDurableObject(stub, (_instance, state) =>
-      state.storage.getAlarm(),
-    ),
-  ).not.toBeNull();
-});
-
 test("the staging Worker writes only to the staging bucket, on workers.dev, replaying, with no seed token", () => {
   // JSONC allows trailing commas, which JSON.parse rejects.
   const config = JSON.parse(stagingConfig.replace(/,(\s*[}\]])/g, "$1"));
@@ -137,6 +111,7 @@ test("the staging Worker writes only to the staging bucket, on workers.dev, repl
   expect(config.vars.UPSTREAM).toBe("proxy");
   expect(config.vars.UPSTREAM_PROXY_URL).toBe("https://metro.manasa.ai");
   expect(config.vars.PUBLIC_DATA_URL).toBe("https://data.metro.manasa.ai");
+  expect(config.vars.ARCHIVE_ROOT).toBe("r2://metro-data-staging");
   expect(config.assets).toEqual({
     directory: "../../web/dist",
     binding: "ASSETS",
@@ -163,8 +138,34 @@ test("the production env is metro on metro.manasa.ai, recording live data into m
     FLEET_INSTANCE: "fleet",
     UPSTREAM: "lankametro",
     PUBLIC_DATA_URL: "https://data.metro.manasa.ai",
+    ARCHIVE_ROOT: "r2://metro-data",
   });
   expect(JSON.stringify(production)).not.toMatch(/staging/);
+});
+
+test("both envs run the compactor image in one basic container, with no cron trigger", () => {
+  const config = JSON.parse(stagingConfig.replace(/,(\s*[}\]])/g, "$1"));
+  const production = config.env.production;
+  expect(config.containers).toEqual([
+    {
+      class_name: "Compactor",
+      image: "../../ops/archive/Dockerfile",
+      image_build_context: "../../ops/archive",
+      instance_type: "basic",
+      max_instances: 1,
+    },
+  ]);
+  expect(production.containers).toEqual(config.containers);
+  expect(config.durable_objects.bindings).toContainEqual({
+    name: "COMPACTOR",
+    class_name: "Compactor",
+  });
+  expect(config.migrations).toEqual([
+    { tag: "v1", new_sqlite_classes: ["FleetObject"] },
+    { tag: "v2", new_sqlite_classes: ["Compactor"] },
+  ]);
+  expect(config.triggers).toBeUndefined();
+  expect(production.triggers).toBeUndefined();
 });
 
 test("the Fleet's publisher records a failed run and tries again while no routes are published", async () => {
@@ -184,7 +185,7 @@ test("the Fleet's publisher records a failed run and tries again while no routes
   expect((await stub.publishReferenceIfDue())?.ok).toBe(false);
 });
 
-test("the Fleet's alarm runs the publisher without waiting for the cron", async () => {
+test("the Fleet's alarm runs the publisher", async () => {
   await emptyArchive();
   const stub = fleet();
   await stub.ensureRunning();
