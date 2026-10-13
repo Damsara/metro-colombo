@@ -39,3 +39,4 @@ export { COLOMBO_UTC_OFFSET_MS, optional } from "./archive/rows.js";
 export { encodeVehiclePositions } from "./gtfs/realtime.js";
 export { parseJson } from "./json.js";
 export * from "./reference.js";
+export { crc32, zip, type ZipEntry } from "./zip.js";
