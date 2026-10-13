@@ -12,6 +12,7 @@ import type { AlertBookShape } from "./alerts.js";
 export const RENEW_MARGIN_MS = 2 * 60_000;
 export const CODE_EVERY_MS = 10 * 60_000;
 const REFRESH_TIMEOUT = "15 seconds";
+export const REFRESH_BACKOFF_MS = 60_000;
 
 export type LoginStatus = "ok" | "login_needed" | "upstream_error";
 
@@ -75,6 +76,7 @@ export const makeSession = (alerts: AlertBookShape) =>
     let lastError: "upstream_error" | undefined;
     let sessionUnsaved = false;
     let loginUncleared = false;
+    let refreshBackoffUntil = 0;
 
     // Every change to memory happens after the load, so a load that finds loaded set never overwrites newer state.
     const load = loadLock.withPermits(1)(
@@ -210,6 +212,7 @@ export const makeSession = (alerts: AlertBookShape) =>
         Effect.flatMap((webview) =>
           Effect.gen(function* () {
             const now = yield* Clock.currentTimeMillis;
+            refreshBackoffUntil = 0;
             yield* keepSession({
               refreshToken,
               webviewToken: webview.token,
@@ -230,7 +233,7 @@ export const makeSession = (alerts: AlertBookShape) =>
     const refresh = semaphore.withPermits(1)(
       Effect.gen(function* () {
         const now = yield* Clock.currentTimeMillis;
-        if (login || fresh(now)) return;
+        if (login || fresh(now) || now < refreshBackoffUntil) return;
         const current = session;
         if (!current?.refreshToken) return yield* needLogin("no refresh token");
         // Once upstream has answered, the old token is spent, so nothing may interrupt before the new one is saved.
@@ -269,7 +272,11 @@ export const makeSession = (alerts: AlertBookShape) =>
                 )
               : Effect.as(
                   Effect.andThen(
-                    Effect.sync(() => void (lastError = "upstream_error")),
+                    Effect.gen(function* () {
+                      refreshBackoffUntil =
+                        (yield* Clock.currentTimeMillis) + REFRESH_BACKOFF_MS;
+                      lastError = "upstream_error";
+                    }),
                     Effect.logWarning("refresh failed", error.message),
                   ),
                   Option.none(),
@@ -329,6 +336,7 @@ export const makeSession = (alerts: AlertBookShape) =>
                 _tag: "CodeRejected",
                 message: verified.message,
               } satisfies SubmitOutcome;
+            refreshBackoffUntil = 0;
             yield* keepSession({
               refreshToken: verified.pair.refreshToken,
               webviewToken: "",

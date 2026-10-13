@@ -124,10 +124,12 @@ test("an upstream outage is not mistaken for a dead token", async () => {
   const { upstream, alerts, run } = setup({ session: expired });
   upstream.settings.refreshStatus = 503;
   const status = await run((session) =>
-    Effect.andThen(
-      Effect.andThen(session.token, session.token),
-      session.status,
-    ),
+    Effect.gen(function* () {
+      yield* session.token;
+      yield* TestClock.adjust(MINUTE);
+      yield* session.token;
+      return yield* session.status;
+    }),
   );
   assert.equal(status, "upstream_error");
   assert.deepEqual(upstream.calls.refresh, ["stored", "stored"]);
@@ -668,7 +670,7 @@ test("logs never carry tokens, codes, references or the phone number", async () 
     );
 });
 
-test("a hung refresh times out after 15 seconds as an outage and lets a waiting caller through", async () => {
+test("a hung refresh times out after 15 seconds as an outage, and a waiting caller waits out the backoff", async () => {
   const { upstream, alerts, backing, run } = setup({ session: expired });
   upstream.settings.refreshHangs = true;
   const settle = Effect.forEach(
@@ -684,17 +686,20 @@ test("a hung refresh times out after 15 seconds as an outage and lets a waiting 
       yield* settle;
       upstream.settings.refreshHangs = false;
       yield* TestClock.adjust("15 seconds");
-      return {
+      const outcome = {
         hung: tokenText(yield* Fiber.join(hung)),
         waiting: tokenText(yield* Fiber.join(waiting)),
         status: yield* session.status,
       };
+      yield* TestClock.adjust("60 seconds");
+      return { ...outcome, later: tokenText(yield* session.token) };
     }),
   );
   assert.deepEqual(result, {
     hung: undefined,
-    waiting: "webview-1",
-    status: "ok",
+    waiting: undefined,
+    status: "upstream_error",
+    later: "webview-1",
   });
   assert.deepEqual(upstream.calls.refresh, ["stored", "stored"]);
   assert.deepEqual(upstream.calls.checkPhone, []);
@@ -767,4 +772,51 @@ test("a hung verify-otp is rejected after 15 seconds and frees the lock for a wa
   assert.equal(result.token, undefined);
   assert.equal(upstream.calls.verify, 1);
   assert.equal(backing.has("login"), true);
+});
+
+test("after a failed refresh, reads within a minute don't refresh again", async () => {
+  const { upstream, run } = setup({ session: expired });
+  upstream.settings.refreshStatus = 503;
+  const tokens = await run((session) =>
+    Effect.gen(function* () {
+      const first = yield* session.token;
+      yield* TestClock.adjust("1 second");
+      const second = yield* session.token;
+      return [first, second];
+    }),
+  );
+  assert.deepEqual(tokens.map(tokenText), [undefined, undefined]);
+  assert.deepEqual(upstream.calls.refresh, ["stored"]);
+});
+
+test("a read after the minute tries the refresh again", async () => {
+  const { upstream, run } = setup({ session: expired });
+  upstream.settings.refreshStatus = 503;
+  const tokens = await run((session) =>
+    Effect.gen(function* () {
+      yield* session.token;
+      yield* TestClock.adjust(59 * 1000);
+      yield* session.token;
+      upstream.settings.refreshStatus = 200;
+      yield* TestClock.adjust(1000);
+      return yield* session.token;
+    }),
+  );
+  assert.equal(tokenText(tokens), "webview-1");
+  assert.deepEqual(upstream.calls.refresh, ["stored", "stored"]);
+});
+
+test("during the backoff an unexpired webview token is still handed out", async () => {
+  const nearEnd = { ...expired, expiresAt: T0 + MINUTE, webviewToken: "old" };
+  const { upstream, run } = setup({ session: nearEnd });
+  upstream.settings.refreshStatus = 503;
+  const tokens = await run((session) =>
+    Effect.gen(function* () {
+      const first = yield* session.token;
+      yield* TestClock.adjust("10 seconds");
+      return [first, yield* session.token];
+    }),
+  );
+  assert.deepEqual(tokens.map(tokenText), ["old", "old"]);
+  assert.deepEqual(upstream.calls.refresh, ["stored"]);
 });
