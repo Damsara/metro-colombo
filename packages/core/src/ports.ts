@@ -94,3 +94,16 @@ export type AlertsShape = {
 export class Alerts extends Context.Service<Alerts, AlertsShape>()(
   "metro/Alerts",
 ) {}
+
+export type EdgeCacheShape = {
+  readonly get: (key: string) => Effect.Effect<Option.Option<Uint8Array>>;
+  readonly put: (
+    key: string,
+    body: Uint8Array,
+    ttlSeconds: number,
+  ) => Effect.Effect<void>;
+};
+
+export class EdgeCache extends Context.Service<EdgeCache, EdgeCacheShape>()(
+  "metro/EdgeCache",
+) {}

@@ -49,3 +49,4 @@ export {
   lineCoordinates,
   staticGtfsFiles,
 } from "./gtfs/static.js";
+export { makeMemoryEdgeCache } from "./edge-cache.js";

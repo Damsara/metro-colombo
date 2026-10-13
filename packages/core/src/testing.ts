@@ -1,4 +1,4 @@
-import { Clock, Effect, Layer, Option } from "effect";
+import { Clock, Duration, Effect, Layer, Option } from "effect";
 import { HttpClient, HttpClientResponse } from "effect/http";
 import { TestClock } from "effect/testing";
 import {
@@ -215,3 +215,28 @@ export const testClockAt = (ms: number) =>
 export const settle = Effect.promise(
   () => new Promise<void>((resolve) => setTimeout(resolve, 5)),
 );
+
+export const manualClock = (start: number) => {
+  let now = start;
+  const nanos = () => BigInt(now) * 1_000_000n;
+  const clock: Clock.Clock = {
+    currentTimeMillisUnsafe: () => now,
+    currentTimeMillis: Effect.sync(() => now),
+    currentTimeNanosUnsafe: nanos,
+    currentTimeNanos: Effect.sync(nanos),
+    monotonicTimeNanosUnsafe: nanos,
+    monotonicTimeNanos: Effect.sync(nanos),
+    sleep: (duration) =>
+      Effect.promise(
+        () =>
+          new Promise<void>((resolve) =>
+            setTimeout(resolve, Duration.toMillis(duration)),
+          ),
+      ),
+  };
+  return {
+    clock,
+    layer: Layer.succeed(Clock.Clock, clock),
+    advance: (ms: number) => void (now += ms),
+  };
+};
