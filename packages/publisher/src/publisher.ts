@@ -40,6 +40,8 @@ export const PUBLISH_EVERY_MS = 55 * 60_000;
 export const RUN_TIMEOUT_MS = 5 * 60_000;
 export const ALERT_AFTER_FAILURES = 3;
 const FETCH_CONCURRENCY = 4;
+const RAW_ROUTES = "raw/reference/routes.json";
+const RAW_STOPS = "raw/reference/stops.json";
 
 export type PublishReport = {
   readonly ok: boolean;
@@ -132,7 +134,8 @@ const fetchAll = (
     if (Option.isSome(places)) add(ReferenceName.places, places.value);
     if (Option.isSome(occasions)) add(ReferenceName.occasions, occasions.value);
     const routes = Option.map(fetched, (list) => keepColours(list, colours));
-    if (Option.isNone(routes)) return { built, failed, routes };
+    if (Option.isNone(routes))
+      return { built, failed, routes, raw: Option.none<Built[]>() };
     add(ReferenceName.routes, routes.value);
 
     const directions = routes.value.flatMap((route, routeIndex) =>
@@ -167,6 +170,22 @@ const fetchAll = (
         }),
       { concurrency: FETCH_CONCURRENCY },
     );
+
+    const allStops = Option.all(fetchedDirections.map((entry) => entry.stops));
+    const raw = Option.map(allStops, (lists): Built[] => [
+      { name: RAW_ROUTES, body: encode(routes.value), zip: false },
+      {
+        name: RAW_STOPS,
+        body: encode(
+          directions.map(({ route, direction }, at) => ({
+            route_code: route.code,
+            direction_id: direction.id,
+            stops: lists[at],
+          })),
+        ),
+        zip: false,
+      },
+    ]);
 
     const perRoute = routes.value.map((route, routeIndex) => {
       const own = fetchedDirections.filter(
@@ -222,7 +241,7 @@ const fetchAll = (
           zip: true,
         });
     }
-    return { built, failed, routes };
+    return { built, failed, routes, raw };
   });
 
 const failingAlert = (count: number, failed: ReadonlyArray<string>) => ({
@@ -310,7 +329,7 @@ export const makeReferencePublisher = ({
           route.color_hex === undefined ? [] : [[route.code, route.color_hex]],
         ),
       );
-      const { built, failed, routes } = yield* fetchAll(
+      const { built, failed, routes, raw } = yield* fetchAll(
         upstream,
         yield* token,
         colours,
@@ -358,6 +377,16 @@ export const makeReferencePublisher = ({
         }
         files[item.name] = key;
       }
+
+      if (Option.isSome(raw))
+        for (const item of raw.value)
+          yield* store
+            .put(item.name, item.body, { contentType: "application/json" })
+            .pipe(
+              Effect.catch((error) =>
+                Effect.logWarning("raw reference not written", error.message),
+              ),
+            );
 
       const next = byName(files);
       if (JSON.stringify(next) !== JSON.stringify(byName(before))) {

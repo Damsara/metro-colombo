@@ -321,12 +321,16 @@ test("the files hold what production serves", async () => {
   assert.deepEqual([...archive.subarray(0, 4)], [0x50, 0x4b, 0x03, 0x04]);
 });
 
-test("an unchanged run rewrites only the status", async () => {
+test("an unchanged run rewrites only the raw reference files and the status", async () => {
   const h = setup();
   await h.at(T0, h.publisher.run);
   const before = h.objects.puts.length;
   await h.at(T0 + HOUR, h.publisher.run);
-  assert.deepEqual(h.putsSince(before), [STATUS_KEY]);
+  assert.deepEqual(h.putsSince(before), [
+    "raw/reference/routes.json",
+    "raw/reference/stops.json",
+    STATUS_KEY,
+  ]);
 });
 
 test("a changed stop list writes that route's stops, the stop ids, the archive and the manifest", async () => {
@@ -342,6 +346,8 @@ test("a changed stop list writes that route's stops, the stop ids, the archive a
       manifest.files["gtfs/static"],
       manifest.files["stop-ids"],
       manifest.files["stops/CM01"],
+      "raw/reference/routes.json",
+      "raw/reference/stops.json",
       MANIFEST_KEY,
       STATUS_KEY,
     ].sort(),
@@ -533,6 +539,8 @@ test("a route without a colour keeps the colour published before, in the same pl
     [
       manifest.files.routes,
       manifest.files["gtfs/static"],
+      "raw/reference/routes.json",
+      "raw/reference/stops.json",
       MANIFEST_KEY,
       STATUS_KEY,
     ].sort(),
@@ -666,4 +674,68 @@ test("a run where one file changes and another fetch fails publishes the new key
     },
   ]);
   assert.deepEqual(await h.file("places"), [PLACE]);
+});
+
+test("a full run writes the compactor's raw reference files before the manifest", async () => {
+  const h = setup();
+  await h.at(T0, h.publisher.run);
+  const order = h.putsSince(0);
+  assert.ok(
+    order.indexOf("raw/reference/routes.json") < order.indexOf(MANIFEST_KEY),
+  );
+  assert.ok(
+    order.indexOf("raw/reference/stops.json") < order.indexOf(MANIFEST_KEY),
+  );
+  const routes = await h.read("raw/reference/routes.json");
+  assert.equal(routes.contentType, "application/json");
+  assert.equal(
+    new TextDecoder().decode(routes.body),
+    JSON.stringify([CM06, CM01]),
+  );
+  const stops = await h.read("raw/reference/stops.json");
+  assert.equal(stops.contentType, "application/json");
+  assert.equal(
+    new TextDecoder().decode(stops.body),
+    JSON.stringify([
+      { route_code: "CM06", direction_id: "d1", stops: h.fake.data.stops.d1 },
+      { route_code: "CM06", direction_id: "d2", stops: h.fake.data.stops.d2 },
+      { route_code: "CM01", direction_id: "c1", stops: h.fake.data.stops.c1 },
+    ]),
+  );
+});
+
+test("a run with one failed direction leaves the raw reference files as they were", async () => {
+  const h = setup();
+  await h.at(T0, h.publisher.run);
+  const before = await h.read("raw/reference/stops.json");
+  h.fake.data.stops = { ...h.fake.data.stops, d1: [stop("s1", "KCR100")] };
+  h.fake.failing.add("stops/CM06/d2");
+  const puts = h.objects.puts.length;
+  await h.at(T0 + HOUR, h.publisher.run);
+  assert.equal(
+    h.putsSince(puts).some((key) => key.startsWith("raw/")),
+    false,
+  );
+  assert.deepEqual(
+    (await h.read("raw/reference/stops.json")).body,
+    before.body,
+  );
+});
+
+test("a failed route list writes no raw reference files", async () => {
+  const h = setup();
+  h.fake.failing.add("routes");
+  await h.at(T0, h.publisher.run);
+  assert.equal(
+    h.putsSince(0).some((key) => key.startsWith("raw/")),
+    false,
+  );
+});
+
+test("raw reference files that can't be written don't stop the manifest", async () => {
+  const h = setup();
+  h.storage.refuseWhen((key) => key.startsWith("raw/"));
+  const report = await h.at(T0, h.publisher.run);
+  assert.equal(report.ok, true);
+  assert.ok(report.written.includes(MANIFEST_KEY));
 });
