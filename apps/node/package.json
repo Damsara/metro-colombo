@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "tsx --env-file-if-exists=.env src/main.ts",
-    "replay:prepare": "tsx src/replay-prepare.ts"
+    "replay:prepare": "tsx src/replay-prepare.ts",
+    "compat:diff": "tsx src/compat-diff.ts"
   },
   "dependencies": {
     "@effect/platform-node": "4.0.1",
