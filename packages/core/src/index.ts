@@ -40,3 +40,12 @@ export { encodeVehiclePositions } from "./gtfs/realtime.js";
 export { parseJson } from "./json.js";
 export * from "./reference.js";
 export { crc32, zip, type ZipEntry } from "./zip.js";
+export {
+  buildStaticGtfs,
+  csv,
+  GTFS_AGENCY,
+  type GtfsInput,
+  type GtfsPath,
+  lineCoordinates,
+  staticGtfsFiles,
+} from "./gtfs/static.js";
