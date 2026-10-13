@@ -57,6 +57,14 @@ test("an entry name over 65535 UTF-8 bytes is refused", async () => {
   );
 });
 
+test("a name's UTF-8 length counts, not its string length", async () => {
+  const name = "\u0d9a".repeat(21846);
+  assert.equal(name.length, 21846);
+  await assert.rejects(zip([{ name, bytes: new Uint8Array() }]), {
+    message: "zip: entry name too long",
+  });
+});
+
 test("duplicate entry names are refused", async () => {
   const entry = { name: "a.txt", bytes: utf8.encode("x") };
   await assert.rejects(zip([entry, entry]), {
@@ -75,11 +83,18 @@ test("a raw size at the limit is refused", async () => {
 });
 
 test("a compressed size at the limit is refused", async () => {
-  const bytes = utf8.encode("x".repeat(8));
-  const compressed = new DataView(
-    (await zip([{ name: "a", bytes }])).buffer,
-  ).getUint32(18, true);
-  await assert.rejects(zip([{ name: "a", bytes }], compressed), tooBig);
+  const entry = { name: "a", bytes: new Uint8Array() };
+  const compressed = new DataView((await zip([entry])).buffer).getUint32(
+    18,
+    true,
+  );
+  assert.equal(compressed, 2);
+  await assert.rejects(zip([entry], compressed), tooBig);
+});
+
+test("a limit above 2^32 is clamped", async () => {
+  const entry = { name: "a", bytes: utf8.encode("x") };
+  assert.deepEqual(await zip([entry], 2 ** 40), await zip([entry]));
 });
 
 test("a running offset at the limit is refused", async () => {

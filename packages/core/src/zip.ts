@@ -51,8 +51,9 @@ const guard = (value: number, limit: number) => {
 
 export const zip = async (
   entries: ReadonlyArray<ZipEntry>,
-  limit = ZIP32_LIMIT,
+  requested = ZIP32_LIMIT,
 ) => {
+  const limit = Math.min(requested, ZIP32_LIMIT);
   if (entries.length > MAX_16) throw new Error("zip: more than 65535 entries");
   const utf8 = new TextEncoder();
   const seen = new Set<string>();
