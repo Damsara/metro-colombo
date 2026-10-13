@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { Effect, Option, Redacted } from "effect";
+import { Effect, Logger, Layer, Option, Redacted } from "effect";
 import { JourneyRoutes } from "@metro/api";
 import { UpstreamError } from "@metro/upstream";
 import { harness, type HarnessOptions } from "./support/harness.ts";
@@ -21,12 +21,16 @@ const q = (from: string, to: string, date?: string) =>
   `/api/journey?${new URLSearchParams({ from, to, ...(date ? { date } : {}) })}`;
 
 const journeySite = async (
-  options: HarnessOptions & { needsLogin?: boolean; fail?: UpstreamError } = {},
+  options: HarnessOptions & {
+    needsLogin?: boolean;
+    fail?: UpstreamError;
+    routes?: Layer.Layer<never, unknown, unknown>;
+  } = {},
 ) => {
   const calls: Array<[string, string, string]> = [];
   const tokens: Array<string | undefined> = [];
   let tokenCalls = 0;
-  const h = await harness(JourneyRoutes, {
+  const h = await harness(options.routes ?? JourneyRoutes, {
     ...options,
     upstream: {
       needsLogin: options.needsLogin ?? false,
@@ -47,6 +51,11 @@ const journeySite = async (
     },
   });
   return { ...h, calls, tokens, tokenCalls: () => tokenCalls };
+};
+
+const sleepersAppear = async (time: { pending: () => number }) => {
+  while (time.pending() === 0)
+    await new Promise((resolve) => setTimeout(resolve, 1));
 };
 
 const expectError = async (
@@ -160,8 +169,13 @@ test("an upstream 400 with a message is passed on, and any other failure is 502"
   );
 });
 
-test("with a login the Fleet's token is used and never shown; without one it isn't asked for", async () => {
+test("with a login the Fleet's token is used and never shown or logged; without one it isn't asked for", async () => {
+  const lines: string[] = [];
+  const logs = Logger.layer([
+    Logger.make(({ message }) => void lines.push(JSON.stringify(message))),
+  ]);
   const authed = await journeySite({
+    routes: Layer.merge(JourneyRoutes, logs),
     needsLogin: true,
     fail: new UpstreamError({
       message: "upstream answered HTTP 401",
@@ -171,6 +185,8 @@ test("with a login the Fleet's token is used and never shown; without one it isn
   const response = await authed.get(q("KCR100", "KCR101"));
   assert.doesNotMatch(await response.text(), new RegExp(SECRET));
   assert.deepEqual(authed.tokens, [SECRET]);
+  assert.notEqual(lines.length, 0);
+  assert.equal(lines.filter((line) => line.includes(SECRET)).length, 0);
   const open = await journeySite();
   await open.get(q("KCR100", "KCR101"));
   assert.equal(open.tokenCalls(), 0);
@@ -191,10 +207,67 @@ test("a token that never answers is given up on after 3 seconds and the plan goe
     client: { token: Effect.never },
   });
   const pending = h.get(q("KCR100", "KCR101"));
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await sleepersAppear(h.time);
   assert.deepEqual(calls, []);
   h.time.advance(3_000);
   const response = await pending;
   assert.equal(response.status, 200);
   assert.deepEqual(calls, [undefined]);
+});
+
+test("a slow token read is abandoned after 3 seconds but never interrupted", async () => {
+  let started = 0;
+  let finished = 0;
+  let interrupted = 0;
+  let release!: () => void;
+  const done = new Promise<void>((resolve) => (release = resolve));
+  const tokens: Array<string | undefined> = [];
+  const h = await harness(JourneyRoutes, {
+    upstream: {
+      needsLogin: true,
+      journey: (token, _from, _to, date) =>
+        Effect.sync(() => {
+          tokens.push(Option.getOrUndefined(Option.map(token, Redacted.value)));
+          return { ...PLAN, date };
+        }),
+    },
+    client: {
+      token: Effect.gen(function* () {
+        started++;
+        yield* Effect.promise(() => done);
+        finished++;
+        return Option.some(Redacted.make(SECRET));
+      }).pipe(Effect.onInterrupt(() => Effect.sync(() => void interrupted++))),
+    },
+  });
+  const pending = h.get(q("KCR100", "KCR101"));
+  await sleepersAppear(h.time);
+  h.time.advance(3_000);
+  const response = await pending;
+  assert.equal(response.status, 200);
+  assert.deepEqual(tokens, [undefined]);
+  release();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.deepEqual([started, finished, interrupted], [1, 1, 0]);
+});
+
+test("a stop list that can't be read is the fixed 502, not cached", async () => {
+  const h = await journeySite({ reference: null });
+  await expectError(
+    await h.get(q("KCR100", "KCR101")),
+    502,
+    '{"error":"transit data is temporarily unavailable"}',
+  );
+});
+
+test("a stop code the list maps to an empty id is unknown", async () => {
+  const h = await journeySite({
+    reference: { "stop-ids": { KCR100: "", KCR101: "s2" } },
+  });
+  await expectError(
+    await h.get(q("KCR100", "KCR101")),
+    400,
+    '{"error":"unknown stop: KCR100"}',
+  );
+  assert.equal(h.calls.length, 0);
 });

@@ -1,4 +1,4 @@
-import { Clock, Effect, Layer, Option, Schema } from "effect";
+import { Clock, Effect, Fiber, Layer, Option, Schema } from "effect";
 import { HttpRouter, HttpServerRequest } from "effect/http";
 import {
   colomboDay,
@@ -32,8 +32,11 @@ export const JourneyRoutes = Layer.unwrap(
     const clock = yield* Clock.Clock;
     const token = upstream.needsLogin
       ? client.token.pipe(
+          Effect.forkDetach,
+          Effect.flatMap(Fiber.join),
           Effect.timeoutOption(TOKEN_TIMEOUT),
           Effect.map(Option.flatten),
+          Effect.provideService(Clock.Clock, clock),
         )
       : Effect.succeed(Option.none());
     const utf8 = new TextEncoder();
@@ -46,7 +49,7 @@ export const JourneyRoutes = Layer.unwrap(
       isStopUuid(ref)
         ? Effect.succeed(ref)
         : Effect.flatMap(ids, (known) =>
-            Object.hasOwn(known, ref)
+            Object.hasOwn(known, ref) && known[ref]
               ? Effect.succeed(known[ref])
               : Effect.fail(
                   new BadRequest({ message: `unknown stop: ${ref}` }),
