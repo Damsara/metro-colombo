@@ -7,7 +7,12 @@ import {
   type FakeReply,
   type FakeRequest,
 } from "@metro/core/testing";
-import { CatalogRoutes, makeCatalogRoutes, UiIndex } from "@metro/api";
+import {
+  CatalogRoutes,
+  makeCatalogRoutes,
+  UI_TIMEOUT_MS,
+  UiIndex,
+} from "@metro/api";
 import { harness, type HarnessOptions } from "./support/harness.ts";
 
 const DUCKDB = "duckdb/v1.5.6(osx_arm64)";
@@ -113,17 +118,71 @@ test("a failing origin is tried once more, then the archive is 502", async () =>
   assert.equal(recovered.status, 200);
 });
 
-test("an origin that never answers gives up rather than holding the request", async () => {
-  const silent = HttpClient.make(() => Effect.never);
-  const { get, time } = await site(silent, {}, makeCatalogRoutes(50));
-  const pending = get("/", { headers: { "user-agent": DUCKDB } });
-  for (let attempt = 0; attempt < 2; attempt++) {
-    while (time.pending() === 0)
+test(
+  "an origin that never answers gives up rather than holding the request",
+  { timeout: 2_000 },
+  async () => {
+    const attempts: string[] = [];
+    const silent = HttpClient.make(() => {
+      attempts.push("attempt");
+      return Effect.never;
+    });
+    const { get, time } = await site(silent, {}, makeCatalogRoutes(50));
+    const pending = get("/", { headers: { "user-agent": DUCKDB } });
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      for (let tries = 0; attempts.length < attempt && tries < 500; tries++)
+        await new Promise((resolve) => setTimeout(resolve, 1));
+      assert.equal(attempts.length, attempt);
       await new Promise((resolve) => setTimeout(resolve, 1));
-    time.advance(50);
-  }
-  const response = await pending;
+      time.advance(50);
+    }
+    const response = await pending;
+    assert.equal(response.status, 502);
+    assert.equal(attempts.length, 2);
+  },
+);
+
+test("a missing app index keeps its own status and cache-control", async () => {
+  const { get } = await site(origin().client, {
+    ui: UiIndex.of({
+      response: Effect.succeed(
+        HttpServerResponse.text("missing", {
+          status: 404,
+          headers: { "cache-control": "no-store" },
+        }),
+      ),
+    }),
+  });
+  const response = await get("/", { headers: { "user-agent": "Mozilla/5.0" } });
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+});
+
+test(
+  "an app index that hangs is a 502 after its limit",
+  { timeout: 2_000 },
+  async () => {
+    const { get, time } = await site(origin().client, {
+      ui: UiIndex.of({ response: Effect.never }),
+    });
+    const pending = get("/", { headers: { "user-agent": "Mozilla/5.0" } });
+    for (let tries = 0; time.pending() === 0 && tries < 500; tries++)
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    time.advance(UI_TIMEOUT_MS);
+    const response = await pending;
+    assert.equal(response.status, 502);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+  },
+);
+
+test("an app index that throws is a 502", async () => {
+  const { get } = await site(origin().client, {
+    ui: UiIndex.of({ response: Effect.die(new Error("index exploded")) }),
+  });
+  const response = await get("/", { headers: { "user-agent": "Mozilla/5.0" } });
   assert.equal(response.status, 502);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.doesNotMatch(await response.text(), /exploded/);
 });
 
 test("a browser gets the app, never cached by a shared cache", async () => {

@@ -1,4 +1,4 @@
-import { Clock, Data, Effect, Layer } from "effect";
+import { Cause, Clock, Data, Effect, Layer } from "effect";
 import {
   HttpClient,
   HttpClientRequest,
@@ -11,6 +11,7 @@ import { UiIndex } from "./ui.js";
 
 export const CATALOG_PATH = "catalog/metro.duckdb";
 export const CATALOG_TIMEOUT_MS = 20_000;
+export const UI_TIMEOUT_MS = 10_000;
 
 const PASSED_THROUGH = [
   "content-length",
@@ -25,6 +26,12 @@ export const isDuckDbAgent = (userAgent: string | undefined) =>
 class CatalogUnavailable extends Data.TaggedError("CatalogUnavailable")<{
   readonly status: number;
 }> {}
+
+const appUnavailable = () =>
+  HttpServerResponse.text("The app is unavailable right now.", {
+    status: 502,
+    headers: { "cache-control": "no-store" },
+  });
 
 const unavailable = () =>
   HttpServerResponse.text("The fleet archive is unavailable right now.", {
@@ -67,13 +74,29 @@ export const makeCatalogRoutes = (timeoutMs = CATALOG_TIMEOUT_MS) =>
             Effect.provideService(Clock.Clock, clock),
           );
 
+      const browser = ui.response.pipe(
+        Effect.timeout(UI_TIMEOUT_MS),
+        Effect.provideService(Clock.Clock, clock),
+        Effect.map((response) =>
+          response.status >= 200 && response.status < 300
+            ? HttpServerResponse.setHeaders(response, {
+                "cache-control": "no-cache",
+                vary: "User-Agent",
+              })
+            : response,
+        ),
+        Effect.catchCause((cause) =>
+          Effect.as(
+            Effect.logWarning("app index unavailable", Cause.squash(cause)),
+            appUnavailable(),
+          ),
+        ),
+      );
+
       const root = Effect.gen(function* () {
         const request = yield* HttpServerRequest.HttpServerRequest;
         if (!isDuckDbAgent(request.headers["user-agent"]))
-          return HttpServerResponse.setHeaders(yield* ui.response, {
-            "cache-control": "no-cache",
-            vary: "User-Agent",
-          });
+          return yield* browser;
         const method = request.method === "HEAD" ? "HEAD" : "GET";
         const forwarded: Record<string, string> = {};
         for (const name of ["range", "if-none-match"] as const) {
@@ -84,6 +107,7 @@ export const makeCatalogRoutes = (timeoutMs = CATALOG_TIMEOUT_MS) =>
           Effect.map((response) => {
             const headers: Record<string, string> = {
               "accept-ranges": "bytes",
+              // The root answers browsers and DuckDB differently, so a shared cache must not keep it.
               "cache-control": "private, max-age=300",
               vary: "User-Agent",
             };

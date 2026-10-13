@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Effect } from "effect";
 import { STATUS_KEY, StoreError } from "@metro/core";
-import { StatusRoutes } from "@metro/api";
+import { StatusRoutes, UNAVAILABLE } from "@metro/api";
 import { LIVE_JSON_KEY as LIVE_KEY } from "@metro/fleet";
 import { T0 } from "./support/fixtures.ts";
 import { harness, type HarnessOptions } from "./support/harness.ts";
@@ -120,6 +120,9 @@ test("a store that can't be read makes /api/live 502", async () => {
   const response = await get("/api/live");
   assert.equal(response.status, 502);
   assert.equal(response.headers.get("cache-control"), "no-store");
+  const text = await response.text();
+  assert.equal(text, JSON.stringify({ error: UNAVAILABLE }));
+  assert.doesNotMatch(text, /read failed/);
 });
 
 test("health keeps production's keys and adds the live state and the reference age", async () => {
