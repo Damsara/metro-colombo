@@ -1,5 +1,6 @@
 import {
   Clock,
+  Context,
   Effect,
   Layer,
   Option,
@@ -58,7 +59,11 @@ export const NtfyAlerts = Layer.effect(
   }),
 );
 
-export type Problem = "login" | "feed_stale" | "archive_failing";
+export type Problem =
+  | "login"
+  | "feed_stale"
+  | "archive_failing"
+  | "reference_failing";
 
 // No bus runs overnight, so a silent feed then is expected rather than a fault.
 export const QUIET_HOURS = { from: 23, until: 5 } as const;
@@ -144,3 +149,9 @@ export const makeAlertBook = Effect.gen(function* () {
   };
   return shape;
 });
+
+export class AlertBook extends Context.Service<AlertBook, AlertBookShape>()(
+  "metro/AlertBook",
+) {
+  static readonly layer = Layer.effect(AlertBook, makeAlertBook);
+}

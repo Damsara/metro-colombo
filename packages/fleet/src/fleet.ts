@@ -9,7 +9,7 @@ import {
 } from "effect";
 import { type Fix, ObjectStore, Scheduler, toFix } from "@metro/core";
 import { LiveFeed, type RouteCode } from "@metro/upstream";
-import { isQuietHour, makeAlertBook } from "./alerts.js";
+import { AlertBook, isQuietHour } from "./alerts.js";
 import { FleetConfig } from "./config.js";
 import { makeLivePublisher } from "./publisher.js";
 import { makeRecorder } from "./recorder.js";
@@ -51,6 +51,7 @@ export type FleetShape = {
   readonly tick: Effect.Effect<void>;
   readonly status: Effect.Effect<FleetStatus>;
   readonly submitCode: (code: string) => Effect.Effect<SubmitOutcome>;
+  readonly token: Effect.Effect<Option.Option<Redacted.Redacted<string>>>;
   readonly shutdown: Effect.Effect<void>;
 };
 
@@ -61,7 +62,7 @@ const makeFleet = Effect.gen(function* () {
   const scheduler = yield* Scheduler;
   const clock = yield* Clock.Clock;
   const scope = yield* Effect.scope;
-  const alerts = yield* makeAlertBook;
+  const alerts = yield* AlertBook;
   const session = yield* makeSession(alerts);
   const recorder = yield* makeRecorder({ store, instance: config.instance });
   const publisher = yield* makeLivePublisher(store);
@@ -295,11 +296,14 @@ const makeFleet = Effect.gen(function* () {
       feed.needsLogin
         ? session.submitCode(code)
         : Effect.succeed(NO_CODE_PENDING),
+    token,
     shutdown,
   };
   return shape;
 });
 
 export class Fleet extends Context.Service<Fleet, FleetShape>()("metro/Fleet") {
-  static readonly layer = Layer.effect(Fleet, makeFleet);
+  static readonly layer = Layer.effect(Fleet, makeFleet).pipe(
+    Layer.provideMerge(AlertBook.layer),
+  );
 }

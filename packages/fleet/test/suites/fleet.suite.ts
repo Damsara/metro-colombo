@@ -1,5 +1,13 @@
 import assert from "node:assert/strict";
-import { ConfigProvider, Deferred, Effect, Fiber, Layer, Option } from "effect";
+import {
+  ConfigProvider,
+  Deferred,
+  Effect,
+  Fiber,
+  Layer,
+  Option,
+  Redacted,
+} from "effect";
 import { HttpClient } from "effect/http";
 import { TestClock } from "effect/testing";
 import {
@@ -23,6 +31,7 @@ import {
 } from "@metro/core/testing";
 import { AuthClient, LankaMetroFeed } from "@metro/upstream";
 import {
+  AlertBook,
   Fleet,
   type FleetShape,
   LIVE_ARCHIVE_KEY,
@@ -220,7 +229,7 @@ const harness = (wiring: FleetWiring, env: Record<string, string> = {}) => {
     );
   const runFleet = async <A>(
     at: number,
-    use: (fleet: FleetShape) => Effect.Effect<A>,
+    use: (fleet: FleetShape) => Effect.Effect<A, never, AlertBook>,
   ) => {
     const result = await run(
       Effect.gen(function* () {
@@ -1137,5 +1146,42 @@ export function fleetSuite(
       );
       assert.equal(result.opened.feed, "connecting");
       assert.equal(result.pinging.feed, "connected");
+    }));
+
+  test(`${name}: the Fleet hands out its stored session as the upstream token, without refreshing`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      await h.seed("session", validSession);
+      const token = await h.runFleet(T0, (fleet) => fleet.token);
+      assert.equal(
+        Option.getOrUndefined(Option.map(token, Redacted.value)),
+        "webview-stored",
+      );
+      assert.deepEqual(h.upstream.calls.refresh, []);
+    }));
+
+  test(`${name}: a problem raised through the AlertBook survives the Fleet's own alerts`, () =>
+    withWiring(async (wiring) => {
+      const h = harness(wiring);
+      await h.seed("session", validSession);
+      await h.runFleet(T0, (fleet) =>
+        Effect.gen(function* () {
+          const book = yield* AlertBook;
+          yield* book.raise("reference_failing", {
+            title: "Reference data: updates failing",
+            message: "three in a row",
+          });
+          yield* fleet.tick;
+          yield* TestClock.adjust(3 * MINUTE);
+          yield* fleet.tick;
+        }),
+      );
+      const stored = Option.getOrUndefined(
+        await run(wiring.openState().get("alerts")),
+      ) as Record<string, unknown>;
+      assert.deepEqual(Object.keys(stored).sort(), [
+        "feed_stale",
+        "reference_failing",
+      ]);
     }));
 }

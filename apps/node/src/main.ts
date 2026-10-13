@@ -36,6 +36,7 @@ const Client = Layer.effect(
     return FleetClient.of({
       status: fleet.status,
       submitCode: fleet.submitCode,
+      token: fleet.token,
     });
   }),
 );

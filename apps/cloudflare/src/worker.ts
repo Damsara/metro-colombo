@@ -1,4 +1,4 @@
-import { ConfigProvider, Effect, Layer } from "effect";
+import { ConfigProvider, Effect, Layer, Option, Redacted } from "effect";
 import { HttpRouter } from "effect/http";
 import {
   FleetClient,
@@ -28,6 +28,13 @@ const build = (env: Env) =>
                 async () =>
                   (await fleetStub(env).submitCode(code)) as SubmitOutcome,
               ),
+            token: Effect.promise(() => fleetStub(env).sessionToken()).pipe(
+              Effect.map((token) =>
+                token === null
+                  ? Option.none()
+                  : Option.some(Redacted.make(token)),
+              ),
+            ),
           }),
         ),
       ),

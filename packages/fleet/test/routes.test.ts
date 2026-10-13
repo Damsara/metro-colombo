@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ConfigProvider, Effect, Layer } from "effect";
+import { ConfigProvider, Effect, Layer, Option } from "effect";
 import { HttpRouter } from "effect/http";
 import {
   bearerMatches,
@@ -27,6 +27,7 @@ const handlerWith = (
   const client = FleetClient.of({
     status: Effect.succeed(STATUS),
     submitCode: (code) => Effect.sync(() => (submitted.push(code), outcome)),
+    token: Effect.succeed(Option.none()),
   });
   const { handler } = HttpRouter.toWebHandler(
     FleetRoutes.pipe(

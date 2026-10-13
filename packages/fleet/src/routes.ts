@@ -7,6 +7,7 @@ import type { SubmitOutcome } from "./session.js";
 export type FleetClientShape = {
   readonly status: Effect.Effect<FleetStatus>;
   readonly submitCode: (code: string) => Effect.Effect<SubmitOutcome>;
+  readonly token: Effect.Effect<Option.Option<Redacted.Redacted<string>>>;
 };
 
 export class FleetClient extends Context.Service<

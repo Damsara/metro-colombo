@@ -1,5 +1,12 @@
 import { DurableObject } from "cloudflare:workers";
-import { ConfigProvider, Effect, Layer, ManagedRuntime } from "effect";
+import {
+  ConfigProvider,
+  Effect,
+  Layer,
+  ManagedRuntime,
+  Option,
+  Redacted,
+} from "effect";
 import { FetchHttpClient } from "effect/http";
 import { ObjectStore, Scheduler, Socket, StateStore } from "@metro/core";
 import {
@@ -79,5 +86,13 @@ export class FleetObject extends DurableObject<Env> {
 
   async submitCode(code: string): Promise<SubmitOutcome> {
     return this.use((fleet) => fleet.submitCode(code));
+  }
+
+  async sessionToken(): Promise<string | null> {
+    return this.use((fleet) =>
+      Effect.map(fleet.token, (token) =>
+        Option.match(token, { onNone: () => null, onSome: Redacted.value }),
+      ),
+    );
   }
 }

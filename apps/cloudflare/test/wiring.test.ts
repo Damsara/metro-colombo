@@ -135,3 +135,7 @@ test("the staging Worker writes only to the staging bucket, on workers.dev, repl
   expect(config.vars.LIVE_FEED).toBe("replay");
   expect(Object.keys(config.vars)).not.toContain("METRO_REFRESH_TOKEN");
 });
+
+test("a replaying Fleet hands out no session token", async () => {
+  expect(await fleet().sessionToken()).toBeNull();
+});
