@@ -35,6 +35,8 @@ test("the Node app reads only its own .env, and its example replays", () => {
   const example = readFileSync(app(".env.example"), "utf8");
   assert.match(example, /^LIVE_FEED=replay$/m);
   assert.doesNotMatch(example, /^METRO_REFRESH_TOKEN=/m);
+  assert.match(example, /^UPSTREAM=proxy$/m);
+  assert.doesNotMatch(example, /^UPSTREAM=lankametro$/m);
   assert.doesNotMatch(manifest.scripts["replay:prepare"], /env-file/);
 });
 
@@ -46,13 +48,19 @@ test("the Node app refuses to start without LIVE_FEED", async () => {
     {
       env: {
         PATH: process.env.PATH ?? "",
+        UPSTREAM: "proxy",
+        UPSTREAM_PROXY_URL: "http://127.0.0.1:9",
+        PUBLIC_DATA_URL: "http://127.0.0.1:9",
         DATA_DIR: join(dir, "data"),
         FLEET_STATE_PATH: join(dir, "state.json"),
         PORT: String(19_789 + Math.floor(Math.random() * 1_000)),
       },
-      stdio: "ignore",
+      stdio: ["ignore", "pipe", "pipe"],
     },
   );
+  let stderr = "";
+  child.stderr?.on("data", (chunk) => (stderr += chunk));
+  child.stdout?.on("data", (chunk) => (stderr += chunk));
   const code = await Promise.race([
     new Promise<number | null>((resolve) =>
       child.on("exit", (exitCode) => resolve(exitCode)),
@@ -62,6 +70,7 @@ test("the Node app refuses to start without LIVE_FEED", async () => {
     ),
   ]).finally(() => child.kill("SIGKILL"));
   assert.notEqual(code, 0);
+  assert.match(stderr, /LIVE_FEED/);
 });
 
 test("the Node app serves the Fleet's status behind the secret and stops on SIGTERM", async () => {
@@ -74,6 +83,9 @@ test("the Node app serves the Fleet's status behind the secret and stops on SIGT
       env: {
         PATH: process.env.PATH ?? "",
         LIVE_FEED: "replay",
+        UPSTREAM: "proxy",
+        UPSTREAM_PROXY_URL: "http://127.0.0.1:9",
+        PUBLIC_DATA_URL: "http://127.0.0.1:9",
         REPLAY_DATE: "2026-10-11",
         DATA_DIR: join(dir, "data"),
         FLEET_STATE_PATH: join(dir, "state.json"),

@@ -10,6 +10,7 @@ export const NodeConfig = Config.all({
   s3Endpoint: Config.option(Config.String("S3_ENDPOINT")),
   s3AccessKeyId: Config.option(Config.Redacted("S3_ACCESS_KEY_ID")),
   s3SecretAccessKey: Config.option(Config.Redacted("S3_SECRET_ACCESS_KEY")),
+  webDist: Config.String("WEB_DIST").pipe(Config.withDefault("../../web/dist")),
   bucket: Config.String("ARCHIVE_BUCKET").pipe(
     Config.withDefault("metro-data-staging"),
   ),
