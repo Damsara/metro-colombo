@@ -96,6 +96,8 @@ test("a matching etag is 304", async () => {
     headers: { "user-agent": DUCKDB, "if-none-match": ETAG },
   });
   assert.equal(response.status, 304);
+  assert.equal(response.headers.get("content-type"), null);
+  assert.equal(response.headers.get("etag"), ETAG);
 });
 
 test("a failing origin is tried once more, then the archive is 502", async () => {

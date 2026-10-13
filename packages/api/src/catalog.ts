@@ -115,6 +115,8 @@ export const makeCatalogRoutes = (timeoutMs = CATALOG_TIMEOUT_MS) =>
               const value = response.headers[name];
               if (value !== undefined) headers[name] = value;
             }
+            if (response.status === 304)
+              return HttpServerResponse.empty({ status: 304, headers });
             const options = {
               status: response.status,
               headers,
