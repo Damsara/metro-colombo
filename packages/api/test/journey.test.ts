@@ -28,6 +28,7 @@ const journeySite = async (
   } = {},
 ) => {
   const calls: Array<[string, string, string]> = [];
+  let failure = options.fail;
   const tokens: Array<string | undefined> = [];
   let tokenCalls = 0;
   const h = await harness(options.routes ?? JourneyRoutes, {
@@ -38,8 +39,8 @@ const journeySite = async (
         Effect.suspend(() => {
           calls.push([from, to, date]);
           tokens.push(Option.getOrUndefined(Option.map(token, Redacted.value)));
-          return options.fail
-            ? Effect.fail(options.fail)
+          return failure
+            ? Effect.fail(failure)
             : Effect.succeed({ ...PLAN, date });
         }),
     },
@@ -50,7 +51,13 @@ const journeySite = async (
       }),
     },
   });
-  return { ...h, calls, tokens, tokenCalls: () => tokenCalls };
+  return {
+    ...h,
+    calls,
+    tokens,
+    tokenCalls: () => tokenCalls,
+    failWith: (error: UpstreamError | undefined) => void (failure = error),
+  };
 };
 
 const sleepersAppear = async (time: { pending: () => number }) => {
@@ -270,4 +277,58 @@ test("a stop code the list maps to an empty id is unknown", async () => {
     '{"error":"unknown stop: KCR100"}',
   );
   assert.equal(h.calls.length, 0);
+});
+
+const DOWN = new UpstreamError({ message: "down", status: 503 });
+
+test("after an upstream failure a plan kept within 3 minutes is served again, with a fresh plan's headers", async () => {
+  const h = await journeySite();
+  const fresh = await h.get(q("KCR100", "KCR101"));
+  const body = await fresh.text();
+  h.failWith(DOWN);
+  h.time.advance(60_000);
+  const stale = await h.get(q("KCR100", "KCR101"));
+  assert.equal(h.calls.length, 2);
+  assert.equal(stale.status, 200);
+  assert.equal(stale.headers.get("content-type"), "application/json");
+  assert.equal(stale.headers.get("cache-control"), "no-store");
+  assert.equal(await stale.text(), body);
+  h.time.advance(119_999);
+  assert.equal((await h.get(q("KCR100", "KCR101"))).status, 200);
+  h.time.advance(1);
+  await expectError(
+    await h.get(q("KCR100", "KCR101")),
+    502,
+    '{"error":"transit data is temporarily unavailable"}',
+  );
+});
+
+test("a stale plan is served only for the same stops and date", async () => {
+  const h = await journeySite();
+  await h.get(q("KCR100", "KCR101"));
+  h.failWith(DOWN);
+  h.time.advance(60_000);
+  for (const url of [
+    q("KCR101", "KCR100"),
+    q("KCR100", "KCR101", "2026-10-14"),
+  ])
+    assert.equal((await h.get(url)).status, 502);
+});
+
+test("an upstream 400 with a message is never answered from a stale plan", async () => {
+  const h = await journeySite();
+  await h.get(q("KCR100", "KCR101"));
+  h.failWith(
+    new UpstreamError({
+      message: "x",
+      status: 400,
+      detail: "No journeys found",
+    }),
+  );
+  h.time.advance(60_000);
+  await expectError(
+    await h.get(q("KCR100", "KCR101")),
+    400,
+    '{"error":"No journeys found"}',
+  );
 });

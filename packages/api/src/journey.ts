@@ -15,6 +15,7 @@ import { type ReferenceMissing, ReferenceReader } from "./reader.js";
 import { BadRequest, CACHE, respond } from "./responses.js";
 
 export const JOURNEY_TTL_SECONDS = 60;
+export const JOURNEY_STALE_TTL_SECONDS = JOURNEY_TTL_SECONDS + 120;
 const TOKEN_TIMEOUT = "3 seconds";
 
 const JourneyQuery = Schema.Struct({
@@ -76,22 +77,35 @@ export const JourneyRoutes = Layer.unwrap(
       const from = yield* resolve(query.from, ids);
       const to = yield* resolve(query.to, ids);
       const key = `journey/${from}|${to}|${date}`;
-      const cached = Option.flatMap(yield* cache.get(key), (body) =>
-        parseJson(decoder.decode(body)),
-      );
+      const staleKey = `${key}|stale`;
+      const kept = (at: string) =>
+        Effect.map(cache.get(at), (body) =>
+          Option.flatMap(body, (bytes) => parseJson(decoder.decode(bytes))),
+        );
+      const cached = yield* kept(key);
       if (Option.isSome(cached)) return cached.value;
-      const plan = yield* upstream.journey(yield* token, from, to, date).pipe(
-        Effect.catchIf(
-          (error) => error.status === 400 && error.detail !== undefined,
-          (error) => Effect.fail(new BadRequest({ message: error.detail! })),
-        ),
-      );
-      yield* cache.put(
-        key,
-        utf8.encode(JSON.stringify(plan)),
-        JOURNEY_TTL_SECONDS,
-      );
-      return plan;
+      const searched = yield* upstream
+        .journey(yield* token, from, to, date)
+        .pipe(
+          Effect.map((plan) => ({ plan, fresh: true })),
+          Effect.catchIf(
+            (error) => error.status === 400 && error.detail !== undefined,
+            (error) => Effect.fail(new BadRequest({ message: error.detail! })),
+          ),
+          Effect.catchTag("UpstreamError", (error) =>
+            Effect.flatMap(kept(staleKey), (stale) =>
+              Option.isSome(stale)
+                ? Effect.succeed({ plan: stale.value, fresh: false })
+                : Effect.fail(error),
+            ),
+          ),
+        );
+      if (searched.fresh) {
+        const body = utf8.encode(JSON.stringify(searched.plan));
+        yield* cache.put(key, body, JOURNEY_TTL_SECONDS);
+        yield* cache.put(staleKey, body, JOURNEY_STALE_TTL_SECONDS);
+      }
+      return searched.plan;
     });
 
     // The default date is today, and today's plans carry live estimates, so browsers don't keep them.
