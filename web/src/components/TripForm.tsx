@@ -165,25 +165,11 @@ export function TripForm({
           className="flex w-6 flex-col items-center pt-6 pb-5 text-ink"
           aria-hidden="true"
         >
-          <MapPin size={19} />
+          <span className="mt-1 size-3 rounded-full border-2 border-ink" />
           <i className="my-1 min-h-12 flex-1 border-l-2 border-dotted border-line-strong" />
-          <span className="size-3 rounded-full border-2 border-ink" />
+          <MapPin size={19} />
         </div>
         <div className="min-w-0 flex-1">
-          <StopPicker
-            label={t`Where to?`}
-            placeholder={t`Type a stop or a place`}
-            value={to}
-            stops={stops}
-            language={language}
-            loading={stopsLoading}
-            routeColors={routeColors}
-            places={places}
-            sections={stopSections}
-            prominent
-            onChange={onToChange}
-          />
-          <div className="my-3 mr-7 border-t border-line" />
           <StopPicker
             label={t`From`}
             labelNote={fromIsNearest ? t`(nearest)` : undefined}
@@ -197,6 +183,22 @@ export function TripForm({
             sections={stopSections}
             onChange={onFromChange}
           />
+          <div className="my-3 mr-7 border-t border-line" />
+          <div data-stop="to">
+            <StopPicker
+              label={t`Where to?`}
+              placeholder={t`Type a stop or a place`}
+              value={to}
+              stops={stops}
+              language={language}
+              loading={stopsLoading}
+              routeColors={routeColors}
+              places={places}
+              sections={stopSections}
+              prominent
+              onChange={onToChange}
+            />
+          </div>
         </div>
         <IconButton
           variant="tinted"

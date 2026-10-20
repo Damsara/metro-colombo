@@ -553,7 +553,9 @@ function Home() {
             className={`flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left ${cardClass()}`}
             onClick={() =>
               formRef.current
-                ?.querySelector<HTMLInputElement>('[role="combobox"]')
+                ?.querySelector<HTMLInputElement>(
+                  '[data-stop="to"] [role="combobox"]',
+                )
                 ?.focus({ preventScroll: true })
             }
           >
