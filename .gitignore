@@ -25,3 +25,6 @@ re/
 # Local agent state
 .claude/
 .playwright-mcp/
+
+# Internal notes: specs, plans, runbooks
+docs/

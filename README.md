@@ -222,7 +222,6 @@ web/                 React + Vite UI (TanStack Router/Query, MapLibre, three.js,
   src/occasions/     festive themes and stop decorations
   src/locales/       translation catalogs
   tests/             frontend tests
-docs/                findings, specs, plans and runbooks
 ```
 
 ## Reference
