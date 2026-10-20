@@ -2,7 +2,17 @@
 
 Install with npm 11 (`npx npm@11.21.0 install` from this folder): npm 10.9.8 crashes in arborist (`Cannot read properties of null (reading 'edgesOut')`) on vite 8's optional peer dependencies.
 
-Staging (`metro-staging`) is deployed only for a check and deleted after it, because a second Fleet doubles the Durable Object duration (spec §9). Build the web app first (`npm --prefix web run build`): the Worker serves `web/dist` as static assets.
+The Worker serves `web/dist` as static assets, so build the web app first (`npm --prefix web run build`).
+
+```sh
+npm run dev                 # wrangler dev
+npm test                    # Worker tests (vitest on workerd)
+npm run typecheck
+npm run deploy:staging
+npm run deploy:production
+```
+
+Staging (`metro-staging`) is deployed only for a check and deleted after it, because a second Fleet doubles the Durable Object duration.
 
 ## Production env
 
@@ -10,8 +20,7 @@ Staging (`metro-staging`) is deployed only for a check and deleted after it, bec
 
 - binds `ARCHIVE` to `metro-data`, the production bucket, instead of `metro-data-staging`;
 - sets `LIVE_FEED=lankametro`, so the Fleet logs in and records the live feed instead of replaying a day, and has no `REPLAY_DATE` or `REPLAY_SPEED`;
-- sets `UPSTREAM=lankametro` and has no `UPSTREAM_PROXY_URL`, because proxying to `https://metro.manasa.ai` from the Worker that serves it would call itself.
-
+- sets `UPSTREAM=lankametro` and has no `UPSTREAM_PROXY_URL`, because proxying to `https://metro.manasa.ai` from the Worker that serves it would call itself;
 - sets `ARCHIVE_ROOT=r2://metro-data` for the compactor instead of `r2://metro-data-staging`.
 
 The Durable Object bindings, the migrations, the container, the assets and `PUBLIC_DATA_URL` stay the same. Wrangler warns that `REPLAY_DATE`, `REPLAY_SPEED` and `UPSTREAM_PROXY_URL` are missing from `env.production.vars`. They are left out on purpose.
@@ -40,7 +49,7 @@ The container gets `ARCHIVE_ROOT` and `PUBLIC_DATA_URL` from the vars, and three
 ./node_modules/.bin/wrangler secret put ARCHIVE_R2_ACCOUNT_ID --env production
 ```
 
-Once the Worker compactor has run, suspend the k3s CronJob so the two never run together:
+If you're moving from the Kubernetes deployment in `deploy/k8s`, suspend its CronJob once the Worker compactor has run, so the two never run together:
 
 ```sh
 ssh <k3s-host> 'export KUBECONFIG=$HOME/.kube/config; kubectl -n metro patch cronjob metro-archive -p "{\"spec\":{\"suspend\":true}}"'

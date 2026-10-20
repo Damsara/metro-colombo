@@ -48,8 +48,26 @@ request), 404 (unknown route or path), or 502 (upstream unavailable).
 - `GET /api/places`: landmarks with trilingual names (`name`, `name_si`,
   `name_ta`), a free-text `category`, and their nearest stop as `stop_code` and
   `stop_id` (usable with `/api/journey`) plus `walk_meters` to it.
-- `GET /api/health`: `{"ok":true,"routes_count":N,"upstream":"reachable"}`, or
-  `ok:false` when the upstream cannot be reached.
+- `GET /api/occasions`: upcoming Sri Lankan holidays as
+  `{"occasions":[{"date":"YYYY-MM-DD","title":…,"kind":…}]}`, where `kind` is
+  a festive theme such as `poya`, `vesak` or `deepavali`.
+- `GET /api/health`:
+  `{"ok":true,"routes_count":N,"upstream":"reachable","live":{"stale":false,"age_ms":…},"reference_age_ms":…}`.
+  `ok` is false when no route data is available; `upstream` is `unreachable`
+  when the operator hasn't answered recently; `live.age_ms` is how old the
+  latest positions are and `reference_age_ms` how old the routes and stops are.
+
+## Fleet archive
+
+Every live position since 12 October 2026 is published as Parquet with a
+DuckDB catalog. In DuckDB: `ATTACH 'https://metro.manasa.ai/' AS metro;` then
+query views such as `metro.fixes_today`. https://metro.manasa.ai/data lists
+the tables and columns.
+
+A partial static GTFS (agency, routes, stops, shapes; no trips or stop times)
+is listed under `gtfs/static` in
+https://data.metro.manasa.ai/reference/manifest.json, and GTFS-Realtime
+vehicle positions are at https://data.metro.manasa.ai/live/vehicles.pb.
 
 ## Notes
 

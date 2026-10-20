@@ -301,11 +301,33 @@ curl '${api}/routes/CM01/stops?direction=DIRECTION_ID'`}</pre>
 }`}</pre>
         </Endpoint>
 
+        <Endpoint path="/api/occasions">
+          <p>
+            Upcoming Sri Lankan holidays, each with the <code>kind</code> of
+            festive theme the map uses, such as <code>poya</code>,{" "}
+            <code>vesak</code> or <code>deepavali</code>.
+          </p>
+          <pre tabIndex={0}>{`curl ${api}/occasions`}</pre>
+          <pre tabIndex={0}>{`{
+  "occasions": [
+    { "date": "2026-10-25", "title": "Vap Full Moon Poya Day", "kind": "poya" }
+  ]
+}`}</pre>
+        </Endpoint>
+
         <Endpoint path="/api/health">
-          <p>Whether the server can reach the upstream transit API.</p>
-          <pre
-            tabIndex={0}
-          >{`{ "ok": true, "routes_count": 7, "upstream": "reachable" }`}</pre>
+          <p>
+            Whether route data is available (<code>ok</code>), whether the
+            upstream transit API has answered recently, and how old the live
+            positions and the routes and stops are.
+          </p>
+          <pre tabIndex={0}>{`{
+  "ok": true,
+  "routes_count": 7,
+  "upstream": "reachable",
+  "live": { "stale": false, "age_ms": 1153 },
+  "reference_age_ms": 2403861
+}`}</pre>
         </Endpoint>
 
         <p>Every call can be made from any origin (public CORS).</p>
