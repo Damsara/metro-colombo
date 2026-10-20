@@ -21,3 +21,7 @@ re/
 .fleet-data/
 .replay/
 **/.wrangler
+
+# Local agent state
+.claude/
+.playwright-mcp/
