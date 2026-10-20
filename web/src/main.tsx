@@ -6,9 +6,13 @@ import { ApiError } from "./api";
 import { ConsentPrompt } from "./components/ConsentPrompt";
 import { trackPage } from "./lib/analytics";
 import { ConsentProvider } from "./lib/consent";
+import { listenForKonami } from "./lib/konami";
 import { LanguageProvider } from "./lib/language";
 import { routeTree } from "./routeTree.gen";
+import producerTag from "./assets/metro-boomin.mp3";
 import "./styles.css";
+
+listenForKonami(() => void new Audio(producerTag).play().catch(() => {}));
 
 const client = new QueryClient({
   defaultOptions: {
