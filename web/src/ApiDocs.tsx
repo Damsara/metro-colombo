@@ -301,20 +301,6 @@ curl '${api}/routes/CM01/stops?direction=DIRECTION_ID'`}</pre>
 }`}</pre>
         </Endpoint>
 
-        <Endpoint path="/api/occasions">
-          <p>
-            Upcoming Sri Lankan holidays, each with the <code>kind</code> of
-            festive theme the map uses, such as <code>poya</code>,{" "}
-            <code>vesak</code> or <code>deepavali</code>.
-          </p>
-          <pre tabIndex={0}>{`curl ${api}/occasions`}</pre>
-          <pre tabIndex={0}>{`{
-  "occasions": [
-    { "date": "2026-10-25", "title": "Vap Full Moon Poya Day", "kind": "poya" }
-  ]
-}`}</pre>
-        </Endpoint>
-
         <Endpoint path="/api/health">
           <p>
             Whether route data is available (<code>ok</code>), whether the

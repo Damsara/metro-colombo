@@ -254,7 +254,6 @@ Stop references accept a `stop_code` (e.g. `MMC-1`) or a stop UUID. Errors are
 | `/api/journey?from=&to=&date=` | 60 s → 10 min         | journey options; `date` is optional `YYYY-MM-DD` (default today)                |
 | `/api/live`                    | live snapshot         | latest bus positions, and `age_ms` since the last update                        |
 | `/api/places`                  | 24 h → 7 d            | landmarks with their nearest stop (`stop_code`, `stop_id`) and walking distance |
-| `/api/occasions`               | 24 h → 30 d           | upcoming Sri Lankan holidays and the festive theme for each                     |
 
 Upstream data is served stale when a refresh fails, so the API keeps answering
 through an upstream outage.

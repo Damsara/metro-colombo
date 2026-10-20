@@ -48,9 +48,6 @@ request), 404 (unknown route or path), or 502 (upstream unavailable).
 - `GET /api/places`: landmarks with trilingual names (`name`, `name_si`,
   `name_ta`), a free-text `category`, and their nearest stop as `stop_code` and
   `stop_id` (usable with `/api/journey`) plus `walk_meters` to it.
-- `GET /api/occasions`: upcoming Sri Lankan holidays as
-  `{"occasions":[{"date":"YYYY-MM-DD","title":…,"kind":…}]}`, where `kind` is
-  a festive theme such as `poya`, `vesak` or `deepavali`.
 - `GET /api/health`:
   `{"ok":true,"routes_count":N,"upstream":"reachable","live":{"stale":false,"age_ms":…},"reference_age_ms":…}`.
   `ok` is false when no route data is available; `upstream` is `unreachable`
