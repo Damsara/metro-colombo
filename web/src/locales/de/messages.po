@@ -145,6 +145,12 @@ msgstr "A: Start · B: Ziel"
 msgid "About {minutesText}"
 msgstr "Etwa {minutesText}"
 
+#. placeholder {0}: estimate.minutes.low
+#. placeholder {1}: estimate.minutes.high
+#: src/components/LastMileRide.tsx:44
+msgid "About {road} by road, {0}–{1} min in traffic."
+msgstr "Etwa {road} auf der Straße, {0}–{1} Min. im Verkehr."
+
 #: src/components/RoutesPanel.tsx:171
 msgid "All bus routes"
 msgstr "Alle Buslinien"
@@ -407,6 +413,10 @@ msgstr "Deine Busse werden gesucht…"
 msgid "Finding your location…"
 msgstr "Dein Standort wird gesucht…"
 
+#: src/components/LastMileRide.tsx:42
+msgid "Finish with a ride"
+msgstr "Den Rest mit einer Fahrt"
+
 #: src/components/BusCard.tsx:160
 #: src/components/RoutesPanel.tsx:342
 #: src/components/TrackingPanel.tsx:255
@@ -455,6 +465,10 @@ msgstr "An der nächsten Haltestelle aussteigen"
 #: src/components/TrackingPanel.tsx:335
 msgid "Get off here"
 msgstr "Hier aussteigen"
+
+#: src/components/LastMileRide.tsx:66
+msgid "Get the app"
+msgstr "App holen"
 
 #: src/components/StopCard.tsx:64
 msgid "Go here"
@@ -791,6 +805,10 @@ msgstr "Auf dem Weg nach {alight}"
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "Öffne eine Linie, um ihre Haltestellen und die aktuellen Busse zu sehen."
 
+#: src/components/LastMileRide.tsx:58
+msgid "Open PickMe"
+msgstr "PickMe öffnen"
+
 #: src/routes/__root.tsx:14
 msgid "Page not found :c"
 msgstr "Seite nicht gefunden :c"
@@ -851,6 +869,10 @@ msgstr "Beliebte Starthaltestellen"
 msgid "Press “Find my bus”. Select a departure for boarding instructions."
 msgstr "Tippe auf „Meinen Bus finden“. Wähle eine Abfahrt für die Einstiegshinweise."
 
+#: src/components/LastMileRide.tsx:49
+msgid "Price shown in the PickMe app."
+msgstr "Preis in der PickMe-App."
+
 #: src/components/ConsentPrompt.tsx:91
 msgid "Privacy choices"
 msgstr "Datenschutzoptionen"
@@ -866,6 +888,10 @@ msgstr "Zuletzt"
 #: src/App.tsx:681
 msgid "Recent trips"
 msgstr "Letzte Fahrten"
+
+#: src/components/LastMileRide.tsx:47
+msgid "Roughly {money} by car, before surge."
+msgstr "Etwa {money} mit dem Auto, ohne Aufschlag."
 
 #: src/components/StopCard.tsx:205
 msgid "Route {route}"

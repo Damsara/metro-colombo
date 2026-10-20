@@ -145,6 +145,12 @@ msgstr "A:出発 · B:目的地"
 msgid "About {minutesText}"
 msgstr "約 {minutesText}"
 
+#. placeholder {0}: estimate.minutes.low
+#. placeholder {1}: estimate.minutes.high
+#: src/components/LastMileRide.tsx:44
+msgid "About {road} by road, {0}–{1} min in traffic."
+msgstr "道路で約{road}、渋滞時{0}～{1}分。"
+
 #: src/components/RoutesPanel.tsx:171
 msgid "All bus routes"
 msgstr "すべてのバス路線"
@@ -407,6 +413,10 @@ msgstr "バスを探しています…"
 msgid "Finding your location…"
 msgstr "現在地を探しています…"
 
+#: src/components/LastMileRide.tsx:42
+msgid "Finish with a ride"
+msgstr "最後は配車で"
+
 #: src/components/BusCard.tsx:160
 #: src/components/RoutesPanel.tsx:342
 #: src/components/TrackingPanel.tsx:255
@@ -455,6 +465,10 @@ msgstr "次の停留所で降りる"
 #: src/components/TrackingPanel.tsx:335
 msgid "Get off here"
 msgstr "ここで降りる"
+
+#: src/components/LastMileRide.tsx:66
+msgid "Get the app"
+msgstr "アプリを入手"
 
 #: src/components/StopCard.tsx:64
 msgid "Go here"
@@ -791,6 +805,10 @@ msgstr "{alight} に向かっています"
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "路線を開くと、停留所とバスの現在位置が見られます。"
 
+#: src/components/LastMileRide.tsx:58
+msgid "Open PickMe"
+msgstr "PickMeを開く"
+
 #: src/routes/__root.tsx:14
 msgid "Page not found :c"
 msgstr "ページが見つかりません :c"
@@ -851,6 +869,10 @@ msgstr "人気の出発停留所"
 msgid "Press “Find my bus”. Select a departure for boarding instructions."
 msgstr "「バスを探す」を押し、出発便を選ぶと乗り方が表示されます。"
 
+#: src/components/LastMileRide.tsx:49
+msgid "Price shown in the PickMe app."
+msgstr "料金はPickMeアプリに表示されます。"
+
 #: src/components/ConsentPrompt.tsx:91
 msgid "Privacy choices"
 msgstr "プライバシーの選択"
@@ -866,6 +888,10 @@ msgstr "最近"
 #: src/App.tsx:681
 msgid "Recent trips"
 msgstr "最近の行程"
+
+#: src/components/LastMileRide.tsx:47
+msgid "Roughly {money} by car, before surge."
+msgstr "車で約{money}（ピーク料金を除く）。"
 
 #: src/components/StopCard.tsx:205
 msgid "Route {route}"

@@ -145,6 +145,12 @@ msgstr "A: தொடக்கம் · B: சேருமிடம்"
 msgid "About {minutesText}"
 msgstr "சுமார் {minutesText}"
 
+#. placeholder {0}: estimate.minutes.low
+#. placeholder {1}: estimate.minutes.high
+#: src/components/LastMileRide.tsx:44
+msgid "About {road} by road, {0}–{1} min in traffic."
+msgstr "சாலை வழியாக சுமார் {road}, போக்குவரத்தில் {0}–{1} நிமிடங்கள்."
+
 #: src/components/RoutesPanel.tsx:171
 msgid "All bus routes"
 msgstr "அனைத்து பேருந்து வழித்தடங்கள்"
@@ -407,6 +413,10 @@ msgstr "பேருந்துகளைக் கண்டறிகிறத�
 msgid "Finding your location…"
 msgstr "இருப்பிடத்தைக் கண்டறிகிறது…"
 
+#: src/components/LastMileRide.tsx:42
+msgid "Finish with a ride"
+msgstr "ஒரு சவாரியுடன் பயணத்தை முடிக்கவும்"
+
 #: src/components/BusCard.tsx:160
 #: src/components/RoutesPanel.tsx:342
 #: src/components/TrackingPanel.tsx:255
@@ -455,6 +465,10 @@ msgstr "அடுத்த நிறுத்தத்தில் இறங்�
 #: src/components/TrackingPanel.tsx:335
 msgid "Get off here"
 msgstr "இங்கே இறங்கவும்"
+
+#: src/components/LastMileRide.tsx:66
+msgid "Get the app"
+msgstr "செயலியைப் பெறுக"
 
 #: src/components/StopCard.tsx:64
 msgid "Go here"
@@ -791,6 +805,10 @@ msgstr "{alight} நோக்கிப் பயணிக்கிறீர்�
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "நிறுத்தங்களையும் பேருந்துகள் இப்போது இருக்கும் இடத்தையும் பார்க்க ஒரு வழித்தடத்தைத் திறக்கவும்."
 
+#: src/components/LastMileRide.tsx:58
+msgid "Open PickMe"
+msgstr "PickMe-ஐத் திறக்கவும்"
+
 #: src/routes/__root.tsx:14
 msgid "Page not found :c"
 msgstr "பக்கம் கிடைக்கவில்லை :c"
@@ -851,6 +869,10 @@ msgstr "பிரபலமான புறப்படும் நிறுத�
 msgid "Press “Find my bus”. Select a departure for boarding instructions."
 msgstr "“என் பேருந்தைக் கண்டறியுங்கள்” அழுத்தவும். ஏறும் வழிமுறைகளுக்கு ஒரு பயணத்தைத் தேர்ந்தெடுங்கள்."
 
+#: src/components/LastMileRide.tsx:49
+msgid "Price shown in the PickMe app."
+msgstr "விலை PickMe செயலியில் காட்டப்படும்."
+
 #: src/components/ConsentPrompt.tsx:91
 msgid "Privacy choices"
 msgstr "தனியுரிமைத் தேர்வுகள்"
@@ -866,6 +888,10 @@ msgstr "சமீபத்தியவை"
 #: src/App.tsx:681
 msgid "Recent trips"
 msgstr "சமீபத்திய பயணங்கள்"
+
+#: src/components/LastMileRide.tsx:47
+msgid "Roughly {money} by car, before surge."
+msgstr "காரில் சுமார் {money}, கூடுதல் கட்டணத்திற்கு முன்."
 
 #: src/components/StopCard.tsx:205
 msgid "Route {route}"

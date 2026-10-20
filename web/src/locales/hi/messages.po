@@ -145,6 +145,12 @@ msgstr "A: शुरुआत · B: मंज़िल"
 msgid "About {minutesText}"
 msgstr "लगभग {minutesText}"
 
+#. placeholder {0}: estimate.minutes.low
+#. placeholder {1}: estimate.minutes.high
+#: src/components/LastMileRide.tsx:44
+msgid "About {road} by road, {0}–{1} min in traffic."
+msgstr "सड़क से लगभग {road}, ट्रैफ़िक में {0}–{1} मिनट।"
+
 #: src/components/RoutesPanel.tsx:171
 msgid "All bus routes"
 msgstr "सभी बस रूट"
@@ -407,6 +413,10 @@ msgstr "आपकी बसें खोजी जा रही हैं…"
 msgid "Finding your location…"
 msgstr "आपकी लोकेशन खोजी जा रही है…"
 
+#: src/components/LastMileRide.tsx:42
+msgid "Finish with a ride"
+msgstr "आख़िरी हिस्सा सवारी से पूरा करें"
+
 #: src/components/BusCard.tsx:160
 #: src/components/RoutesPanel.tsx:342
 #: src/components/TrackingPanel.tsx:255
@@ -455,6 +465,10 @@ msgstr "अगले स्टॉप पर उतरें"
 #: src/components/TrackingPanel.tsx:335
 msgid "Get off here"
 msgstr "यहाँ उतरें"
+
+#: src/components/LastMileRide.tsx:66
+msgid "Get the app"
+msgstr "ऐप पाएँ"
 
 #: src/components/StopCard.tsx:64
 msgid "Go here"
@@ -791,6 +805,10 @@ msgstr "आप {alight} की ओर जा रहे हैं"
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "किसी रूट को खोलकर उसके स्टॉप और बसों की मौजूदा जगह देखें।"
 
+#: src/components/LastMileRide.tsx:58
+msgid "Open PickMe"
+msgstr "PickMe खोलें"
+
 #: src/routes/__root.tsx:14
 msgid "Page not found :c"
 msgstr "पेज नहीं मिला :c"
@@ -851,6 +869,10 @@ msgstr "लोकप्रिय शुरुआती स्टॉप"
 msgid "Press “Find my bus”. Select a departure for boarding instructions."
 msgstr "“मेरी बस खोजें” दबाएँ। चढ़ने की जानकारी के लिए कोई रवानगी चुनें।"
 
+#: src/components/LastMileRide.tsx:49
+msgid "Price shown in the PickMe app."
+msgstr "कीमत PickMe ऐप में दिखेगी।"
+
 #: src/components/ConsentPrompt.tsx:91
 msgid "Privacy choices"
 msgstr "निजता के विकल्प"
@@ -866,6 +888,10 @@ msgstr "हाल की"
 #: src/App.tsx:681
 msgid "Recent trips"
 msgstr "हाल की यात्राएँ"
+
+#: src/components/LastMileRide.tsx:47
+msgid "Roughly {money} by car, before surge."
+msgstr "कार से लगभग {money}, सर्ज से पहले।"
 
 #: src/components/StopCard.tsx:205
 msgid "Route {route}"

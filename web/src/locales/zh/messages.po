@@ -145,6 +145,12 @@ msgstr "A:起点 · B:目的地"
 msgid "About {minutesText}"
 msgstr "约 {minutesText}"
 
+#. placeholder {0}: estimate.minutes.low
+#. placeholder {1}: estimate.minutes.high
+#: src/components/LastMileRide.tsx:44
+msgid "About {road} by road, {0}–{1} min in traffic."
+msgstr "路程约 {road}，路况下需 {0}–{1} 分钟。"
+
 #: src/components/RoutesPanel.tsx:171
 msgid "All bus routes"
 msgstr "所有公交线路"
@@ -407,6 +413,10 @@ msgstr "正在查找你的公交车…"
 msgid "Finding your location…"
 msgstr "正在定位你的位置…"
 
+#: src/components/LastMileRide.tsx:42
+msgid "Finish with a ride"
+msgstr "最后一段打车"
+
 #: src/components/BusCard.tsx:160
 #: src/components/RoutesPanel.tsx:342
 #: src/components/TrackingPanel.tsx:255
@@ -455,6 +465,10 @@ msgstr "下一站下车"
 #: src/components/TrackingPanel.tsx:335
 msgid "Get off here"
 msgstr "在这里下车"
+
+#: src/components/LastMileRide.tsx:66
+msgid "Get the app"
+msgstr "获取应用"
 
 #: src/components/StopCard.tsx:64
 msgid "Go here"
@@ -791,6 +805,10 @@ msgstr "正前往 {alight}"
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "打开一条线路,查看它的站点和公交车当前位置。"
 
+#: src/components/LastMileRide.tsx:58
+msgid "Open PickMe"
+msgstr "打开 PickMe"
+
 #: src/routes/__root.tsx:14
 msgid "Page not found :c"
 msgstr "找不到页面 :c"
@@ -851,6 +869,10 @@ msgstr "热门起点站"
 msgid "Press “Find my bus”. Select a departure for boarding instructions."
 msgstr "点按“查找公交车”,再选择一个班次,即可查看上车指引。"
 
+#: src/components/LastMileRide.tsx:49
+msgid "Price shown in the PickMe app."
+msgstr "价格以 PickMe 应用内显示为准。"
+
 #: src/components/ConsentPrompt.tsx:91
 msgid "Privacy choices"
 msgstr "隐私选项"
@@ -866,6 +888,10 @@ msgstr "最近"
 #: src/App.tsx:681
 msgid "Recent trips"
 msgstr "最近行程"
+
+#: src/components/LastMileRide.tsx:47
+msgid "Roughly {money} by car, before surge."
+msgstr "乘车约 {money}，不含高峰加价。"
 
 #: src/components/StopCard.tsx:205
 msgid "Route {route}"

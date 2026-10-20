@@ -145,6 +145,12 @@ msgstr "A: старт · B: пункт назначения"
 msgid "About {minutesText}"
 msgstr "Около {minutesText}"
 
+#. placeholder {0}: estimate.minutes.low
+#. placeholder {1}: estimate.minutes.high
+#: src/components/LastMileRide.tsx:44
+msgid "About {road} by road, {0}–{1} min in traffic."
+msgstr "Около {road} по дороге, {0}–{1} мин с учётом пробок."
+
 #: src/components/RoutesPanel.tsx:171
 msgid "All bus routes"
 msgstr "Все маршруты автобусов"
@@ -407,6 +413,10 @@ msgstr "Ищем ваши автобусы…"
 msgid "Finding your location…"
 msgstr "Определяем ваше местоположение…"
 
+#: src/components/LastMileRide.tsx:42
+msgid "Finish with a ride"
+msgstr "Остаток пути на такси"
+
 #: src/components/BusCard.tsx:160
 #: src/components/RoutesPanel.tsx:342
 #: src/components/TrackingPanel.tsx:255
@@ -455,6 +465,10 @@ msgstr "Выходите на следующей остановке"
 #: src/components/TrackingPanel.tsx:335
 msgid "Get off here"
 msgstr "Выходите здесь"
+
+#: src/components/LastMileRide.tsx:66
+msgid "Get the app"
+msgstr "Скачать приложение"
 
 #: src/components/StopCard.tsx:64
 msgid "Go here"
@@ -791,6 +805,10 @@ msgstr "Вы едете к остановке {alight}"
 msgid "Open a route to see its stops and where its buses are now."
 msgstr "Откройте маршрут, чтобы увидеть его остановки и где сейчас автобусы."
 
+#: src/components/LastMileRide.tsx:58
+msgid "Open PickMe"
+msgstr "Открыть PickMe"
+
 #: src/routes/__root.tsx:14
 msgid "Page not found :c"
 msgstr "Страница не найдена :c"
@@ -851,6 +869,10 @@ msgstr "Популярные начальные остановки"
 msgid "Press “Find my bus”. Select a departure for boarding instructions."
 msgstr "Нажмите «Найти автобус». Выберите рейс, чтобы узнать, как сесть."
 
+#: src/components/LastMileRide.tsx:49
+msgid "Price shown in the PickMe app."
+msgstr "Цена указана в приложении PickMe."
+
 #: src/components/ConsentPrompt.tsx:91
 msgid "Privacy choices"
 msgstr "Настройки конфиденциальности"
@@ -866,6 +888,10 @@ msgstr "Недавние"
 #: src/App.tsx:681
 msgid "Recent trips"
 msgstr "Недавние поездки"
+
+#: src/components/LastMileRide.tsx:47
+msgid "Roughly {money} by car, before surge."
+msgstr "Примерно {money} на машине, без повышающего коэффициента."
 
 #: src/components/StopCard.tsx:205
 msgid "Route {route}"
