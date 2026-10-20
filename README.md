@@ -13,10 +13,15 @@ app. For trip planning only, not tickets or official service information.
 
 ## Why this exists
 
-The metro buses are comfortable and air-conditioned. The official app
-asks for your NIC before it shows you where a bus is, which locks out every
-foreigner living here, and it's hard going for anyone who isn't comfortable
-with apps. This is the same data, in a web page anyone can use.
+I wanted my mom to take the Metro bus that starts at the junction near our
+place instead of standing and sweating on a private bus. She can find her way
+around her phone, but she found the official LMT-GO app difficult and
+unintuitive. A couple of foreign friends living in Sri Lanka couldn't use it
+at all, because it asks for an NIC and personal details before it shows you
+where a bus is.
+
+So I reverse engineered the app and built this: the same routes, timetables
+and live positions, in a web page anyone can open without signing up.
 
 ## What it does
 
