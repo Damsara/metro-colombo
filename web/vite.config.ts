@@ -5,7 +5,7 @@ import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import { lingui } from "@lingui/vite-plugin";
 
 // The API server (repository root, `npm start`) serves `/api/*`.
-const api = { "/api": { target: "http://127.0.0.1:8788", changeOrigin: true } };
+const api = { "/api": { target: "http://127.0.0.1:8789", changeOrigin: true } };
 
 export default defineConfig({
   plugins: [

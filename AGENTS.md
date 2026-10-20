@@ -1,17 +1,18 @@
 # Working on lmt-go-ui
 
-A rider-facing app for Lanka Metro buses: an Effect-TS API in `src/` and a React + Vite + MapLibre UI in `web/src/`. Read this before changing anything.
+A rider-facing app for Lanka Metro buses: Effect-TS packages in `packages/`, run by `apps/cloudflare` (production) and `apps/node` (one process), and a React + Vite + MapLibre UI in `web/src/`. Shared packages import nothing runtime-specific. Read this before changing anything.
 
 ## Commands
 
-| Command | Does |
-| --- | --- |
-| `npm test` | Server tests |
-| `npm run typecheck` | Server types |
-| `npm --prefix web test` | Web tests (vitest) |
-| `(cd web && npx tsc --noEmit)` | Web types |
+| Command                                    | Does                                                        |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| `npm test`                                 | Package and Node app tests                                  |
+| `npm run typecheck`                        | Package and Node app types                                  |
+| `(cd apps/cloudflare && npm test)`         | Worker tests                                                |
+| `npm --prefix web test`                    | Web tests (vitest)                                          |
+| `(cd web && npx tsc --noEmit)`             | Web types                                                   |
 | `(cd web && npx prettier --check <files>)` | Formatting; run from `web/` so the Tailwind plugin resolves |
-| `npm --prefix web run i18n:extract` | Update the translation catalogs |
+| `npm --prefix web run i18n:extract`        | Update the translation catalogs                             |
 
 ## House rules
 

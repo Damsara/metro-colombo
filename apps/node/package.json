@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "tsx --env-file-if-exists=.env src/main.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
+    "build": "tsc -p tsconfig.json --noEmit false --outDir dist",
     "replay:prepare": "tsx src/replay-prepare.ts",
     "compat:diff": "tsx src/compat-diff.ts"
   },

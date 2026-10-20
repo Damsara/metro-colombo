@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 #   docker build -t metro .
-#   docker run -p 8788:8788 metro
+#   docker run -p 8789:8789 --env-file apps/node/.env -v metro-state:/data metro
 
 ARG NODE_VERSION=22.22
 
@@ -15,11 +15,9 @@ COPY packages/publisher/package.json ./packages/publisher/
 COPY packages/api/package.json ./packages/api/
 COPY apps/node/package.json ./apps/node/
 RUN npm ci
-COPY tsconfig.json ./
-COPY packages/core/tsconfig.json ./packages/core/
-COPY packages/core/src ./packages/core/src
-COPY src ./src
-RUN npm run build && npm prune --omit=dev
+COPY packages ./packages
+COPY apps/node ./apps/node
+RUN npm run build:packages && npm --workspace @metro/node run build && npm prune --omit=dev
 
 FROM node:${NODE_VERSION}-alpine AS web
 WORKDIR /web
@@ -33,21 +31,22 @@ RUN npm run build
 FROM node:${NODE_VERSION}-alpine
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORT=8788 \
+    PORT=8789 \
     WEB_DIST=/app/web/dist \
-    AUTH_STATE_PATH=/data/auth-state
+    FLEET_STATE_PATH=/data/fleet-state.json \
+    DATA_DIR=/data/fleet-data
 RUN mkdir /data && chown node:node /data
 VOLUME /data
 WORKDIR /app
 COPY --from=api /app/package.json ./
 COPY --from=api /app/node_modules ./node_modules
-COPY --from=api /app/packages/core/package.json ./packages/core/
-COPY --from=api /app/packages/core/dist ./packages/core/dist
-COPY --from=api /app/dist ./dist
+COPY --from=api /app/packages ./packages
+COPY --from=api /app/apps/node/package.json ./apps/node/
+COPY --from=api /app/apps/node/dist ./apps/node/dist
 COPY --from=web /web/dist ./web/dist
 USER node
-EXPOSE 8788
+EXPOSE 8789
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
   CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" >/dev/null || exit 1
 # The server handles SIGTERM itself (Effect's runMain), so no init is needed.
-CMD ["node", "dist/server.js"]
+CMD ["node", "apps/node/dist/main.js"]

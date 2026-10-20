@@ -124,41 +124,45 @@ Cloudflare-specific; `apps/node` is the way out.
 
 ## Run it locally
 
-Requires Node.js **22.19+**.
-
-### Without a login (recommended for contributors)
-
-The Node app can replay a real recorded day of buses and read routes and
-journeys from the production API, so you don't need an LMT-GO account:
-
-```bash
-npm install && npm --prefix web install
-npm --prefix web run build
-cp apps/node/.env.example apps/node/.env
-npm --workspace @metro/node run replay:prepare -- --date 2026-10-12 --out .fleet-data
-npm --workspace @metro/node start   # -> http://127.0.0.1:8789
-```
-
-Set `WEB_DIST=../../web/dist` in `apps/node/.env` to serve the UI from the
-same port. Routes answer a few seconds after start, once the first reference
-publish lands.
-
-For UI work, run `npm --prefix web run dev` (http://localhost:5173) next to an
-API server; add `-- --host` to try it on a phone on the same network.
-
-### With your own login
-
-The original single-process server in `src/` talks to the operator directly.
-You need a phone number that can receive the LMT-GO SMS code:
+Requires Node.js **22.19+**. `apps/node` runs the whole site in one process,
+from the same packages the production Worker uses.
 
 ```bash
 npm install && npm --prefix web install
 npm --prefix web run build             # the server also serves the built UI
-node scripts/otp-login.mjs 0712345678  # one-time login; see "The token"
-npm start                              # -> http://127.0.0.1:8788
+cp apps/node/.env.example apps/node/.env
+npm --workspace @metro/node run replay:prepare -- --date 2026-10-12 --out .fleet-data
+npm start                              # -> http://127.0.0.1:8789
 ```
 
-`npm run dev` runs it with reload; Vite forwards `/api/*` to port 8788.
+The example config replays a real recorded day of buses and reads routes and
+journeys from metro.manasa.ai, so you don't need an LMT-GO account. Routes
+answer a few seconds after start, once the first reference publish lands.
+
+`npm run dev` restarts the server on changes. For UI work, run
+`npm --prefix web run dev` (http://localhost:5173) next to it; Vite forwards
+`/api/*` to port 8789. Add `-- --host` to try it on a phone on the same
+network.
+
+### With your own login
+
+Set `LIVE_FEED=lankametro` and `UPSTREAM=lankametro` in `apps/node/.env`, plus
+`METRO_PHONE` and `OTP_SECRET` for an LMT-GO account of your own (register it
+in the official app). On start the server texts a login code to that phone;
+see [Logging in](#logging-in). Don't use the same account as another running
+server: a new login can end its session.
+
+### Docker
+
+The `Dockerfile` builds `apps/node` and the UI into one image:
+
+```bash
+docker build -t metro .
+docker run -p 8789:8789 --env-file apps/node/.env -v metro-state:/data metro
+```
+
+The `/data` volume keeps the Fleet's session and, without an S3 bucket, the
+published files and the archive.
 
 ### On Cloudflare
 
@@ -179,8 +183,8 @@ Issues and pull requests are welcome, from bug reports to translations.
 ### Checks
 
 ```bash
-npm run typecheck                  # server and packages
-npm test                           # server and package tests (node:test)
+npm run typecheck                  # packages and the Node app
+npm test                           # package and Node app tests (node:test)
 npm --prefix web test              # frontend tests (Vitest)
 (cd web && npx tsc --noEmit)       # frontend types
 npm --prefix web run build         # production bundle
@@ -220,12 +224,9 @@ packages/
   api/               HTTP routes: reference, journey, live, status, catalog
 apps/
   cloudflare/        Worker, Fleet Durable Object, compactor container (production)
-  node/              the same packages in one Node process, with replay and a compat diff
-src/                 the original single-process Effect server (npm start)
-tests/               tests for src/
-scripts/otp-login.mjs  one-time phone-OTP sign-in for src/
+  node/              the same packages in one Node process (npm start), with replay and a compat diff
+tests/               checks across packages: the archive contract and runtime boundaries
 ops/archive/         hourly compactor: daily Parquet and the DuckDB catalog
-deploy/k8s/          Kustomize manifests for running src/ on Kubernetes
 web/                 React + Vite UI (TanStack Router/Query, MapLibre, three.js, Tailwind CSS v4, Lingui)
   src/components/    panels, journey results, stop picker, map, bus card
   src/state/         transit data, trip, live buses, selection, routes, map layers
@@ -349,50 +350,26 @@ turns finished days into zstd Parquet, writes today's earlier hours to one
 file, and publishes a small DuckDB catalog of views over all of it. Readers
 fetch Parquet straight from R2's public domain.
 
-To run your own with `src/`, set `ARCHIVE_R2_ACCOUNT_ID`,
-`ARCHIVE_R2_ACCESS_KEY_ID`, `ARCHIVE_R2_SECRET_ACCESS_KEY`, `ARCHIVE_R2_BUCKET`
-(default `metro-data`) and `ARCHIVE_PUBLIC_URL` (the bucket's public domain),
-and run `ops/archive/compact.py` hourly (its `Dockerfile` builds an image) with
-the same variables and `ARCHIVE_ROOT=r2://<bucket>`. Without the R2 variables
-the recorder stays off. Give the bucket a CORS rule allowing `GET` and `HEAD`
-with `Range` from any origin so the browser shell can read it, and don't let
-your CDN cache 404s for `.parquet` files.
+To run your own with `apps/node`, point it at an R2 bucket (`S3_ENDPOINT`,
+`S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `ARCHIVE_BUCKET`) and set
+`PUBLIC_DATA_URL` to the bucket's public domain. Then run
+`ops/archive/compact.py` hourly (its `Dockerfile` builds an image) with
+`ARCHIVE_ROOT=r2://<bucket>`, `ARCHIVE_PUBLIC_URL` (the same public domain)
+and `ARCHIVE_R2_ACCOUNT_ID`, `ARCHIVE_R2_ACCESS_KEY_ID` and
+`ARCHIVE_R2_SECRET_ACCESS_KEY`; the compactor speaks R2 only. Give the bucket a CORS rule allowing `GET` and `HEAD` with
+`Range` from any origin so the browser shell can read it, and don't let your
+CDN cache 404s for `.parquet` files.
 
-### The token
+### Logging in
 
 The operator's API needs a signed-in account for everything this app uses.
-The server signs in with one account on behalf of every visitor.
+The Fleet signs in with one account on behalf of every visitor, keeps the
+session in its state (`FLEET_STATE_PATH`, or Durable Object storage on
+Cloudflare) and renews it on its own.
 
-`scripts/otp-login.mjs` does the one-time sign-in for `src/`. It sends an OTP
-to the phone number, asks for the code (and, for a new account, a name and
-NIC) and saves the resulting refresh token as `METRO_REFRESH_TOKEN` in `.env`.
-It never prints the token.
-
-```bash
-node scripts/otp-login.mjs <phone>                  # 07XXXXXXXX, 94XXXXXXXXX or +94XXXXXXXXX
-node scripts/otp-login.mjs --send <phone>           # or in two steps: text the code…
-node scripts/otp-login.mjs --verify <code>          # …then sign in with it
-node scripts/otp-login.mjs --token <refresh_token>  # save a refresh token you already have
-node scripts/otp-login.mjs --refresh                # swap the token in .env for a new one
-```
-
-The two-step form suits shells that can't answer a prompt. `--send` keeps the
-code's reference in `.otp-reference` (gitignored) until `--verify` uses it.
-New accounts have to register with the interactive form.
-
-From then on the server renews its own access. A refresh token works once, so
-after each renewal the server saves the new one to `.auth-state` (or
-`AUTH_STATE_PATH`) and reads it from there on restart, ignoring the spent one
-in `.env`. If the saved token stops working, for example after the server was
-off for more than about 7 days, run the login again: the server falls back to
-the new token in `.env`.
-
-To log in again without a laptop, set `METRO_PHONE`, `OTP_SECRET` and
-`ALERT_WEBHOOK_URL`. When the refresh token is rejected, the server stops
-calling refresh, sends an alert, and texts a code to the phone (at most every
-10 minutes). An iPhone Shortcuts automation on that phone (trigger: a message
-from `LMT-GO` containing "verification code", run immediately) takes the code
-with `(?<=is:\s)\d{6}` and posts it:
+When there is no session, or the operator rejects it, the Fleet stops
+refreshing, sends an alert to `ALERT_WEBHOOK_URL`, and texts a code to
+`METRO_PHONE` (at most every 10 minutes). Post the code back:
 
 ```
 POST /fleet/otp
@@ -400,34 +377,37 @@ Authorization: Bearer <OTP_SECRET>
 {"code":"123456"}
 ```
 
-The server signs in with it, saves the new token, resumes the live feed and
-sends a "restored" alert. Replies: 200 accepted, 400 not a code or rejected,
-409 no code pending, 404 wrong secret or `OTP_SECRET` unset. The Cloudflare
-Fleet uses the same endpoint and Shortcut.
+Replies: 200 accepted, 400 not a code or rejected, 409 no code pending, 404
+wrong secret or `OTP_SECRET` unset. `GET /fleet/status` with the same header
+shows the login and feed state. An iPhone Shortcuts automation on the phone
+(trigger: a message from `LMT-GO` containing "verification code", run
+immediately) can take the code with `(?<=is:\s)\d{6}` and post it, so the
+server recovers without a laptop. A refresh token you already have can seed
+the first session as `METRO_REFRESH_TOKEN`.
 
-Treat `.env` and `.auth-state` like a password: they act as the account that
-signed in. Both are gitignored.
+Treat `apps/node/.env` and the Fleet's state file like a password: they act
+as the account that signed in. Both are gitignored.
 
-### Configuration (`src/`)
+### Configuration
 
-| Variable                 | Default                              | Purpose                                                     |
-| ------------------------ | ------------------------------------ | ----------------------------------------------------------- |
-| `METRO_REFRESH_TOKEN`    | none (required)                      | upstream refresh token from `scripts/otp-login.mjs`         |
-| `AUTH_STATE_PATH`        | `.auth-state`                        | where the renewed refresh token is saved                    |
-| `METRO_PHONE`            | none                                 | the login's phone; a code is texted here when it dies       |
-| `OTP_SECRET`             | none (endpoint off)                  | bearer secret for `POST /fleet/otp`                         |
-| `ALERT_WEBHOOK_URL`      | none (log only)                      | where login alerts are POSTed, e.g. an ntfy topic           |
-| `EIMSKY_BASE`            | `https://metrobusapiprod.eimsky.com` | MetroBus backend                                            |
-| `LANKAMETRO_BASE`        | `https://lankametro.lk`              | route colours, landmarks, geometry fallback                 |
-| `HOST` / `PORT`          | `127.0.0.1` / `8788`                 | listen address; set `HOST=0.0.0.0` to accept other machines |
-| `WEB_DIST`               | `web/dist`                           | built UI served next to the API                             |
-| `VITE_GA_MEASUREMENT_ID` | unset (no analytics)                 | GA4 id baked into the UI at build time                      |
-| `OCCASIONS_ICS_URL`      | calendarlabs Sri Lanka holidays      | holiday calendar for the festive touches                    |
-| `ARCHIVE_R2_*`           | unset (archive off)                  | Cloudflare R2 bucket for the fleet archive                  |
-| `OTEL_*`                 | unset (no telemetry)                 | traces, logs and metrics over OTLP; see `.env.example`      |
+`apps/node/.env.example` lists every variable with its default. The main ones:
 
-`npm start` and `npm run dev` load `.env` when present; `.env.example` lists
-the variables. `apps/node/.env.example` lists the Node app's.
+| Variable                                  | Default                             | Purpose                                                       |
+| ----------------------------------------- | ----------------------------------- | ------------------------------------------------------------- |
+| `LIVE_FEED`                               | none (required)                     | `replay` a recorded day, or `lankametro` for the real feed    |
+| `UPSTREAM`                                | none (required)                     | `proxy` another instance's `/api`, or `lankametro`            |
+| `UPSTREAM_PROXY_URL`                      | none                                | the instance to proxy, e.g. `https://metro.manasa.ai`         |
+| `PUBLIC_DATA_URL`                         | none (required)                     | public URL of the data bucket, for the DuckDB catalog         |
+| `METRO_PHONE` / `OTP_SECRET`              | none (login code off)               | where login codes are texted, and the bearer for `/fleet/otp` |
+| `ALERT_WEBHOOK_URL`                       | none (log only)                     | where login alerts are POSTed, e.g. an ntfy topic             |
+| `DATA_DIR` / `FLEET_STATE_PATH`           | `.fleet-data` / `.fleet-state.json` | local storage and the Fleet's session                         |
+| `S3_ENDPOINT` / `S3_*` / `ARCHIVE_BUCKET` | unset (local files)                 | an S3-compatible bucket such as R2 instead of `DATA_DIR`      |
+| `HOST` / `PORT`                           | `127.0.0.1` / `8789`                | listen address; set `HOST=0.0.0.0` to accept other machines   |
+| `WEB_DIST`                                | `../../web/dist`                    | built UI served next to the API                               |
+| `OTEL_*`                                  | unset (no telemetry)                | traces, logs and metrics over OTLP                            |
+
+`VITE_GA_MEASUREMENT_ID` is read when building the UI, not by the server; see
+[Analytics](#analytics).
 
 ### Analytics
 
@@ -444,45 +424,6 @@ and stop codes and day offsets, never stop names, places, coordinates or
 anything typed. Visitors with Do Not Track on are never asked or tracked. In
 the GA property, turn off Enhanced measurement's "page changes based on
 browser history events", since the app sends its own page views.
-
-### Docker and Kubernetes (`src/`)
-
-The `Dockerfile` builds `src/` and the UI into one image:
-
-```bash
-docker build -t metro .
-docker run -p 8788:8788 --env-file .env -v metro-state:/data metro
-```
-
-The `/data` volume keeps the renewed token; without it, every new container
-starts from the token in `.env`, which is spent after the first run.
-
-`deploy/k8s/` has Kustomize manifests, with `example.com` placeholders for the
-image registry and hostname:
-
-- `base/` is the app itself: a namespace that enforces the restricted Pod
-  Security Standard, the Deployment, its Service and ServiceAccount, a small
-  PersistentVolumeClaim for the renewed token, and a NetworkPolicy that only
-  lets in the ingress controller and only lets out DNS and HTTPS.
-- `overlays/example/` adds an Ingress (Traefik with cert-manager) and pins the
-  image tag. Copy it, set your image, tag and hostname, then
-  `kubectl apply -k deploy/k8s/overlays/example`.
-- `cloudflared/` has an optional rule for publishing through a Cloudflare
-  Tunnel instead of an open port.
-
-After the first `kubectl apply`, create the token Secret from a `.env` made by
-`scripts/otp-login.mjs` (never commit it), then restart the pod:
-
-```bash
-kubectl -n metro create secret generic metro-secrets \
-  --from-literal=METRO_REFRESH_TOKEN="$(grep '^METRO_REFRESH_TOKEN=' .env | cut -d= -f2-)"
-kubectl -n metro rollout restart deployment/metro
-```
-
-Run one replica: two pods would share one account and spend each other's
-refresh tokens, so rollouts use `Recreate`. The liveness probe only checks the
-port is open, because `/api/health` calls the upstream; readiness uses
-`/api/health`, which stays 200 while the API serves its stale cache.
 
 ## Caveats
 

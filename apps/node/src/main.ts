@@ -3,6 +3,7 @@ import path from "node:path";
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node";
 import { Effect, Layer, Schedule } from "effect";
 import { FetchHttpClient, HttpRouter, HttpStaticServer } from "effect/http";
+import { Otlp, OtlpSerialization } from "effect/observability";
 import { SiteRoutes } from "@metro/api";
 import { EdgeCache, makeMemoryEdgeCache } from "@metro/core";
 import { Fleet, FleetClient, NtfyAlerts } from "@metro/fleet";
@@ -87,12 +88,20 @@ const HttpLive = Layer.unwrap(
   }),
 );
 
+// Off unless the OTEL_* env vars are set.
+const Observability = Otlp.layerFromConfig({
+  resource: { serviceName: "metro-api" },
+}).pipe(
+  Layer.provide(OtlpSerialization.layerProtobuf),
+  Layer.provide(FetchHttpClient.layer),
+);
+
 const Main = Layer.mergeAll(
   HttpRouter.serve(Layer.mergeAll(SiteRoutes, WebRoutes)).pipe(
     Layer.provide(Layer.mergeAll(Client, Ui)),
     Layer.provide(HttpLive),
   ),
   Driver,
-).pipe(Layer.provide(FleetLive));
+).pipe(Layer.provide(FleetLive), Layer.provide(Observability));
 
 Layer.launch(Main).pipe(NodeRuntime.runMain);

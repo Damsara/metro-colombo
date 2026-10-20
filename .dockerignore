@@ -1,6 +1,7 @@
 # Build inputs are copied explicitly; keep everything else out of the context.
 **/node_modules
 **/dist
+**/*.tsbuildinfo
 .git
 .env
 .env.*
@@ -8,13 +9,14 @@
 **/.env
 **/.env.*
 !**/.env.example
-.auth-state
 .claude
+docs
 re
 skill
 tests
 web/tests
-deploy
+packages/*/test
+apps/node/test
 *.md
 .dev.vars
 .handoff

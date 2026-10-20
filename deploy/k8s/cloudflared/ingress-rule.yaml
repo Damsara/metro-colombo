@@ -1,4 +1,0 @@
-- hostname: metro.example.com
-  service: http://traefik.kube-system.svc.cluster.local:80
-  originRequest:
-    httpHostHeader: metro.example.com

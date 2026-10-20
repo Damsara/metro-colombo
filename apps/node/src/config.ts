@@ -22,7 +22,7 @@ export class UnsafeBucket extends Data.TaggedError("UnsafeBucket")<{
   readonly message: string;
 }> {}
 
-// Until the switch-over, nothing new may write the archive the live site reads.
+// Only the Cloudflare Fleet writes the archive metro.manasa.ai reads.
 export const guardBucket = (bucket: string) =>
   bucket === PRODUCTION_BUCKET
     ? Effect.fail(
