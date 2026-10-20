@@ -84,14 +84,25 @@ all in there. See [Fleet archive](#fleet-archive) for how it's built.
 
 ## How it works
 
-```
- LMT-GO backend ──login, live WebSocket──▶ Fleet (one Durable Object)
-                                              │ publishes live + reference files,
-                                              │ records every position
-                                              ▼
- browser ◀── CDN ◀── Worker ◀──────────── R2 (metro-data)
-                       │                      ▲
-                       └ journey search       └ hourly compactor: Parquet + DuckDB catalog
+```mermaid
+flowchart LR
+  LMT["LMT-GO backend"]
+  Fleet["Fleet<br/>(one Durable Object)"]
+  R2[("R2<br/>metro-data")]
+  Compactor["Hourly compactor<br/>(Container)"]
+  Worker["Worker"]
+  Browser["Browser"]
+  DuckDB["DuckDB"]
+
+  LMT -->|"login, live WebSocket"| Fleet
+  Fleet -->|"live + reference files,<br/>every position"| R2
+  Fleet -->|"starts hourly"| Compactor
+  Compactor -->|"Parquet + DuckDB catalog"| R2
+  Fleet -->|"live snapshot, session"| Worker
+  R2 -->|"reference files"| Worker
+  Worker -->|"journey search"| LMT
+  Worker -->|"via CDN"| Browser
+  R2 -->|"Parquet"| DuckDB
 ```
 
 - **One login, shared by everyone.** The operator's API needs a signed-in
