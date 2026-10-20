@@ -32,6 +32,12 @@ Production can't proxy to `https://metro.manasa.ai`, because that's itself. Wran
 
 Deploy staging only for a check and delete it afterwards: a second Fleet doubles the Durable Object duration you pay for.
 
+## Deploys
+
+`.github/workflows/ci.yml` runs every check on pushes to `main` and `develop` and on pull requests. A push to `main` then deploys production; `develop` only runs the checks, and staging is deployed by hand. Every production deploy restarts the Fleet, so batch changes into fewer merges.
+
+The workflow needs the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and the repository variable `VITE_GA_MEASUREMENT_ID` for analytics.
+
 ## Secrets
 
 Secrets never go in the config. Set them per environment with `./node_modules/.bin/wrangler secret put <NAME> --env production`.
