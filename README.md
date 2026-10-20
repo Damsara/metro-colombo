@@ -57,11 +57,13 @@ curl 'https://metro.manasa.ai/api/journey?from=MMC-1&to=MCC5'
 curl https://metro.manasa.ai/api/live
 ```
 
-**GTFS.** Static GTFS (agency, routes, stops, shapes) is listed in
+**GTFS (partial).** A static GTFS zip with `agency`, `routes`, `stops` and
+`shapes` is listed under `gtfs/static` in
 [the reference manifest](https://data.metro.manasa.ai/reference/manifest.json),
 and GTFS-Realtime vehicle positions are at
-`https://data.metro.manasa.ai/live/vehicles.pb`, so standard transit tools
-can read the network.
+`https://data.metro.manasa.ai/live/vehicles.pb`. There are no trips, stop
+times or calendar yet, so trip planners that need a complete feed can't use
+it; it's enough to draw the network and the buses on it.
 
 **The fleet archive.** Every bus position since 12 October 2026 is recorded
 and published as Parquet with a DuckDB catalog on top. Query it from your
