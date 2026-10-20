@@ -28,3 +28,6 @@ re/
 
 # Internal notes: specs, plans, runbooks
 docs/
+
+# Personal agent instructions
+CLAUDE.local.md

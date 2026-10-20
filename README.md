@@ -173,9 +173,10 @@ its secrets, staging and the compactor container.
 
 Issues and pull requests are welcome, from bug reports to translations.
 
-- Read [`AGENTS.md`](AGENTS.md) for the house rules. The short version: no
-  needless comments, all user-facing text goes through Lingui, pure logic goes
-  in `web/src/lib/` with tests, and respect `prefers-reduced-motion`.
+- Read [`AGENTS.md`](AGENTS.md) for the house rules (it doubles as the guide
+  for AI coding agents). The short version: no needless comments, all
+  user-facing text goes through Lingui, pure logic goes in `web/src/lib/` with
+  tests, and respect `prefers-reduced-motion`.
 - Run the checks below before sending a pull request.
 - Translators: see [Translations](#translations). Sinhala and Tamil fixes are
   especially welcome.

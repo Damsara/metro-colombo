@@ -1,32 +1,34 @@
-# Working on lmt-go-ui
+# Contributing to metro-colombo
 
-A rider-facing app for Lanka Metro buses: Effect-TS packages in `packages/`, run by `apps/cloudflare` (production) and `apps/node` (one process), and a React + Vite + MapLibre UI in `web/src/`. Shared packages import nothing runtime-specific. Read this before changing anything.
+A trip planner and live bus map for Lanka Metro Transit. The domain lives in Effect-TS packages under `packages/`, run by `apps/cloudflare` (production, metro.manasa.ai) and `apps/node` (one Node process). The UI is React, Vite and MapLibre in `web/`.
 
-## Commands
+## Checks
+
+Run these before sending a pull request.
 
 | Command                                    | Does                                                        |
 | ------------------------------------------ | ----------------------------------------------------------- |
 | `npm test`                                 | Package and Node app tests                                  |
 | `npm run typecheck`                        | Package and Node app types                                  |
 | `(cd apps/cloudflare && npm test)`         | Worker tests                                                |
-| `npm --prefix web test`                    | Web tests (vitest)                                          |
+| `npm --prefix web test`                    | Web tests (Vitest)                                          |
 | `(cd web && npx tsc --noEmit)`             | Web types                                                   |
 | `(cd web && npx prettier --check <files>)` | Formatting; run from `web/` so the Tailwind plugin resolves |
 | `npm --prefix web run i18n:extract`        | Update the translation catalogs                             |
 
-## House rules
+## Code
 
-- No code comments unless the reason can't be seen in the code, and then one plain sentence. Don't restate what code does.
-- All user-facing text goes through Lingui (`t`, `Trans`, `Plural`). English is the source; Sinhala and Tamil live in `web/src/locales/*/messages.po`. Lanes don't edit `.po` files; the coordinator extracts and translates.
-- Match the surrounding code. Colours come from `web/src/theme.ts` / `styles.css` tokens; route colours go through `routeColor()` in `web/src/lib/routeColor.ts`.
+- Shared packages import nothing runtime-specific: no `node:*`, Cloudflare or platform imports. `tests/boundaries.test.ts` enforces it.
+- Comment only what the code can't say, in one plain sentence.
 - Pure logic goes in `web/src/lib/` with unit tests; components stay thin.
+- Colours come from the `web/src/theme.ts` and `styles.css` tokens; route colours go through `routeColor()` in `web/src/lib/routeColor.ts`.
 - Respect `prefers-reduced-motion`.
-- Don't add or change dependencies without asking.
+- Open an issue before adding or changing a dependency.
 
-## Lanes
+## Text and translations
 
-Parallel work runs one git worktree per lane on `lane/<name>`. A lane edits only the files its brief says it owns. Brief in `.handoff/brief.md`, report out `.handoff/report.md`, with status `done`, `partial` or `blocked` and the output of each check. Stop with `blocked` rather than editing a file you don't own or changing a shared contract.
+All user-facing text goes through Lingui (`t`, `Trans`, `Plural`), with English as the source. After changing English text, run `i18n:extract` and translate the new entries in every catalog under `web/src/locales/`; the production build fails on an untranslated entry.
 
-## Git
+## Commits
 
-Commit after each green step with a plain subject line and trailers `Lane:` and `Task:`. Never push, never touch `main`.
+Small commits with a plain subject line that says what changed, e.g. "Show the next stop on the bus card".
