@@ -97,7 +97,7 @@ function persist(tokens) {
 
 if (process.argv.includes("--refresh")) {
   const refreshToken = envValue("METRO_REFRESH_TOKEN");
-  if (!refreshToken) fail("No METRO_REFRESH_TOKEN in .env — log in first.");
+  if (!refreshToken) fail("No METRO_REFRESH_TOKEN in .env. Log in first.");
   const res = await post("/refresh", { refresh_token: refreshToken });
   if (res.status >= 400) fail(`refresh failed (HTTP ${res.status})`);
   persist(extractTokens(res.json));

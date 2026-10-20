@@ -131,7 +131,7 @@ export function BusCard({
               {followStatus(i18n, state)}
             </span>
             <strong className="shrink-0 font-semibold">
-              {bus.registration_number || "—"}
+              {bus.registration_number || "-"}
             </strong>
             {routeCode && (
               <RouteChip code={routeCode} color={color} size="xs" />

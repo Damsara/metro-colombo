@@ -20,7 +20,7 @@ export function HowToUse({ hidden }: { hidden: boolean }) {
         </li>
       </ol>
       <p className="text-xs">
-        {t`Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only — not tickets or official service information.`}
+        {t`Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only, not tickets or official service information.`}
       </p>
     </details>
   );

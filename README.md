@@ -189,7 +189,7 @@ Stop references accept a `stop_code` (e.g. `MMC-1`) or a stop UUID. Errors are
 
 | Path                           | Cache (fresh → stale) | Description                                                                     |
 | ------------------------------ | --------------------- | ------------------------------------------------------------------------------- |
-| `/api/health`                  | —                     | liveness and upstream reachability                                              |
+| `/api/health`                  | none                  | liveness and upstream reachability                                              |
 | `/api/routes`                  | 12 h → 7 d            | all routes (code, English name, colour, directions)                             |
 | `/api/routes/:code`            | 12 h → 7 d            | one route, e.g. `/api/routes/CM01`                                              |
 | `/api/routes/:code/stops`      | 12 h → 7 d            | stops; `?direction=forward\|reverse\|0\|1\|<direction_id>`                      |

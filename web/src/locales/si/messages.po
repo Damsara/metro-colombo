@@ -1036,8 +1036,8 @@ msgid "Time unavailable"
 msgstr "වේලාව නොමැත"
 
 #: src/components/HowToUse.tsx:23
-msgid "Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only — not tickets or official service information."
-msgstr "වේලාවන් ශ්‍රී ලංකා වේලාවෙනි. සජීවී ඇස්තමේන්තු වෙනම දක්වා ඇත. Lanka Metro Transit, Smart Metro හෝ නිල LMT GO යෙදුම සමඟ අනුබද්ධ නොවේ. ගමන් සැලසුම් සඳහා පමණි — ටිකට්පත් හෝ නිල සේවා තොරතුරු නොවේ."
+msgid "Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only, not tickets or official service information."
+msgstr "වේලාවන් ශ්‍රී ලංකා වේලාවෙනි. සජීවී ඇස්තමේන්තු වෙනම දක්වා ඇත. Lanka Metro Transit, Smart Metro හෝ නිල LMT GO යෙදුම සමඟ අනුබද්ධ නොවේ. ගමන් සැලසුම් සඳහා පමණි, ටිකට්පත් හෝ නිල සේවා තොරතුරු නොවේ."
 
 #: src/components/JourneyResults.tsx:234
 msgid "To {toName}"

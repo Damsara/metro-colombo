@@ -25,7 +25,7 @@ function Endpoint({ path, children }: { path: string; children: ReactNode }) {
 export default function ApiDocs() {
   useEffect(() => {
     const previous = document.title;
-    document.title = "Metro API — timetable and live buses";
+    document.title = "Metro API: timetable and live buses";
     return () => {
       document.title = previous;
     };
@@ -235,7 +235,7 @@ curl '${api}/routes/CM01/stops?direction=DIRECTION_ID'`}</pre>
           <p>
             Live bus positions, served from a single persistent connection to
             Metro's ticketing-service WebSocket. The map polls this every 5
-            seconds — the feed itself updates on that same cadence.{" "}
+            seconds, and the feed itself updates on that same cadence.{" "}
             <code>success</code> is <code>true</code> while that feed is
             connected; an empty <code>buses</code> array then means no bus is
             reporting right now, not that the service has stopped.

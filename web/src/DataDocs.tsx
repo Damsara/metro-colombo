@@ -312,7 +312,7 @@ const COLUMNS: [string, string][] = [
 export default function DataDocs() {
   useEffect(() => {
     const previous = document.title;
-    document.title = "Metro data — every bus position for DuckDB";
+    document.title = "Metro data: every bus position for DuckDB";
     return () => {
       document.title = previous;
     };

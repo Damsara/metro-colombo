@@ -1036,8 +1036,8 @@ msgid "Time unavailable"
 msgstr "Tempus ignotum"
 
 #: src/components/HowToUse.tsx:23
-msgid "Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only — not tickets or official service information."
-msgstr "Horae Taprobanae (Sri Lanka) sunt. Aestimationes in vivo separatim ab horis statutis notantur. Non coniunctum cum Lanka Metro Transit, Smart Metro, neque cum applicatione LMT GO officiali. Ad itinera paranda tantum — non tesserae neque nuntii officiales."
+msgid "Times are in Sri Lanka time. Live estimates are marked separately from scheduled times. Not affiliated with Lanka Metro Transit, Smart Metro, or the official LMT GO app. For trip planning only, not tickets or official service information."
+msgstr "Horae Taprobanae (Sri Lanka) sunt. Aestimationes in vivo separatim ab horis statutis notantur. Non coniunctum cum Lanka Metro Transit, Smart Metro, neque cum applicatione LMT GO officiali. Ad itinera paranda tantum, non tesserae neque nuntii officiales."
 
 #: src/components/JourneyResults.tsx:234
 msgid "To {toName}"
