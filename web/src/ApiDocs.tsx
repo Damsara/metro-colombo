@@ -268,7 +268,9 @@ curl '${api}/routes/CM01/stops?direction=DIRECTION_ID'`}</pre>
             as soon as it lands. Positions are already corrected for a known
             upstream fault that puts some fixes one degree north and east of
             Colombo, and <code>route_code</code> is filled in from{" "}
-            <code>route_id</code>. Heading is often missing; the site derives it
+            <code>route_id</code>. When the positions could not be refreshed,{" "}
+            <code>stale</code> is <code>true</code> and <code>reason</code> is{" "}
+            <code>login_needed</code> or <code>feed_down</code>. Heading is often missing; the site derives it
             from the bus's movement along its route. Occupancy, when present, is{" "}
             <code>current_capacity / total_capacity</code> and is not a promise
             of a free seat.

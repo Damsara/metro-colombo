@@ -267,7 +267,10 @@ is connected, so an empty list from a connected feed means no bus is
 reporting, not an outage. `age_ms` is how long ago the current positions
 arrived: polling `5000 − age_ms` later picks up the next update as it lands,
 which is what the UI does. Positions are corrected for a known upstream fault
-that offsets some fixes by one degree, and carry `route_code`.
+that offsets some fixes by one degree, and carry `route_code`. When the Fleet
+can't refresh the positions, `stale` is `true` and `reason` says why
+(`login_needed` or `feed_down`); `buses` then holds the last known positions.
+`/api/health` repeats `reason` under `live`.
 
 #### Example journey response
 

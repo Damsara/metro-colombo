@@ -69,18 +69,48 @@ test("/api/live has production's keys in production's order, aged when served", 
       timestamp: T0 - 2_000,
       age_ms: 2_000,
       buses: [BUS],
+      stale: false,
     }),
   );
 });
 
-test("a stale snapshot is served without stale or reason", async () => {
+test("a stale snapshot is served with stale and its reason", async () => {
   const { get } = await site({
-    [LIVE_KEY]: { ...LIVE, success: false, stale: true, reason: "feed_down" },
+    [LIVE_KEY]: {
+      ...LIVE,
+      success: false,
+      stale: true,
+      reason: "login_needed",
+    },
   });
-  const text = await body(await get("/api/live"));
-  assert.equal(text.includes("stale"), false);
-  assert.equal(text.includes("reason"), false);
-  assert.equal(JSON.parse(text).success, false);
+  const served = JSON.parse(await body(await get("/api/live")));
+  assert.equal(served.success, false);
+  assert.equal(served.stale, true);
+  assert.equal(served.reason, "login_needed");
+});
+
+test("a fresh snapshot is served with stale false and no reason", async () => {
+  const { get } = await site({ [LIVE_KEY]: LIVE });
+  const served = JSON.parse(await body(await get("/api/live")));
+  assert.equal(served.stale, false);
+  assert.equal("reason" in served, false);
+});
+
+test("health reports why the live feed is stale", async () => {
+  const { get } = await site({
+    [LIVE_KEY]: {
+      ...LIVE,
+      success: false,
+      stale: true,
+      reason: "login_needed",
+    },
+  });
+  const health = JSON.parse(await body(await get("/api/health")));
+  assert.deepEqual(health.live, {
+    stale: true,
+    age_ms: 2_000,
+    reason: "login_needed",
+  });
 });
 
 test("with no snapshot yet, /api/live is production's not-yet-connected body", async () => {
@@ -185,6 +215,7 @@ test("/api/live is the Fleet's in-memory snapshot, byte for byte, without readin
       timestamp: T0 - 2_000,
       age_ms: 2_000,
       buses: [BUS],
+      stale: false,
     }),
   );
   assert.equal(h.objects.gets.includes(LIVE_KEY), false);

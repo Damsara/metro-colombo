@@ -43,7 +43,9 @@ request), 404 (unknown route or path), or 502 (upstream unavailable).
   `timestamp`. Buses silent for 60 seconds are dropped. `success` is true while
   the live feed is connected; an empty `buses` array then means no bus is
   reporting, not that service stopped. Positions are already corrected for a
-  known upstream fault that offsets some fixes by one degree.
+  known upstream fault that offsets some fixes by one degree. `stale` is true
+  when the positions could not be refreshed, and `reason` (`login_needed` or
+  `feed_down`) says why; `buses` then holds the last known positions.
 
 - `GET /api/places`: landmarks with trilingual names (`name`, `name_si`,
   `name_ta`), a free-text `category`, and their nearest stop as `stop_code` and
@@ -52,7 +54,7 @@ request), 404 (unknown route or path), or 502 (upstream unavailable).
   `{"ok":true,"routes_count":N,"upstream":"reachable","live":{"stale":false,"age_ms":…},"reference_age_ms":…}`.
   `ok` is false when no route data is available; `upstream` is `unreachable`
   when the operator hasn't answered recently; `live.age_ms` is how old the
-  latest positions are and `reference_age_ms` how old the routes and stops are.
+  latest positions are, `live.reason` (when stale) says why, and `reference_age_ms` how old the routes and stops are.
 
 ## Fleet archive
 
