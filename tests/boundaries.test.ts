@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 const FORBIDDEN =
   /(?:from\s+|import\s*\(?\s*)["'](node:[^"']+|ws|undici|cloudflare:[^"']+|@cloudflare\/[^"']+|@effect\/platform-[^"']+|(?:\.\.\/)+(?:src|apps|core|upstream|fleet|publisher|api)\/[^"']*)["']/;
 
-const root = new URL("../packages", import.meta.url).pathname;
+const root = fileURLToPath(new URL("../packages", import.meta.url));
 
 const sources = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
