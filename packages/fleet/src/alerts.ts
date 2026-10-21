@@ -32,7 +32,11 @@ export const NtfyAlerts = Layer.effect(
                 // Plain text with title, priority and tags headers is ntfy's format; other webhooks still get the text.
                 headers: {
                   title: alert.title,
-                  priority: alert.urgent ? "high" : "default",
+                  priority: alert.critical
+                    ? "max"
+                    : alert.urgent
+                      ? "high"
+                      : "default",
                   tags: alert.urgent ? "rotating_light" : "white_check_mark",
                 },
                 body: HttpBody.text(alert.message),
@@ -65,6 +69,11 @@ export type Problem =
   | "archive_failing"
   | "reference_failing";
 
+// Only a login needs a person, so only its alert escalates when nobody acts on it.
+export const ESCALATE_AFTER_MS: Partial<Record<Problem, number>> = {
+  login: 15 * 60_000,
+};
+
 // No bus runs overnight, so a silent feed then is expected rather than a fault.
 export const QUIET_HOURS = { from: 23, until: 5 } as const;
 
@@ -82,7 +91,11 @@ export type AlertBookShape = {
 const HOUR_MS = 3_600_000;
 const Book = Schema.Record(
   Schema.String,
-  Schema.Struct({ since: Schema.Number, sentAt: Schema.Number }),
+  Schema.Struct({
+    since: Schema.Number,
+    sentAt: Schema.Number,
+    escalated: Schema.optional(Schema.Boolean),
+  }),
 );
 type Stored = Option.Option<typeof Book.Type>;
 
@@ -104,7 +117,10 @@ export const makeAlertBook = Effect.gen(function* () {
     ),
     Effect.catch(() => empty("alert book not loaded, starting empty")),
   );
-  const book: Record<string, { since: number; sentAt: number }> = Option.match(
+  const book: Record<
+    string,
+    { since: number; sentAt: number; escalated?: boolean }
+  > = Option.match(
     stored,
     {
       onNone: () => ({}),
@@ -125,9 +141,24 @@ export const makeAlertBook = Effect.gen(function* () {
       Effect.gen(function* () {
         const now = yield* Clock.currentTimeMillis;
         const entry = book[problem];
+        const escalateAfter = ESCALATE_AFTER_MS[problem];
+        if (
+          entry &&
+          !entry.escalated &&
+          escalateAfter !== undefined &&
+          now - entry.since >= escalateAfter
+        ) {
+          yield* alerts.send({
+            ...alert,
+            critical: true,
+            title: `Still down after ${Math.round((now - entry.since) / 60_000)} minutes: ${alert.title}`,
+          });
+          book[problem] = { ...entry, sentAt: now, escalated: true };
+          return yield* save;
+        }
         if (entry && now - entry.sentAt < HOUR_MS) return;
         yield* alerts.send(alert);
-        book[problem] = { since: entry?.since ?? now, sentAt: now };
+        book[problem] = { ...entry, since: entry?.since ?? now, sentAt: now };
         yield* save;
       }),
     );

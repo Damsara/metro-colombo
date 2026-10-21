@@ -13,6 +13,7 @@ export const RENEW_MARGIN_MS = 2 * 60_000;
 export const CODE_EVERY_MS = 10 * 60_000;
 const REFRESH_TIMEOUT = "15 seconds";
 export const REFRESH_BACKOFF_MS = 60_000;
+export const REJECTED_RETRY_MS = 15 * 60_000;
 
 export type LoginStatus = "ok" | "login_needed" | "upstream_error";
 
@@ -39,6 +40,7 @@ const StoredLogin = Schema.Struct({
   reason: Schema.String,
   otpReference: Schema.NullOr(Schema.String),
   lastCodeRequestAt: Schema.NullOr(Schema.Number),
+  refreshTriedAt: Schema.optional(Schema.Number),
 });
 type StoredLogin = Schema.Schema.Type<typeof StoredLogin>;
 
@@ -56,6 +58,12 @@ const loginNeededAlert = (reason: string, hasPhone: boolean) => ({
 const restoredAlert = {
   title: "Live buses: login restored",
   message: "The code was accepted and the live feed is resuming.",
+};
+
+const retryRestoredAlert = {
+  title: "Live buses: login restored",
+  message:
+    "Upstream accepted the refresh token it had rejected, so no code was needed.",
 };
 
 export const makeSession = (alerts: AlertBookShape) =>
@@ -199,6 +207,9 @@ export const makeSession = (alerts: AlertBookShape) =>
             reason,
             otpReference: null,
             lastCodeRequestAt: null,
+            ...(session?.refreshToken
+              ? { refreshTriedAt: yield* Clock.currentTimeMillis }
+              : {}),
           });
         yield* alerts.raise(
           "login",
@@ -234,37 +245,40 @@ export const makeSession = (alerts: AlertBookShape) =>
         ),
       );
 
+    // Once upstream has answered, the old token is spent, so nothing may interrupt before the new one is saved.
+    const rotate = (current: StoredSession) =>
+      Effect.uninterruptibleMask((restore) =>
+        restore(
+          auth.refresh(current.refreshToken).pipe(
+            Effect.timeout(REFRESH_TIMEOUT),
+            Effect.catchTag("TimeoutError", () =>
+              Effect.fail(
+                new AuthHttpError({
+                  endpoint: "refresh",
+                  message: "upstream /auth/refresh timed out",
+                }),
+              ),
+            ),
+          ),
+        ).pipe(
+          Effect.tap((rotated) =>
+            saveSession({
+              ...current,
+              refreshToken: rotated.refreshToken,
+              webviewToken: "",
+              expiresAt: 0,
+            }),
+          ),
+        ),
+      );
+
     const refresh = semaphore.withPermits(1)(
       Effect.gen(function* () {
         const now = yield* Clock.currentTimeMillis;
         if (login || fresh(now) || now < refreshBackoffUntil) return;
         const current = session;
         if (!current?.refreshToken) return yield* needLogin("no refresh token");
-        // Once upstream has answered, the old token is spent, so nothing may interrupt before the new one is saved.
-        const pair = yield* Effect.uninterruptibleMask((restore) =>
-          restore(
-            auth.refresh(current.refreshToken).pipe(
-              Effect.timeout(REFRESH_TIMEOUT),
-              Effect.catchTag("TimeoutError", () =>
-                Effect.fail(
-                  new AuthHttpError({
-                    endpoint: "refresh",
-                    message: "upstream /auth/refresh timed out",
-                  }),
-                ),
-              ),
-            ),
-          ).pipe(
-            Effect.tap((rotated) =>
-              saveSession({
-                ...current,
-                refreshToken: rotated.refreshToken,
-                webviewToken: "",
-                expiresAt: 0,
-              }),
-            ),
-          ),
-        ).pipe(
+        const pair = yield* rotate(current).pipe(
           Effect.map(Option.some),
           Effect.catchTag("AuthHttpError", (error) =>
             isDeadToken(error)
@@ -292,10 +306,42 @@ export const makeSession = (alerts: AlertBookShape) =>
       }),
     );
 
+    // A gateway fault can look like a dead token, and a code may go unforwarded all night, so the rejected token is tried again now and then.
+    const retryRejected = semaphore.withPermits(1)(
+      Effect.gen(function* () {
+        const now = yield* Clock.currentTimeMillis;
+        const current = session;
+        const pending = login;
+        if (!pending || !current?.refreshToken) return;
+        // A record from before retries existed starts the wait instead of spending a token on restart.
+        if (pending.refreshTriedAt === undefined)
+          return yield* saveLogin({ ...pending, refreshTriedAt: now });
+        if (now - pending.refreshTriedAt < REJECTED_RETRY_MS) return;
+        yield* saveLogin({ ...pending, refreshTriedAt: now });
+        const pair = yield* rotate(current).pipe(
+          Effect.map(Option.some),
+          Effect.catchTag("AuthHttpError", (error) =>
+            Effect.as(
+              Effect.logWarning(
+                "the rejected refresh token is still refused",
+                error.message,
+              ),
+              Option.none(),
+            ),
+          ),
+        );
+        if (Option.isNone(pair)) return;
+        yield* clearLogin;
+        yield* adopt(pair.value.refreshToken, pair.value.accessToken);
+        yield* alerts.resolve("login", retryRestoredAlert);
+      }),
+    );
+
     const token = Effect.gen(function* () {
       yield* load;
       if (sessionUnsaved || loginUncleared) yield* retryWrites;
       if (login) {
+        yield* retryRejected;
         yield* semaphore.withPermits(1)(
           Effect.suspend(() => (login ? needLogin(login.reason) : Effect.void)),
         );

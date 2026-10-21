@@ -68,6 +68,17 @@ export function alertsSuite(test: Register, name: string) {
     assert.equal(request.headers["tags"], "rotating_light");
   });
 
+  test(`${name}: a critical alert goes out at the max priority`, async () => {
+    const { requests } = await send(WEBHOOK, {
+      urgent: true,
+      critical: true,
+      title: "Still down after 15 minutes: Live buses are down: login needed",
+      message: "Upstream login failed.",
+    });
+    assert.equal(requests[0].headers["priority"], "max");
+    assert.equal(requests[0].headers["tags"], "rotating_light");
+  });
+
   test(`${name}: a resolved notice goes out at the default priority`, async () => {
     const { requests } = await send(WEBHOOK, {
       title: "Live buses: login restored",
