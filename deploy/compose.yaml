@@ -1,15 +1,33 @@
-# Copy to ~/metro/compose.yaml on the VPS, next to a .env made from apps/node/.env.example.
-# CI runs `IMAGE_TAG=<commit> docker compose pull && docker compose up -d --wait` here on every push to main.
+# Copy to ~/metro/ on the VPS with the Caddyfile, next to a .env made from apps/node/.env.example
+# plus METRO_DOMAIN. CI runs `IMAGE_TAG=<commit> docker compose pull && docker compose up -d --wait`
+# here on every push to main.
 services:
   metro:
     image: ghcr.io/damsara/metro-colombo:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
-    # Only the reverse proxy on this machine should reach the server; it adds HTTPS.
-    ports:
-      - "127.0.0.1:8789:8789"
     volumes:
       - metro-state:/data
 
+  # Only Caddy is reachable from outside; it gets and renews the HTTPS certificate itself.
+  caddy:
+    image: caddy:2.11
+    restart: unless-stopped
+    depends_on:
+      metro:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      METRO_DOMAIN: ${METRO_DOMAIN:?set METRO_DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
 volumes:
   metro-state:
+  caddy-data:
+  caddy-config:

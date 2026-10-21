@@ -1,0 +1,4 @@
+{$METRO_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy metro:8789
+}
