@@ -270,8 +270,9 @@ curl '${api}/routes/CM01/stops?direction=DIRECTION_ID'`}</pre>
             Colombo, and <code>route_code</code> is filled in from{" "}
             <code>route_id</code>. When the positions could not be refreshed,{" "}
             <code>stale</code> is <code>true</code> and <code>reason</code> is{" "}
-            <code>login_needed</code> or <code>feed_down</code>. Heading is often missing; the site derives it
-            from the bus's movement along its route. Occupancy, when present, is{" "}
+            <code>login_needed</code> or <code>feed_down</code>. Heading is
+            often missing; the site derives it from the bus's movement along its
+            route. Occupancy, when present, is{" "}
             <code>current_capacity / total_capacity</code> and is not a promise
             of a free seat.
           </p>
