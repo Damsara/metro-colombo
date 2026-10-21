@@ -370,7 +370,10 @@ Cloudflare) and renews it on its own.
 
 When there is no session, or the operator rejects it, the Fleet stops
 refreshing, sends an alert to `ALERT_WEBHOOK_URL`, and texts a code to
-`METRO_PHONE` (at most every 10 minutes). Post the code back:
+`METRO_PHONE` (at most every 10 minutes). A rejected refresh token is tried
+again every 15 minutes, so a passing fault on the operator's side recovers
+without a code. If the login is still down after 15 minutes, a second alert
+goes out at ntfy's max priority. Post the code back:
 
 ```
 POST /fleet/otp

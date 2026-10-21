@@ -85,6 +85,7 @@ export type Alert = {
   readonly title: string;
   readonly message: string;
   readonly urgent?: boolean;
+  readonly critical?: boolean;
 };
 
 export type AlertsShape = {

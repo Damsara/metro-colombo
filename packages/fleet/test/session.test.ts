@@ -829,3 +829,94 @@ test("during the backoff an unexpired webview token is still handed out", async 
   assert.deepEqual(tokens.map(tokenText), ["old", "old"]);
   assert.deepEqual(upstream.calls.refresh, ["stored"]);
 });
+
+test("a rejected refresh token is tried again after 15 minutes and, once accepted, restores the login without a code", async () => {
+  const { upstream, alerts, backing, run } = setup({ session: expired });
+  upstream.settings.refreshStatus = 401;
+  const outcome = await run((session) =>
+    Effect.gen(function* () {
+      yield* session.token;
+      yield* TestClock.adjust(14 * MINUTE);
+      const early = yield* session.token;
+      upstream.settings.refreshStatus = 200;
+      yield* TestClock.adjust(MINUTE);
+      return {
+        early,
+        token: yield* session.token,
+        status: yield* session.status,
+      };
+    }),
+  );
+  assert.equal(tokenText(outcome.early), undefined);
+  assert.equal(tokenText(outcome.token), "webview-1");
+  assert.equal(outcome.status, "ok");
+  assert.deepEqual(upstream.calls.refresh, ["stored", "stored"]);
+  assert.equal(backing.has("login"), false);
+  assert.equal(JSON.parse(backing.get("session")!).refreshToken, "refresh-1");
+  assert.deepEqual(
+    alerts.sent.map((alert) => alert.title),
+    ["Live buses are down: login needed", "Live buses: login restored"],
+  );
+});
+
+test("a token that stays rejected is tried at most every 15 minutes, across restarts", async () => {
+  const backing = new Map([["session", JSON.stringify(expired)]]);
+  const first = setup({ state: memoryStateStore(backing) });
+  first.upstream.settings.refreshStatus = 400;
+  await first.run((session) =>
+    Effect.gen(function* () {
+      yield* session.token;
+      for (let tick = 0; tick < 30; tick++) {
+        yield* TestClock.adjust(MINUTE);
+        yield* session.token;
+      }
+    }),
+  );
+  assert.deepEqual(first.upstream.calls.refresh, ["stored", "stored", "stored"]);
+  const second = setup({ state: memoryStateStore(backing) });
+  second.upstream.settings.refreshStatus = 400;
+  await second.run((session) =>
+    Effect.andThen(TestClock.adjust(30 * MINUTE + 14 * MINUTE), session.token),
+  );
+  assert.deepEqual(second.upstream.calls.refresh, []);
+});
+
+test("a code accepted while the token is being retried still logs in", async () => {
+  const { upstream, run } = setup({ session: expired });
+  upstream.settings.refreshStatus = 400;
+  const status = await run((session) =>
+    Effect.gen(function* () {
+      yield* session.token;
+      yield* TestClock.adjust(15 * MINUTE);
+      yield* session.token;
+      yield* session.submitCode("123456");
+      return yield* session.status;
+    }),
+  );
+  assert.equal(status, "ok");
+  assert.deepEqual(upstream.calls.refresh, ["stored", "stored"]);
+});
+
+test("a login nobody fixes escalates once, at the max priority, after 15 minutes", async () => {
+  const { upstream, alerts, run } = setup({ session: expired });
+  upstream.settings.refreshStatus = 400;
+  await run((session) =>
+    Effect.gen(function* () {
+      yield* session.token;
+      for (let tick = 0; tick < 40; tick++) {
+        yield* TestClock.adjust(MINUTE);
+        yield* session.token;
+      }
+    }),
+  );
+  assert.deepEqual(
+    alerts.sent.map((alert) => [alert.title, alert.critical === true]),
+    [
+      ["Live buses are down: login needed", false],
+      [
+        "Still down after 15 minutes: Live buses are down: login needed",
+        true,
+      ],
+    ],
+  );
+});
