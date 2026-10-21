@@ -14,6 +14,7 @@ import {
   type AuthClientShape,
   isDeadToken,
   normalizePhone,
+  phoneFormats,
 } from "@metro/upstream";
 
 const BASE = "https://metrobusapiprod.eimsky.com/user-service/api/v1/auth";
@@ -94,14 +95,28 @@ test("the webview token is fetched with the access token as bearer", async () =>
   assert.equal(requests[0].headers["authorization"], "Bearer a2");
 });
 
-test("a code request posts the phone and returns the OTP reference", async () => {
+test("a code request posts the phone and returns the OTP reference and whether the account exists", async () => {
   const { requests, run } = setup(() => ({
     status: 200,
-    json: { data: { otp_reference: "ref-1", has_account: true } },
+    json: { data: { otp_reference: "ref-1", has_account: false } },
   }));
-  assert.equal(await run((auth) => auth.checkPhone("+94771234567")), "ref-1");
+  assert.deepEqual(await run((auth) => auth.checkPhone("771234567")), {
+    reference: "ref-1",
+    hasAccount: false,
+  });
   assert.equal(requests[0].url.toString(), `${BASE}/customer/check-phone`);
-  assert.deepEqual(JSON.parse(requests[0].text), { phone: "+94771234567" });
+  assert.deepEqual(JSON.parse(requests[0].text), { phone: "771234567" });
+});
+
+test("a code request without has_account assumes the account exists", async () => {
+  const { run } = setup(() => ({
+    status: 200,
+    json: { data: { otp_reference: "ref-1" } },
+  }));
+  assert.deepEqual(await run((auth) => auth.checkPhone("771234567")), {
+    reference: "ref-1",
+    hasAccount: true,
+  });
 });
 
 test("verify-otp finds the nested tokens, and a reply without them is an error", async () => {
@@ -167,7 +182,13 @@ test("a request that never answers fails after 15 seconds as an outage", async (
 });
 
 test("Sri Lankan numbers are normalised and anything else is rejected", () => {
-  assert.equal(normalizePhone("077 123 4567"), "+94771234567");
-  assert.equal(normalizePhone("+94 77 123 4567"), "+94771234567");
+  assert.equal(normalizePhone("077 123 4567"), "771234567");
+  assert.equal(normalizePhone("+94 77 123 4567"), "771234567");
+  assert.equal(normalizePhone("771234567"), "771234567");
   assert.equal(normalizePhone("12345"), undefined);
+  assert.equal(normalizePhone("071234567"), undefined);
+});
+
+test("the number is tried as the app registers it, then with the country code", () => {
+  assert.deepEqual(phoneFormats("771234567"), ["771234567", "+94771234567"]);
 });

@@ -210,6 +210,104 @@ test("codes go out at most every 10 minutes while the login is needed", async ()
   assert.equal(upstream.calls.checkPhone.length, 2);
 });
 
+test("a posted number is sent a code, kept for later logins, and the code logs in", async () => {
+  const { upstream, backing, run } = setup({ session: expired, env: {} });
+  const result = await run((session) =>
+    Effect.gen(function* () {
+      const started = yield* session.startLogin("077 123 4567");
+      const paused = yield* session.token;
+      const submitted = yield* session.submitCode("123456");
+      return { started, paused, submitted, token: yield* session.token };
+    }),
+  );
+  assert.deepEqual(result.started, { _tag: "CodeSent" });
+  assert.equal(tokenText(result.paused), undefined);
+  assert.deepEqual(result.submitted, { _tag: "Accepted" });
+  assert.equal(tokenText(result.token), "webview-1");
+  assert.deepEqual(upstream.calls.checkPhone, ["771234567"]);
+  assert.equal(JSON.parse(backing.get("phone") ?? "null"), "771234567");
+});
+
+test("a stored number replaces METRO_PHONE after a restart", async () => {
+  const { upstream, run } = setup({
+    session: expired,
+    state: memoryStateStore(
+      new Map([
+        ["session", JSON.stringify(expired)],
+        ["phone", JSON.stringify("779999999")],
+      ]),
+    ),
+  });
+  upstream.settings.refreshStatus = 401;
+  await run((session) => session.token);
+  assert.deepEqual(upstream.calls.checkPhone, ["779999999"]);
+});
+
+test("a number registered with the country code is found on the second try", async () => {
+  const { upstream, run } = setup({ session: expired });
+  upstream.settings.accountPhone = "+94771234567";
+  const result = await run((session) =>
+    Effect.gen(function* () {
+      const started = yield* session.startLogin("0771234567");
+      return { started, submitted: yield* session.submitCode("123456") };
+    }),
+  );
+  assert.deepEqual(result, {
+    started: { _tag: "CodeSent" },
+    submitted: { _tag: "Accepted" },
+  });
+  assert.deepEqual(upstream.calls.checkPhone, ["771234567", "+94771234567"]);
+});
+
+test("a number without an account leaves a working session alone", async () => {
+  const { upstream, alerts, backing, run } = setup({ session: expired });
+  upstream.settings.accountPhone = "+94770000000";
+  const result = await run((session) =>
+    Effect.gen(function* () {
+      const started = yield* session.startLogin("0771234567");
+      return {
+        started,
+        token: yield* session.token,
+        status: yield* session.status,
+      };
+    }),
+  );
+  assert.deepEqual(result.started, { _tag: "NoAccount" });
+  assert.equal(tokenText(result.token), "webview-1");
+  assert.equal(result.status, "ok");
+  assert.equal(backing.has("login"), false);
+  assert.equal(backing.has("phone"), false);
+  assert.deepEqual(alerts.sent, []);
+});
+
+test("a number that isn't a Sri Lankan mobile is refused without calling upstream", async () => {
+  const { upstream, run } = setup({ session: expired });
+  assert.deepEqual(await run((session) => session.startLogin("12345")), {
+    _tag: "InvalidPhone",
+  });
+  assert.deepEqual(upstream.calls.checkPhone, []);
+});
+
+test("a second login within a minute of the last code is refused", async () => {
+  const { upstream, run } = setup({ session: expired });
+  const outcomes = await run((session) =>
+    Effect.gen(function* () {
+      const first = yield* session.startLogin("0771234567");
+      yield* TestClock.adjust("40 seconds");
+      const early = yield* session.startLogin("0771234567");
+      yield* TestClock.adjust("20 seconds");
+      const later = yield* session.startLogin("0771234567");
+      return [first, early, later];
+    }),
+  );
+  assert.deepEqual(outcomes, [
+    { _tag: "CodeSent" },
+    { _tag: "TooSoon", retryAfterMs: 20_000 },
+    { _tag: "CodeSent" },
+  ]);
+  assert.equal(upstream.calls.checkPhone.length, 2);
+});
+
 test("a storage read failure is not empty storage: no seed, no refresh, no alert", async () => {
   const writes: string[] = [];
   const failing: StateStoreShape = {
@@ -267,7 +365,7 @@ test("a corrupt stored session never takes the seed: no refresh, and a login is 
   assert.equal(tokenText(token), undefined);
   assert.equal(status, "login_needed");
   assert.deepEqual(upstream.calls.refresh, []);
-  assert.deepEqual(upstream.calls.checkPhone, ["+94771234567"]);
+  assert.deepEqual(upstream.calls.checkPhone, ["771234567"]);
   assert.equal(
     JSON.parse(backing.get("login") ?? "{}").reason,
     "no refresh token",
@@ -409,7 +507,7 @@ test("a 401 refresh is a dead token", async () => {
     Effect.andThen(session.token, session.status),
   );
   assert.equal(status, "login_needed");
-  assert.deepEqual(upstream.calls.checkPhone, ["+94771234567"]);
+  assert.deepEqual(upstream.calls.checkPhone, ["771234567"]);
   assert.equal(alerts.sent.length, 1);
 });
 
@@ -872,7 +970,11 @@ test("a token that stays rejected is tried at most every 15 minutes, across rest
       }
     }),
   );
-  assert.deepEqual(first.upstream.calls.refresh, ["stored", "stored", "stored"]);
+  assert.deepEqual(first.upstream.calls.refresh, [
+    "stored",
+    "stored",
+    "stored",
+  ]);
   const second = setup({ state: memoryStateStore(backing) });
   second.upstream.settings.refreshStatus = 400;
   await second.run((session) =>
@@ -913,10 +1015,7 @@ test("a login nobody fixes escalates once, at the max priority, after 15 minutes
     alerts.sent.map((alert) => [alert.title, alert.critical === true]),
     [
       ["Live buses are down: login needed", false],
-      [
-        "Still down after 15 minutes: Live buses are down: login needed",
-        true,
-      ],
+      ["Still down after 15 minutes: Live buses are down: login needed", true],
     ],
   );
 });

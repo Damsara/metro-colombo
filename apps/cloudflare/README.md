@@ -45,7 +45,7 @@ Secrets never go in the config. Set them per environment with `./node_modules/.b
 | Secret                         | Used by   | Without it                                        |
 | ------------------------------ | --------- | ------------------------------------------------- |
 | `METRO_PHONE`                  | Fleet     | no login code can be texted when the session dies |
-| `OTP_SECRET`                   | Fleet     | `POST /fleet/otp` is off                          |
+| `OTP_SECRET`                   | Fleet     | `POST /fleet/otp` and `/fleet/login` are off      |
 | `ALERT_WEBHOOK_URL`            | Fleet     | login alerts are only logged                      |
 | `ARCHIVE_R2_ACCESS_KEY_ID`     | Compactor | the compactor doesn't start (it needs all three)  |
 | `ARCHIVE_R2_SECRET_ACCESS_KEY` | Compactor |                                                   |

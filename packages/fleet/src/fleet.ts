@@ -16,7 +16,9 @@ import { makeRecorder } from "./recorder.js";
 import {
   type LoginStatus,
   makeSession,
+  LOGIN_NOT_USED,
   NO_CODE_PENDING,
+  type StartOutcome,
   type SubmitOutcome,
 } from "./session.js";
 import {
@@ -57,6 +59,7 @@ export type FleetShape = {
   readonly status: Effect.Effect<FleetStatus>;
   readonly live: Effect.Effect<LiveDocument>;
   readonly submitCode: (code: string) => Effect.Effect<SubmitOutcome>;
+  readonly startLogin: (phone: string) => Effect.Effect<StartOutcome>;
   readonly token: Effect.Effect<Option.Option<Redacted.Redacted<string>>>;
   readonly shutdown: Effect.Effect<void>;
 };
@@ -308,6 +311,10 @@ const makeFleet = Effect.gen(function* () {
       feed.needsLogin
         ? session.submitCode(code)
         : Effect.succeed(NO_CODE_PENDING),
+    startLogin: (phone) =>
+      feed.needsLogin
+        ? session.startLogin(phone)
+        : Effect.succeed(LOGIN_NOT_USED),
     token,
     shutdown,
   };

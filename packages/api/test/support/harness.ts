@@ -59,6 +59,7 @@ export const harness = async (
     status: unused,
     live: unused,
     submitCode: () => unused,
+    startLogin: () => unused,
     token: Effect.succeed(Option.none()),
     ...options.client,
   });

@@ -6,6 +6,7 @@ import {
   isDeadToken,
   LankaMetroConfig,
   normalizePhone,
+  phoneFormats,
 } from "@metro/upstream";
 import type { AlertBookShape } from "./alerts.js";
 
@@ -14,6 +15,7 @@ export const CODE_EVERY_MS = 10 * 60_000;
 const REFRESH_TIMEOUT = "15 seconds";
 export const REFRESH_BACKOFF_MS = 60_000;
 export const REJECTED_RETRY_MS = 15 * 60_000;
+export const LOGIN_CODE_EVERY_MS = 60_000;
 
 export type LoginStatus = "ok" | "login_needed" | "upstream_error";
 
@@ -22,10 +24,19 @@ export type SubmitOutcome =
   | { readonly _tag: "NoCodePending" }
   | { readonly _tag: "CodeRejected"; readonly message: string };
 
+export type StartOutcome =
+  | { readonly _tag: "CodeSent" }
+  | { readonly _tag: "InvalidPhone" }
+  | { readonly _tag: "NoAccount" }
+  | { readonly _tag: "TooSoon"; readonly retryAfterMs: number }
+  | { readonly _tag: "LoginNotUsed" }
+  | { readonly _tag: "Failed"; readonly message: string };
+
 export type SessionShape = {
   readonly token: Effect.Effect<Option.Option<Redacted.Redacted<string>>>;
   readonly status: Effect.Effect<LoginStatus>;
   readonly submitCode: (code: string) => Effect.Effect<SubmitOutcome>;
+  readonly startLogin: (phone: string) => Effect.Effect<StartOutcome>;
 };
 
 const StoredSession = Schema.Struct({
@@ -46,13 +57,14 @@ type StoredLogin = Schema.Schema.Type<typeof StoredLogin>;
 
 const ACCEPTED: SubmitOutcome = { _tag: "Accepted" };
 export const NO_CODE_PENDING: SubmitOutcome = { _tag: "NoCodePending" };
+export const LOGIN_NOT_USED: StartOutcome = { _tag: "LoginNotUsed" };
 
 const loginNeededAlert = (reason: string, hasPhone: boolean) => ({
   urgent: true,
   title: "Live buses are down: login needed",
   message: hasPhone
     ? `Upstream login failed: ${reason}. A code is being texted to the login phone; the iPhone shortcut sends it back.`
-    : `Upstream login failed: ${reason}. Set METRO_PHONE so a code can be texted.`,
+    : `Upstream login failed: ${reason}. Set METRO_PHONE or POST a number to /fleet/login so a code can be texted.`,
 });
 
 const restoredAlert = {
@@ -71,7 +83,8 @@ export const makeSession = (alerts: AlertBookShape) =>
     const auth = yield* AuthClient;
     const state = yield* StateStore;
     const config = yield* LankaMetroConfig;
-    const phone = Option.flatMap(config.phone, (raw) =>
+    // A number posted to /fleet/login replaces METRO_PHONE once it has been sent a code.
+    let phone = Option.flatMap(config.phone, (raw) =>
       Option.fromUndefinedOr(normalizePhone(raw)),
     );
     // Refresh tokens are single use, so two refreshes at once would leave one holding a dead token.
@@ -92,6 +105,10 @@ export const makeSession = (alerts: AlertBookShape) =>
         if (loaded) return;
         const storedSession = yield* state.get("session");
         const storedLogin = yield* state.get("login");
+        const storedPhone = Option.flatMap(
+          yield* state.get("phone"),
+          Schema.decodeUnknownOption(Schema.String),
+        );
         session = Option.getOrUndefined(
           Option.flatMap(
             storedSession,
@@ -101,6 +118,7 @@ export const makeSession = (alerts: AlertBookShape) =>
         login = Option.getOrUndefined(
           Option.flatMap(storedLogin, Schema.decodeUnknownOption(StoredLogin)),
         );
+        if (Option.isSome(storedPhone)) phone = storedPhone;
         if (
           Option.isNone(storedSession) &&
           Option.isSome(config.seedRefreshToken)
@@ -173,6 +191,31 @@ export const makeSession = (alerts: AlertBookShape) =>
       session.webviewToken !== "" &&
       session.expiresAt - now > RENEW_MARGIN_MS;
 
+    // Each format texts a code, so the next is tried only when upstream has no account under the last.
+    const sendCode = (current: StoredLogin, national: string, now: number) =>
+      Effect.gen(function* () {
+        yield* saveLogin({ ...current, lastCodeRequestAt: now });
+        for (const format of phoneFormats(national)) {
+          // Once upstream has texted the code, nothing may interrupt before its reference is saved.
+          const sent = yield* Effect.uninterruptibleMask((restore) =>
+            Effect.flatMap(restore(auth.checkPhone(format)), (request) =>
+              request.hasAccount
+                ? Effect.as(
+                    saveLogin({
+                      ...current,
+                      lastCodeRequestAt: now,
+                      otpReference: request.reference,
+                    }),
+                    true,
+                  )
+                : Effect.succeed(false),
+            ),
+          );
+          if (sent) return true;
+        }
+        return false;
+      });
+
     const requestCode = Effect.gen(function* () {
       const current = login;
       const now = yield* Clock.currentTimeMillis;
@@ -182,18 +225,9 @@ export const makeSession = (alerts: AlertBookShape) =>
         now - current.lastCodeRequestAt < CODE_EVERY_MS
       )
         return;
-      yield* saveLogin({ ...current, lastCodeRequestAt: now });
-      // Once upstream has texted the code, nothing may interrupt before its reference is saved.
-      yield* Effect.uninterruptibleMask((restore) =>
-        Effect.flatMap(restore(auth.checkPhone(phone.value)), (reference) =>
-          saveLogin({
-            ...current,
-            lastCodeRequestAt: now,
-            otpReference: reference,
-          }),
-        ),
-      );
-      yield* Effect.logInfo("login code requested");
+      if (yield* sendCode(current, phone.value, now))
+        yield* Effect.logInfo("login code requested");
+      else yield* Effect.logWarning("no LMT-GO account for the login phone");
     }).pipe(
       Effect.catch((error) =>
         Effect.logWarning("login code request failed", error.message),
@@ -408,6 +442,55 @@ export const makeSession = (alerts: AlertBookShape) =>
           ),
         );
 
-    const shape: SessionShape = { token, status, submitCode };
+    // A wrong number leaves a working session alone; a code that went out pauses the feed until it is posted.
+    const startLogin = (raw: string) =>
+      semaphore
+        .withPermits(1)(
+          Effect.gen(function* () {
+            yield* load;
+            const national = normalizePhone(raw);
+            if (national === undefined)
+              return { _tag: "InvalidPhone" } satisfies StartOutcome;
+            const now = yield* Clock.currentTimeMillis;
+            const last = login?.lastCodeRequestAt;
+            if (
+              last !== undefined &&
+              last !== null &&
+              now - last < LOGIN_CODE_EVERY_MS
+            )
+              return {
+                _tag: "TooSoon",
+                retryAfterMs: LOGIN_CODE_EVERY_MS - (now - last),
+              } satisfies StartOutcome;
+            const pending = login;
+            const current: StoredLogin = pending ?? {
+              reason: "a new login was requested",
+              otpReference: null,
+              lastCodeRequestAt: null,
+              ...(session?.refreshToken ? { refreshTriedAt: now } : {}),
+            };
+            const sent = yield* sendCode(current, national, now).pipe(
+              Effect.tapError(() => (pending ? Effect.void : clearLogin)),
+            );
+            if (!sent) {
+              if (!pending) yield* clearLogin;
+              return { _tag: "NoAccount" } satisfies StartOutcome;
+            }
+            phone = Option.some(national);
+            yield* state.set("phone", national);
+            yield* Effect.logInfo("login code requested");
+            return { _tag: "CodeSent" } satisfies StartOutcome;
+          }),
+        )
+        .pipe(
+          Effect.catch((error) =>
+            Effect.succeed<StartOutcome>({
+              _tag: "Failed",
+              message: error.message,
+            }),
+          ),
+        );
+
+    const shape: SessionShape = { token, status, submitCode, startLogin };
     return shape;
   });
