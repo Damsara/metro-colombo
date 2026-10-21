@@ -58,6 +58,7 @@ const Client = Layer.effect(
       status: fleet.status,
       live: fleet.live,
       submitCode: fleet.submitCode,
+      startLogin: fleet.startLogin,
       token: fleet.token,
     });
   }),

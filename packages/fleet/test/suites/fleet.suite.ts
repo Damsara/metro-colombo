@@ -385,10 +385,7 @@ export function fleetSuite(
 
       assert.equal(down.login, "login_needed");
       assert.deepEqual(h.upstream.calls.refresh, ["dead"]);
-      assert.deepEqual(h.upstream.calls.checkPhone, [
-        "+94771234567",
-        "+94771234567",
-      ]);
+      assert.deepEqual(h.upstream.calls.checkPhone, ["771234567", "771234567"]);
       assert.equal(h.socket.connections.length, 0);
       assert.deepEqual(
         h.alerts.sent.map((alert) => alert.title),
@@ -1181,7 +1178,7 @@ export function fleetSuite(
         fleet.submitCode("123456"),
       );
       assert.equal(outcome._tag, "Accepted");
-      assert.deepEqual(h.upstream.calls.checkPhone, ["+94771234567"]);
+      assert.deepEqual(h.upstream.calls.checkPhone, ["771234567"]);
     }));
 
   test(`${name}: an open socket that only sends pings counts as connected`, () =>

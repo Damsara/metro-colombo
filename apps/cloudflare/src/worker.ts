@@ -6,6 +6,7 @@ import {
   FleetClient,
   type FleetStatus,
   type LiveDocument,
+  type StartOutcome,
   type SubmitOutcome,
 } from "@metro/fleet";
 import { ReferenceUpstreamFromConfig } from "@metro/upstream";
@@ -29,6 +30,10 @@ const fleetClient = (env: Env) =>
     submitCode: (code) =>
       Effect.promise(
         async () => (await fleetStub(env).submitCode(code)) as SubmitOutcome,
+      ),
+    startLogin: (phone) =>
+      Effect.promise(
+        async () => (await fleetStub(env).startLogin(phone)) as StartOutcome,
       ),
     token: Effect.promise(() => fleetStub(env).sessionToken()).pipe(
       Effect.map((token) =>

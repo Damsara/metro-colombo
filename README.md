@@ -390,7 +390,46 @@ shows the login and feed state. An iPhone Shortcuts automation on the phone
 (trigger: a message from `LMT-GO` containing "verification code", run
 immediately) can take the code with `(?<=is:\s)\d{6}` and post it, so the
 server recovers without a laptop. A refresh token you already have can seed
-the first session as `METRO_REFRESH_TOKEN`.
+the first session as `METRO_REFRESH_TOKEN`, but only while the state holds no
+session record, not even an empty one.
+
+To log in with a number without editing the config, post it first:
+
+```
+POST /fleet/login
+Authorization: Bearer <OTP_SECRET>
+{"phone":"0771234567"}
+```
+
+The Fleet texts a code to that number and pauses the feed until the code
+reaches `/fleet/otp`. Once a code goes out, the number is kept in the Fleet's
+state and replaces `METRO_PHONE` for later logins. The operator matches the
+number as it was registered, so the Fleet sends it as the app does
+(`771234567`) and, if there's no account under that, with the country code;
+each try texts a code. Replies: 202 code sent, 400 not a Sri Lankan mobile
+number, 422 no LMT-GO account under either form (a working session is left
+alone), 429 a code went out less than a minute ago (`Retry-After` says when
+to try again), 409 this server doesn't log in, 502 the operator failed, 404
+wrong secret.
+
+`/fleet/admin` is a small page for the same three calls (status, send a code,
+enter the code) from any phone browser. It holds no secret: you type
+`OTP_SECRET` into it, and it can remember it in that browser. Like the
+endpoints, it answers 404 when `OTP_SECRET` is unset.
+
+On Android, MacroDroid can forward the code the way the iPhone shortcut does:
+
+1. Trigger: **SMS Received**, from `LMT-GO`, content contains
+   `verification code`.
+2. Action: **Text Manipulation → Extract text** from the SMS message text
+   (pick it from the magic text list) with the regex `\d{6}`, saved to a
+   string variable such as `code`.
+3. Action: **HTTP Request**, `POST` to `https://<your-server>/fleet/otp`, header
+   `Authorization: Bearer <OTP_SECRET>`, content type `application/json`, body
+   `{"code":"{lv=code}"}` (insert the variable through the magic text picker).
+
+With that macro on the login phone, a dead session recovers without anyone
+touching it: the Fleet texts a code, the phone posts it back.
 
 Treat `apps/node/.env` and the Fleet's state file like a password: they act
 as the account that signed in. Both are gitignored.

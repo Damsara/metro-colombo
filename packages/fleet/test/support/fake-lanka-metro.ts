@@ -15,6 +15,8 @@ export const fakeLankaMetro = (log: string[] = []) => {
     webviewStatus: 200,
     refreshHangs: false,
     verifyHangs: false,
+    // Only this number has an account; undefined means every number does.
+    accountPhone: undefined as string | undefined,
   };
   let issued = 0;
   const http = fakeHttpClient((request) => {
@@ -64,7 +66,9 @@ export const fakeLankaMetro = (log: string[] = []) => {
         json: {
           data: {
             otp_reference: `ref-${calls.checkPhone.length}`,
-            has_account: true,
+            has_account:
+              settings.accountPhone === undefined ||
+              body.phone === settings.accountPhone,
           },
         },
       };

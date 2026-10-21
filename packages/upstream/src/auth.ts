@@ -27,13 +27,22 @@ export type WebviewToken = {
   readonly expiresInSeconds: number;
 };
 
+export type CodeRequest = {
+  readonly reference: string;
+  readonly hasAccount: boolean;
+};
+
+// The nine digits after the country code, e.g. 771234567.
 export const normalizePhone = (raw: string): string | undefined => {
   const digits = raw.replace(/\D/g, "");
-  if (digits.startsWith("94") && digits.length === 11) return `+${digits}`;
-  if (digits.startsWith("0") && digits.length === 10)
-    return `+94${digits.slice(1)}`;
+  if (digits.startsWith("94") && digits.length === 11) return digits.slice(2);
+  if (digits.startsWith("0") && digits.length === 10) return digits.slice(1);
+  if (digits.length === 9 && !digits.startsWith("0")) return digits;
   return undefined;
 };
+
+// Upstream matches the number as typed: the app registers 771234567, but older accounts may sit under +94771234567.
+export const phoneFormats = (national: string) => [national, `+94${national}`];
 
 // verify-otp's reply nests the tokens differently by account state.
 export const findTokens = (
@@ -66,7 +75,10 @@ const WebviewResponse = Schema.Struct({
   }),
 });
 const CheckPhoneResponse = Schema.Struct({
-  data: Schema.Struct({ otp_reference: Schema.String }),
+  data: Schema.Struct({
+    otp_reference: Schema.String,
+    has_account: Schema.optional(Schema.Boolean),
+  }),
 });
 
 export type AuthClientShape = {
@@ -76,7 +88,9 @@ export type AuthClientShape = {
   readonly webview: (
     accessToken: string,
   ) => Effect.Effect<WebviewToken, AuthHttpError>;
-  readonly checkPhone: (phone: string) => Effect.Effect<string, AuthHttpError>;
+  readonly checkPhone: (
+    phone: string,
+  ) => Effect.Effect<CodeRequest, AuthHttpError>;
   readonly verifyOtp: (
     reference: string,
     code: string,
@@ -192,7 +206,10 @@ export class AuthClient extends Context.Service<AuthClient, AuthClientShape>()(
                 Schema.decodeUnknownEffect(CheckPhoneResponse),
               ),
             ),
-            Effect.map(({ data }) => data.otp_reference),
+            Effect.map(({ data }) => ({
+              reference: data.otp_reference,
+              hasAccount: data.has_account ?? true,
+            })),
             limited("customer/check-phone"),
           ),
         verifyOtp: (reference, code) =>
