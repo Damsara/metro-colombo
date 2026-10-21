@@ -85,8 +85,9 @@ export const StatusRoutes = Layer.unwrap(
           live: Option.match(snapshot, {
             onNone: () => null,
             onSome: (doc) => ({
-              stale: (doc as { readonly stale?: unknown }).stale === true,
+              stale: doc.stale === true,
               age_ms: doc.timestamp ? ageAt(now, doc.timestamp) : null,
+              ...(doc.reason ? { reason: doc.reason } : {}),
             }),
           }),
           reference_age_ms: Option.match(lastSuccess, {
@@ -117,6 +118,8 @@ export const StatusRoutes = Layer.unwrap(
                 ? { age_ms: ageAt(now, found.timestamp) }
                 : {}),
               buses: found.buses,
+              ...(found.stale === undefined ? {} : { stale: found.stale }),
+              ...(found.reason ? { reason: found.reason } : {}),
             }),
           }),
         ),

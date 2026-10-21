@@ -172,6 +172,8 @@ export interface LiveFeed {
   /** Milliseconds since the server received `timestamp`'s update. */
   age_ms?: number;
   buses: LiveBus[];
+  stale?: boolean;
+  reason?: "login_needed" | "feed_down";
 }
 type JourneyStop = Stop & {
   scheduled_time?: string;

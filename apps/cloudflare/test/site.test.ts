@@ -52,7 +52,7 @@ test("/api/live is the Fleet's in-memory snapshot over RPC, in production's shap
   const response = await get("/api/live");
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.text()).toBe(
-    '{"success":false,"count":0,"timestamp":0,"buses":[]}',
+    '{"success":false,"count":0,"timestamp":0,"buses":[],"stale":true,"reason":"feed_down"}',
   );
 });
 
@@ -69,7 +69,7 @@ test("/api/live falls back to the published file when the Fleet can't answer", a
   } as never).handler(new Request("https://metro-staging.test/api/live"));
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.text()).toBe(
-    '{"success":true,"count":0,"timestamp":0,"buses":[]}',
+    '{"success":true,"count":0,"timestamp":0,"buses":[],"stale":true,"reason":"feed_down"}',
   );
 });
 

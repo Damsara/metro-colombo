@@ -69,6 +69,8 @@ export const LiveFeed = Schema.Struct({
   timestamp: Schema.Number,
   age_ms: Schema.optional(Schema.Number),
   buses: Schema.Array(LiveBus),
+  stale: Schema.optional(Schema.Boolean),
+  reason: Schema.optional(Schema.Literals(["login_needed", "feed_down"])),
 });
 
 // Plans are passed through because the nested `legs` are complex and versioned by the backend.
