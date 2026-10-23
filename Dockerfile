@@ -19,7 +19,8 @@ COPY packages ./packages
 COPY apps/node ./apps/node
 RUN npm run build:packages && npm --workspace @metro/node run build && npm prune --omit=dev
 
-FROM node:${NODE_VERSION}-alpine AS web
+# The UI is static files, so build it on the runner's own platform instead of under emulation.
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS web
 WORKDIR /web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
